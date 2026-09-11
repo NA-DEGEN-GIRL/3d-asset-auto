@@ -83,6 +83,7 @@ function metadata(item) {
     const count=document.createElement('small'); count.textContent=p.triangles.toLocaleString(); el.append(name,count); return el;
   }));
   const notes=[...item.inspection.errors,...item.inspection.warnings];
+  if(item.review?.notes) notes.push(`시각 검토: ${item.review.notes}`);
   $('warnings').replaceChildren(...(notes.length?notes:['수치 검사에서 발견된 문제가 없습니다.']).map(n=>{
     const p=document.createElement('p');p.textContent=n;return p;
   }));

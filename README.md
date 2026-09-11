@@ -25,6 +25,8 @@ uv run --no-sync python -m asset_auto.cli serve
 
 Open **http://127.0.0.1:8765/** to orbit/zoom, toggle wireframe and grid, select revisions, inspect parts and render views, and download GLBs. Refresh the library after a generation or validation completes. The viewer is local-only and serves only explicit asset files; it exposes no model-generation or arbitrary-script HTTP endpoint.
 
+After setup, Windows users can run `start-viewer.cmd`; Linux users can run `sh start-viewer.sh`. Keep that process running while using the viewer. To select another port, use the CLI's `serve --port` option.
+
 `--async` launches a separate job process. Its JSON state and logs survive the submitting agent process. Completed revisions are immutable; edit operations create a new revision with a parent link. Failed work is retained for diagnosis and excluded from the asset library.
 
 TRELLIS jobs take an OS-backed file lock before using the GPU, so multiple clients do not load multiple inference jobs onto the same GPU simultaneously. The lock releases on process exit. A job-status query detects exited/reused worker PIDs and reports interrupted work instead of leaving it permanently running.
@@ -68,7 +70,7 @@ Install with `uv sync --extra mcp`. A stdio client can run `uv --directory /abso
 - Decimation is a geometry reduction operation, not a texture rebake; inspect texture seams and silhouette afterward.
 - Blender renders use CPU Cycles to leave VRAM available to generation. TRELLIS uses the GPU.
 - Source and export conventions: Blender Z-up internally; GLB Y-up, meters. Existing imported hierarchies are flattened for static normalization.
-- Windows integration is exercised on this machine. Linux paths are implemented, but Linux GPU/Blender end-to-end tests require a Linux host.
+- Blender/Godot integration has passed locally on Windows and in Linux CI. TRELLIS GPU inference has passed locally on an RTX 5090; Linux GPU inference is not yet exercised.
 
 ## Dependencies and provenance
 
