@@ -29,7 +29,7 @@ def executable(root, kind):
         "trellis": "trellis-cli.exe" if windows else "trellis-cli",
         "godot": "*console.exe" if windows else "Godot*linux*x86_64",
     }
-    found = sorted((root / ".runtime" / kind).rglob(patterns[kind]))
+    found = sorted(path for path in (root / ".runtime" / kind).rglob(patterns[kind]) if path.is_file())
     if found:
         return str(found[0])
     value = shutil.which({"trellis": "trellis-cli", "godot": "godot", "blender": "blender"}[kind])

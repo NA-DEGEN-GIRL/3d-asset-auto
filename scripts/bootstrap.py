@@ -9,6 +9,7 @@ import argparse
 import concurrent.futures
 import hashlib
 import json
+import os
 import platform
 import shutil
 import tarfile
@@ -73,6 +74,11 @@ def extract(archive, target):
                 if not destination.is_relative_to(target.resolve()):
                     raise ValueError("Unsafe archive path")
             bundle.extractall(target)
+            if os.name != "nt":
+                for member in bundle.infolist():
+                    mode = (member.external_attr >> 16) & 0o777
+                    if mode:
+                        (target / member.filename).chmod(mode)
     else:
         with tarfile.open(archive) as bundle:
             bundle.extractall(target, filter="data")

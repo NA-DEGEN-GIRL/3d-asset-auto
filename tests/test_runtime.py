@@ -10,6 +10,7 @@ from pydantic import ValidationError
 from asset_auto.jobs import status
 from asset_auto.models import AssetSpec, EditRequest
 from asset_auto.pipeline import review, validate_glb
+from asset_auto.settings import executable
 from asset_auto.store import Store, child, read_json, write_json
 from asset_auto.web import create_app
 
@@ -77,3 +78,13 @@ def test_exited_or_reused_worker_is_reported_as_interrupted(tmp_path):
     path = tmp_path / ".assets/jobs/testjob/job.json"
     write_json(path, {"state": "running", "pid": os.getpid(), "process_created_at": 0.1})
     assert status(tmp_path, "testjob")["state"] == "interrupted"
+
+
+def test_tool_discovery_skips_matching_directories(tmp_path):
+    filename = "blender.exe" if os.name == "nt" else "blender"
+    decoy = tmp_path / ".runtime/blender/a" / filename
+    decoy.mkdir(parents=True)
+    binary = tmp_path / ".runtime/blender/z" / filename
+    binary.parent.mkdir(parents=True)
+    binary.write_text("tool")
+    assert Path(executable(tmp_path, "blender")) == binary
