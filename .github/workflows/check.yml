@@ -36,4 +36,6 @@ jobs:
       - run: uv sync --locked
       - run: python scripts/bootstrap.py --only blender
       - run: python scripts/bootstrap.py --only godot
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
       - run: uv run --no-sync python scripts/smoke.py

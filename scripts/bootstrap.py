@@ -13,6 +13,7 @@ import os
 import platform
 import shutil
 import tarfile
+import urllib.parse
 import urllib.request
 import zipfile
 from pathlib import Path
@@ -26,9 +27,13 @@ MODEL_REV = "a57397bd3d351599d9729fc144b3f87c3f87d65b"
 
 
 def request(url):
-    return urllib.request.urlopen(
-        urllib.request.Request(url, headers={"User-Agent": "asset-auto/0.1"}), timeout=90
-    )
+    req = urllib.request.Request(url, headers={"User-Agent": "asset-auto/0.1"})
+    parsed = urllib.parse.urlsplit(url)
+    token = os.environ.get("GITHUB_TOKEN")
+    if token and parsed.scheme == "https" and parsed.netloc == "api.github.com":
+        # Authenticate release metadata only; never forward credentials on redirects.
+        req.add_unredirected_header("Authorization", f"Bearer {token}")
+    return urllib.request.urlopen(req, timeout=90)
 
 
 def read_json(url):
