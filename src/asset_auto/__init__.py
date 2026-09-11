@@ -1,0 +1,1 @@
+"""Local asset production runtime."""

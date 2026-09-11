@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="로컬 3D 에셋과 제작 버전을 확인하는 Three.js 작업 공간" />
+  <title>Asset Lab · 3D Asset Auto</title>
+</head>
+<body>
+  <header><a class="brand" href="/">A<span class="brand-slash">/</span> <strong>ASSET LAB</strong></a><span class="local-label">LOCAL WORKSPACE</span><button id="refresh">목록 새로고침 ↻</button></header>
+  <div class="workspace">
+    <aside class="library"><div class="section-title">에셋 라이브러리 <span id="asset-count">0</span></div><div id="library"></div><p class="library-note">생성·수정한 에셋은 버전별로 보관됩니다.</p></aside>
+    <main>
+      <div class="asset-heading"><div><p class="eyebrow" id="provider">3D ASSET</p><h1 id="asset-name">에셋을 기다리는 중</h1></div><a id="download" class="download disabled">GLB 다운로드 ↓</a></div>
+      <div class="toolbar"><label>버전 <select id="revision" aria-label="에셋 버전"></select></label><div class="view-controls"><button id="reset">시점 초기화</button><label><input type="checkbox" id="wireframe" /> 와이어프레임</label><label><input type="checkbox" id="rotate" /> 자동 회전</label><label><input type="checkbox" id="grid" checked /> 그리드</label></div></div>
+      <div id="viewport"><div id="loading" role="status">에셋 목록을 불러오고 있습니다.</div><div class="axis-label">Y ↑ · meters</div><div class="viewport-help">드래그: 회전 · 스크롤: 확대 · 우클릭: 이동</div></div>
+      <div class="metrics"><div><span>TRIANGLES</span><strong id="triangles">—</strong></div><div><span>SIZE / X · Y · Z</span><strong id="dimensions">—</strong></div><div><span>PARTS</span><strong id="parts-count">—</strong></div><div><span>THREE.JS</span><strong id="web-status">대기</strong></div></div>
+      <div class="bottom"><section><div class="section-title">렌더 뷰</div><div id="renders"></div></section><section class="checks"><div class="section-title">검증 상태</div><div id="checks"></div><p id="edit-note"></p></section></div>
+    </main>
+    <aside class="inspector"><div class="section-title">부품</div><div id="part-list"></div><div class="section-title inspection-title">검사 메모</div><div id="warnings"></div></aside>
+  </div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

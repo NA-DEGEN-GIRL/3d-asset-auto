@@ -1,0 +1,28 @@
+{
+  "asset_id": "azure-sword",
+  "prompt": "Stylized medieval sword with a blue leather grip, brass guard, steel blade and azure gems",
+  "triangle_budget": 12000,
+  "provider": "procedural",
+  "recipe": {
+    "materials": {
+      "steel": {"color": [0.55, 0.68, 0.8, 1], "metallic": 0.85, "roughness": 0.27},
+      "brass": {"color": [0.58, 0.30, 0.06, 1], "metallic": 0.8, "roughness": 0.3},
+      "leather": {"color": [0.025, 0.1, 0.20, 1], "metallic": 0.0, "roughness": 0.72},
+      "gem": {"color": [0.025, 0.45, 0.85, 1], "metallic": 0.35, "roughness": 0.12}
+    },
+    "parts": [
+      {"name": "blade", "primitive": "box", "dimensions": [0.115, 0.035, 0.77], "location": [0, 0, 0.775], "material": "steel", "bevel": 0.016},
+      {"name": "tip", "primitive": "cone", "segments": 4, "dimensions": [0.115, 0.035, 0.15], "location": [0, 0, 1.23], "rotation_degrees": [0, 0, 45], "material": "steel"},
+      {"name": "fuller", "primitive": "box", "dimensions": [0.014, 0.037, 0.64], "location": [0, 0, 0.77], "material": "brass", "bevel": 0.005},
+      {"name": "guard", "primitive": "box", "dimensions": [0.35, 0.072, 0.055], "location": [0, 0, 0.365], "material": "brass", "bevel": 0.02},
+      {"name": "guard_left", "primitive": "sphere", "dimensions": [0.065, 0.075, 0.075], "location": [-0.17, 0, 0.365], "material": "brass"},
+      {"name": "guard_right", "primitive": "sphere", "dimensions": [0.065, 0.075, 0.075], "location": [0.17, 0, 0.365], "material": "brass"},
+      {"name": "grip", "primitive": "cylinder", "dimensions": [0.056, 0.05, 0.25], "location": [0, 0, 0.2], "material": "leather", "bevel": 0.008},
+      {"name": "grip_ring_top", "primitive": "cylinder", "dimensions": [0.065, 0.06, 0.019], "location": [0, 0, 0.319], "material": "brass", "bevel": 0.004},
+      {"name": "grip_ring_bottom", "primitive": "cylinder", "dimensions": [0.065, 0.06, 0.019], "location": [0, 0, 0.08], "material": "brass", "bevel": 0.004},
+      {"name": "pommel", "primitive": "sphere", "dimensions": [0.085, 0.065, 0.085], "location": [0, 0, 0.036], "material": "brass"},
+      {"name": "pommel_gem", "primitive": "sphere", "dimensions": [0.047, 0.072, 0.047], "location": [0, 0, 0.036], "material": "gem"},
+      {"name": "guard_gem", "primitive": "sphere", "dimensions": [0.06, 0.088, 0.06], "location": [0, 0, 0.367], "material": "gem"}
+    ]
+  }
+}

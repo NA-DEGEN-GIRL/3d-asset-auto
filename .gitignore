@@ -1,0 +1,16 @@
+.venv/
+.runtime/
+.work/
+.assets/
+.pytest_cache/
+.ruff_cache/
+__pycache__/
+*.egg-info/
+*.pyc
+node_modules/
+.env
+.env.*
+!.env.example
+asset-system.local.json
+web/dist/
+

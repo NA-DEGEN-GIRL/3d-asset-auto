@@ -1,0 +1,445 @@
+{
+  "asset_id": "oak-chest",
+  "provider": "procedural",
+  "prompt": "Small stylized oak treasure chest with dark iron bands and brass lock",
+  "recipe": {
+    "materials": {
+      "wood": {
+        "color": [
+          0.3,
+          0.1,
+          0.028,
+          1
+        ],
+        "roughness": 0.63
+      },
+      "iron": {
+        "color": [
+          0.06,
+          0.075,
+          0.095,
+          1
+        ],
+        "metallic": 0.7,
+        "roughness": 0.35
+      },
+      "brass": {
+        "color": [
+          0.5,
+          0.27,
+          0.055,
+          1
+        ],
+        "metallic": 0.75,
+        "roughness": 0.27
+      }
+    },
+    "parts": [
+      {
+        "name": "front_board_0",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          -0.356,
+          -0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "back_board_0",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          -0.356,
+          0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "lid_board_0",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.7,
+          0.085
+        ],
+        "location": [
+          -0.356,
+          0,
+          0.73
+        ],
+        "material": "wood",
+        "bevel": 0.012
+      },
+      {
+        "name": "front_board_1",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          -0.178,
+          -0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "back_board_1",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          -0.178,
+          0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "lid_board_1",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.7,
+          0.085
+        ],
+        "location": [
+          -0.178,
+          0,
+          0.73
+        ],
+        "material": "wood",
+        "bevel": 0.012
+      },
+      {
+        "name": "front_board_2",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          0.0,
+          -0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "back_board_2",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          0.0,
+          0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "lid_board_2",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.7,
+          0.085
+        ],
+        "location": [
+          0.0,
+          0,
+          0.73
+        ],
+        "material": "wood",
+        "bevel": 0.012
+      },
+      {
+        "name": "front_board_3",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          0.178,
+          -0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "back_board_3",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          0.178,
+          0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "lid_board_3",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.7,
+          0.085
+        ],
+        "location": [
+          0.178,
+          0,
+          0.73
+        ],
+        "material": "wood",
+        "bevel": 0.012
+      },
+      {
+        "name": "front_board_4",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          0.356,
+          -0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "back_board_4",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.07,
+          0.58
+        ],
+        "location": [
+          0.356,
+          0.32,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.009
+      },
+      {
+        "name": "lid_board_4",
+        "primitive": "box",
+        "dimensions": [
+          0.17,
+          0.7,
+          0.085
+        ],
+        "location": [
+          0.356,
+          0,
+          0.73
+        ],
+        "material": "wood",
+        "bevel": 0.012
+      },
+      {
+        "name": "side_left",
+        "primitive": "box",
+        "dimensions": [
+          0.065,
+          0.64,
+          0.6
+        ],
+        "location": [
+          -0.435,
+          0,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.012
+      },
+      {
+        "name": "strap_-1_-0.3",
+        "primitive": "box",
+        "dimensions": [
+          0.075,
+          0.032,
+          0.63
+        ],
+        "location": [
+          -0.3,
+          -0.363,
+          0.39
+        ],
+        "material": "iron",
+        "bevel": 0.008
+      },
+      {
+        "name": "strap_-1_0.3",
+        "primitive": "box",
+        "dimensions": [
+          0.075,
+          0.032,
+          0.63
+        ],
+        "location": [
+          0.3,
+          -0.363,
+          0.39
+        ],
+        "material": "iron",
+        "bevel": 0.008
+      },
+      {
+        "name": "side_right",
+        "primitive": "box",
+        "dimensions": [
+          0.065,
+          0.64,
+          0.6
+        ],
+        "location": [
+          0.435,
+          0,
+          0.39
+        ],
+        "material": "wood",
+        "bevel": 0.012
+      },
+      {
+        "name": "strap_1_-0.3",
+        "primitive": "box",
+        "dimensions": [
+          0.075,
+          0.032,
+          0.63
+        ],
+        "location": [
+          -0.3,
+          0.363,
+          0.39
+        ],
+        "material": "iron",
+        "bevel": 0.008
+      },
+      {
+        "name": "strap_1_0.3",
+        "primitive": "box",
+        "dimensions": [
+          0.075,
+          0.032,
+          0.63
+        ],
+        "location": [
+          0.3,
+          0.363,
+          0.39
+        ],
+        "material": "iron",
+        "bevel": 0.008
+      },
+      {
+        "name": "lid_strap_-0.3",
+        "primitive": "box",
+        "dimensions": [
+          0.075,
+          0.74,
+          0.04
+        ],
+        "location": [
+          -0.3,
+          0,
+          0.782
+        ],
+        "material": "iron",
+        "bevel": 0.009
+      },
+      {
+        "name": "lid_strap_0.3",
+        "primitive": "box",
+        "dimensions": [
+          0.075,
+          0.74,
+          0.04
+        ],
+        "location": [
+          0.3,
+          0,
+          0.782
+        ],
+        "material": "iron",
+        "bevel": 0.009
+      },
+      {
+        "name": "lock_plate",
+        "primitive": "box",
+        "dimensions": [
+          0.14,
+          0.045,
+          0.18
+        ],
+        "location": [
+          0,
+          -0.37,
+          0.57
+        ],
+        "material": "brass",
+        "bevel": 0.016
+      },
+      {
+        "name": "keyhole",
+        "primitive": "cylinder",
+        "dimensions": [
+          0.035,
+          0.035,
+          0.018
+        ],
+        "rotation_degrees": [
+          90,
+          0,
+          0
+        ],
+        "location": [
+          0,
+          -0.4,
+          0.57
+        ],
+        "material": "iron"
+      }
+    ]
+  },
+  "triangle_budget": 12000
+}
