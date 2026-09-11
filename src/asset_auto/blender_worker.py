@@ -115,6 +115,21 @@ def edit(changes):
             raise ValueError(f"Unknown part {change['part']}; available: {list(available)}")
         objects = list(available.values()) if change["part"] == "*" else [available[change["part"]]]
         for obj in objects:
+            if change.get("merge_distance"):
+                # Blender BMesh retains UVs per corner while welding coincident vertices.
+                bm = bmesh.new()
+                bm.from_mesh(obj.data)
+                bmesh.ops.remove_doubles(bm, verts=list(bm.verts), dist=change["merge_distance"])
+                bmesh.ops.recalc_face_normals(bm, faces=list(bm.faces))
+                bm.to_mesh(obj.data)
+                bm.free()
+            if change.get("shading"):
+                custom = obj.data.attributes.get("custom_normal")
+                if custom is not None:
+                    obj.data.attributes.remove(custom)
+                for polygon in obj.data.polygons:
+                    polygon.use_smooth = change["shading"] == "smooth"
+                obj.data.update()
             if change.get("scale"):
                 for i, factor in enumerate(change["scale"]):
                     obj.scale[i] *= factor
@@ -290,6 +305,9 @@ def main():
         normalize(request.get("target_height"))
     optimize(request["triangle_budget"])
     bpy.context.view_layer.update()
+    if not request.get("changes"):
+        # Simplification can move the extreme vertices. Reapply the requested final size and ground pivot.
+        normalize(request.get("target_height"))
     report = inspect(request["triangle_budget"])
     (out / "inspection.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     bpy.ops.file.pack_all()

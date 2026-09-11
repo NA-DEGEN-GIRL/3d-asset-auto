@@ -7,13 +7,13 @@ name = "asset-auto"
 version = "0.1.0"
 description = "Local, versioned 3D asset tools for coding agents"
 requires-python = ">=3.11"
-dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1", "pydantic>=2.10,<3"]
+dependencies = ["fastapi>=0.115,<1", "uvicorn>=0.34,<1", "pydantic>=2.10,<3", "filelock>=3.20,<4", "psutil>=7,<8"]
 
 [project.optional-dependencies]
 mcp = ["mcp>=1.12,<2"]
 
 [dependency-groups]
-dev = ["pytest>=8,<10", "httpx>=0.28,<1", "ruff>=0.11,<1"]
+dev = ["pytest>=8,<10", "httpx>=0.28,<1", "ruff>=0.11,<1", "pyyaml>=6,<7"]
 
 [project.scripts]
 assetctl = "asset_auto.cli:main"
@@ -26,4 +26,3 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 110
-

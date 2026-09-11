@@ -86,10 +86,15 @@ class Edit(StrictModel):
     color: tuple[float, float, float, float] | None = None
     metallic: float | None = Field(None, ge=0, le=1)
     roughness: float | None = Field(None, ge=0, le=1)
+    merge_distance: float | None = Field(None, gt=0, le=0.01)
+    shading: Literal["smooth", "flat"] | None = None
 
     @model_validator(mode="after")
     def has_change(self):
-        if all(getattr(self, k) is None for k in ("scale", "offset", "color", "metallic", "roughness")):
+        if all(
+            getattr(self, k) is None
+            for k in ("scale", "offset", "color", "metallic", "roughness", "merge_distance", "shading")
+        ):
             raise ValueError("At least one edit is required")
         if self.scale and min(self.scale) <= 0:
             raise ValueError("Scale factors must be positive")

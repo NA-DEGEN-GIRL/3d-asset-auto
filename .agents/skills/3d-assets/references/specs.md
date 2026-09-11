@@ -34,3 +34,5 @@ Edit example:
 ```
 
 Edits accept `scale` (positive XYZ factors, around each object's origin), `offset` (XYZ translation), `color`, `metallic`, and `roughness`. `part: "*"` selects all meshes but still scales each around its own origin; it is not an assembly-scale operation. Exact object names come from inspection. Material edits copy materials for the selected part and replace connections only for changed shader inputs. Geometry edits can require related parts to move: lengthening the grip alone does not move the pommel or guard. Submit those related changes explicitly.
+
+For observed shading/seam defects, edits also support `merge_distance` in meters (greater than 0 and at most 0.01) and `shading: "smooth"|"flat"`. Welding preserves per-corner UVs and recomputes face orientation; explicit shading changes discard imported custom normals. Use a very small scale-appropriate merge distance only after inspecting the mesh. These operations do not guarantee that holes, missing surfaces, UV artifacts or reference color drift are repaired; inspect the new renders.

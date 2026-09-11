@@ -27,6 +27,8 @@ Open **http://127.0.0.1:8765/** to orbit/zoom, toggle wireframe and grid, select
 
 `--async` launches a separate job process. Its JSON state and logs survive the submitting agent process. Completed revisions are immutable; edit operations create a new revision with a parent link. Failed work is retained for diagnosis and excluded from the asset library.
 
+TRELLIS jobs take an OS-backed file lock before using the GPU, so multiple clients do not load multiple inference jobs onto the same GPU simultaneously. The lock releases on process exit. A job-status query detects exited/reused worker PIDs and reports interrupted work instead of leaving it permanently running.
+
 ## Agent skill
 
 The repository skill is `.agents/skills/3d-assets/SKILL.md`. It covers provider choice, spec construction, partial-edit semantics, visual QA, Godot tests and browser checks. For use from another project, link or install this folder in your agent's personal skills directory. The wrapper resolves this repository automatically.
@@ -47,9 +49,12 @@ uv run --no-sync python -m asset_auto.cli godot ASSET_ID REVISION
 uv run --no-sync python -m asset_auto.cli review ASSET_ID REVISION --result pass --notes "Specific observations after opening renders"
 uv run --no-sync pytest -q
 uv run --no-sync ruff check src scripts tests
+uv run --no-sync python scripts/smoke.py
 ```
 
 Each revision includes editable `source.blend`, self-contained `asset.glb`, five PNG renders, numeric inspection, file hashes, and a toolchain manifest. Godot actually imports and instantiates the GLB, checks meshes/materials, and creates convex collision shapes. Three.js actually loads the GLB and draws it using WebGL. Neither substitutes for visual review or testing within the destination game's real scene.
+
+The smoke test performs real Blender generation, two distinct edits, verifies unchanged source/untouched geometry, rejects an unknown part, round-trips a GLB, verifies the final height and pivot after simplification, and runs Godot. Its isolated artifacts remain under `.work/`. GitHub Actions runs unit/MCP tests and web builds on Windows/Linux, plus the real Blender/Godot smoke test on Linux.
 
 ## Optional MCP adapter
 

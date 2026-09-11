@@ -7,6 +7,8 @@ import traceback
 import uuid
 from pathlib import Path
 
+import psutil
+
 from .models import AssetSpec, EditRequest
 from .pipeline import edit_asset, generate, validate_godot
 from .store import child, now, read_json, write_json
@@ -51,7 +53,28 @@ def submit(root, operation, payload):
 
 
 def status(root, job_id):
-    return read_json(job_dir(root, job_id) / "job.json")
+    path = job_dir(root, job_id) / "job.json"
+    record = read_json(path)
+    if record["state"] == "running" and record.get("process_created_at"):
+        try:
+            process = psutil.Process(record["pid"])
+            alive = (
+                process.create_time() == record["process_created_at"]
+                and process.status() != psutil.STATUS_ZOMBIE
+            )
+        except psutil.NoSuchProcess:
+            alive = False
+        if not alive:
+            # Re-read in case completion was written while checking the process.
+            record = read_json(path)
+            if record["state"] == "running":
+                record.update(
+                    state="interrupted",
+                    error="Worker process exited before recording completion",
+                    finished_at=now(),
+                )
+                write_json(path, record)
+    return record
 
 
 def run(root: Path, job_id):
@@ -59,7 +82,9 @@ def run(root: Path, job_id):
     record = read_json(directory / "job.json")
     if record["state"] != "queued":
         raise ValueError("Job has already started; submit a new job to retry")
-    record.update(state="running", pid=os.getpid(), started_at=now())
+    record.update(
+        state="running", pid=os.getpid(), started_at=now(), process_created_at=psutil.Process().create_time()
+    )
     write_json(directory / "job.json", record)
     try:
         if record["operation"] == "generate":

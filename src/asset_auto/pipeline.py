@@ -7,6 +7,8 @@ import struct
 import subprocess
 from pathlib import Path
 
+from filelock import FileLock
+
 from .models import AssetSpec, EditRequest
 from .settings import executable, model_dir
 from .store import Store, now, read_json, write_json
@@ -152,7 +154,10 @@ def generate(root: Path, spec: AssetSpec):
             "off",
         ]
         write_json(out / "generation.json", {"command": command, "started_at": now()})
-        run_logged(command, out / "trellis.log", timeout=3600, cwd=root)
+        lock_path = root / ".assets" / ".locks" / "trellis.lock"
+        lock_path.parent.mkdir(parents=True, exist_ok=True)
+        with FileLock(lock_path, timeout=3600):
+            run_logged(command, out / "trellis.log", timeout=3600, cwd=root)
         validate_glb(raw)
         request.update(operation="import", source=str(raw))
     blender(root, request, out)
