@@ -15,7 +15,9 @@ serve --port 8765
 mcp
 ```
 
-`serve` binds only to 127.0.0.1. The viewer is http://127.0.0.1:8765/. Start it as a retained process. A browser must select the actual revision for its Three.js load/draw report to be recorded.
+`serve` binds only to 127.0.0.1. The viewer is http://127.0.0.1:8765/. On Windows use the repository's `start-viewer.cmd`: it starts a hidden background process, checks readiness and reuses an existing viewer. On Linux use `sh start-viewer.sh` and retain its terminal. Opening a browser does not start the server. A browser must select the actual revision for its Three.js load/draw report to be recorded.
+
+For first installation, personal-skill links or MCP client setup, read the repository's [INSTALL.md](../../../../INSTALL.md). This wrapper requires the shared checkout and its `.venv`; copying only the skill folder is insufficient.
 
 Each completed revision lives in `<runtime-root>/.assets/<asset_id>/<revision>/`:
 

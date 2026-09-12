@@ -1,0 +1,20 @@
+# 3D Asset Auto
+
+> Local static 3D asset runtime for coding agents: procedural or TRELLIS.2 image generation, versioned Blender edits, GLB export, Godot and Three.js checks. Natural language belongs to the agent; the runtime executes validated JSON.
+
+## Install and operate
+
+- [Install](INSTALL.md): Windows/Linux profiles, real acceptance checks, skill links, optional MCP and updates.
+- [Quick start](QUICKSTART.md): Korean usage guide with generation, edits, asynchronous jobs and visual review.
+- [Agent instructions](AGENTS.md): Repository commands, source contracts and maintenance invariants.
+- [Asset skill](.agents/skills/3d-assets/SKILL.md): Workflow for creating and reviewing assets.
+- [Request fields](.agents/skills/3d-assets/references/specs.md): Generation and edit specifications.
+- [Runtime reference](.agents/skills/3d-assets/references/runtime.md): CLI commands and artifact layout.
+
+## Understand and troubleshoot
+
+- [Overview](README.md): Implemented scope, verified results and current limitations.
+- [Architecture](docs/ARCHITECTURE.md): Components, coordinate conventions, revisions and separate quality gates.
+- [Troubleshooting](docs/TROUBLESHOOTING.md): Offline viewer, downloads, environment locks and interrupted jobs.
+
+This file is a navigation aid, not an installer or a guarantee that every client automatically reads it. Install the shared checkout before linking its skill. Rigging, animation, multi-image conditioning and semantic mesh segmentation are not implemented.
