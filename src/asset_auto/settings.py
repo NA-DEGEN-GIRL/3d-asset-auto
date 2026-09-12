@@ -92,5 +92,17 @@ def capabilities(root):
         "trellis": {"multiview": False, "local": True},
         "tripo": {"multiview": True, "local": False},
     }
+    result["rigging"] = {
+        "available": result["providers"]["tripo"], "provider": "tripo", "explicit_selection_required": True,
+        "rig_types": ["biped"], "local_character_import": result["tools"]["blender"]["available"],
+    }
+    result["animation"] = {
+        "available": result["providers"]["tripo"], "presets": ["idle", "walk", "run"],
+        "requires": "completed Tripo rig revision", "clips_per_request": 1,
+    }
+    result["segmentation"] = {
+        "available": result["providers"]["tripo"], "provider": "tripo", "model": "v2.0-20260430",
+        "semantic_review_required": True,
+    }
     result["models"] = {"directory": str(model_dir(root)), "missing": missing}
     return result

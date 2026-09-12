@@ -69,6 +69,7 @@ class AssetSpec(StrictModel):
     views: dict[Literal["front", "left", "back", "right"], str] | None = None
     tripo: TripoOptions | None = None
     source: str | None = None
+    asset_kind: Literal["static", "character"] = "static"
     triangle_budget: int = Field(12000, ge=12, le=1000000)
     target_height: float | None = Field(None, gt=0, le=10000)
     seed: int = Field(42, ge=0, le=2147483647)
@@ -98,11 +99,29 @@ class AssetSpec(StrictModel):
             raise ValueError("trellis requires a reference image")
         if self.provider == "import" and not self.source:
             raise ValueError("import requires a GLB or .blend source")
+        if self.asset_kind == "character" and self.provider != "import":
+            raise ValueError("character import requires provider: import; use Tripo processing to rig an existing asset")
         return self
+
+
+class PostprocessRequest(StrictModel):
+    asset_id: AssetId
+    revision: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
+    operation: Literal["rig", "animate", "segment"]
+    provider: Literal["tripo"] = "tripo"
+    max_credits: int = Field(100, gt=0, le=100000)
+    rig_type: Literal["biped"] = "biped"
+    rig_model: Literal["v1.0-20240301"] = "v1.0-20240301"
+    rig_forward_axis: Literal["+x", "-x", "+z", "-z"] = "+z"
+    animation: Literal["idle", "walk", "run"] = "walk"
+    animate_in_place: bool = True
+    segmentation_granularity: Literal["simple", "balanced", "detailed"] = "balanced"
+    triangle_budget: int | None = Field(None, ge=12, le=1000000)
 
 
 class Edit(StrictModel):
     part: str = Field(min_length=1)
+    rename: str | None = Field(None, pattern=r"^[A-Za-z][A-Za-z0-9_.-]{0,63}$")
     scale: Vec3 | None = None
     offset: Vec3 | None = None
     color: tuple[float, float, float, float] | None = None
@@ -115,13 +134,15 @@ class Edit(StrictModel):
     def has_change(self):
         if all(
             getattr(self, k) is None
-            for k in ("scale", "offset", "color", "metallic", "roughness", "merge_distance", "shading")
+            for k in ("rename", "scale", "offset", "color", "metallic", "roughness", "merge_distance", "shading")
         ):
             raise ValueError("At least one edit is required")
         if self.scale and min(self.scale) <= 0:
             raise ValueError("Scale factors must be positive")
         if self.color and any(not 0 <= c <= 1 for c in self.color):
             raise ValueError("Color channels must be between 0 and 1")
+        if self.rename and self.part == "*":
+            raise ValueError("Renaming requires one exact part, not a wildcard")
         return self
 
 

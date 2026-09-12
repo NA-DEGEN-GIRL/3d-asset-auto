@@ -9,8 +9,8 @@ from pathlib import Path
 
 import psutil
 
-from .models import AssetSpec, EditRequest
-from .pipeline import edit_asset, generate, resume_tripo, validate_godot
+from .models import AssetSpec, EditRequest, PostprocessRequest
+from .pipeline import edit_asset, generate, postprocess, resume_postprocess, resume_tripo, validate_godot
 from .store import child, now, read_json, write_json
 
 
@@ -23,6 +23,11 @@ def submit(root, operation, payload):
         payload = AssetSpec.model_validate(payload).model_dump()
     elif operation == "edit":
         payload = EditRequest.model_validate(payload).model_dump()
+    elif operation == "tripo-process":
+        payload = PostprocessRequest.model_validate(payload).model_dump()
+    elif operation == "resume-tripo-process":
+        directory = child(root / ".assets", payload["asset_id"], payload["revision"])
+        PostprocessRequest.model_validate(read_json(directory / "processing.json")["request"])
     elif operation == "resume-tripo":
         directory = child(root / ".assets", payload["asset_id"], payload["revision"])
         if read_json(directory / "generation.json").get("provider") != "tripo":
@@ -100,6 +105,10 @@ def run(root: Path, job_id):
             result = generate(root, AssetSpec.model_validate(record["payload"]), on_revision=save_recovery)
         elif record["operation"] == "edit":
             result = edit_asset(root, EditRequest.model_validate(record["payload"]))
+        elif record["operation"] == "tripo-process":
+            result = postprocess(root, PostprocessRequest.model_validate(record["payload"]), on_revision=save_recovery)
+        elif record["operation"] == "resume-tripo-process":
+            result = resume_postprocess(root, **record["payload"])
         elif record["operation"] == "resume-tripo":
             result = resume_tripo(root, **record["payload"])
         else:

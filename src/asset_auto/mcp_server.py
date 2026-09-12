@@ -44,6 +44,24 @@ def build_server(root):
         return jobs.submit(root, "resume-tripo", {"asset_id": asset_id, "revision": revision})
 
     @server.tool()
+    def tripo_process_plan(spec: dict) -> dict:
+        """Read-only plan for explicit Tripo rig, animation or semantic segmentation of an exact revision."""
+        from .models import PostprocessRequest
+        from .pipeline import postprocess_plan
+
+        return postprocess_plan(root, PostprocessRequest.model_validate(spec))
+
+    @server.tool()
+    def process_tripo_asset(request: dict) -> dict:
+        """Submit requested rig/animate/segment processing; creates a new revision, default credit guard 100."""
+        return jobs.submit(root, "tripo-process", request)
+
+    @server.tool()
+    def resume_tripo_processing(asset_id: str, revision: str) -> dict:
+        """Resume saved processing stages without resubmitting known paid tasks."""
+        return jobs.submit(root, "resume-tripo-process", {"asset_id": asset_id, "revision": revision})
+
+    @server.tool()
     def edit_asset(request: dict) -> dict:
         """Submit named-part edits against an exact existing revision; creates a new revision."""
         return jobs.submit(root, "edit", request)
@@ -55,7 +73,12 @@ def build_server(root):
         result.pop("payload", None)
         if "result" in result and "asset_id" in result["result"]:
             asset = result["result"]
-            result["result"] = {key: asset[key] for key in ("asset_id", "revision", "state", "inspection")}
+            result["result"] = {
+                key: asset[key] for key in (
+                    "asset_id", "revision", "parent", "state", "asset_type", "inspection",
+                    "remote_generation", "remote_processing", "animation_previews", "part_previews",
+                ) if key in asset
+            }
         return result
 
     @server.tool()
@@ -73,7 +96,7 @@ def build_server(root):
 
     @server.tool()
     def inspect_asset(asset_id: str, revision: str) -> dict:
-        """Read measured geometry and part names for a completed revision."""
+        """Read measured geometry, real part names, and available skin/animation evidence for a completed revision."""
         return read_json(Store(root).revision(asset_id, revision) / "inspection.json")
 
     @server.tool()

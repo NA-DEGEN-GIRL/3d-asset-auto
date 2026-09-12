@@ -13,6 +13,8 @@ flowchart TD
     T --> F
     D -. 기존 모델 수정 / 명시적 절차적 요청 .-> F
     F --> G[버전 저장: blend / GLB / 5방향 렌더 / 검사]
+    G -. 요청한 Tripo 후처리 .-> P[리깅 / 프리셋 동작 / 의미 분리]
+    P --> F
     G --> J[LLM의 로컬 PNG 시각 검토]
     J --> K[GLB 전달 / 대상 프로젝트 통합]
     K -. 프로젝트에 필요할 때 .-> H[대상 엔진 검사: Godot 등]
@@ -29,6 +31,8 @@ flowchart TD
 | [jobs.py](../src/asset_auto/jobs.py) | 작업 제출, 별도 프로세스, 상태·로그 기록 |
 | [pipeline.py](../src/asset_auto/pipeline.py) | 도구 호출, GPU lock, 입력 복사, 완료 기록 |
 | [blender_worker.py](../src/asset_auto/blender_worker.py) | headless 모델링·수정·정규화·단순화·렌더·출력 |
+| [blender_character_worker.py](../src/asset_auto/blender_character_worker.py) | 뼈·가중치·동작 보존, 공통 부모 변환, 애니메이션 샘플 렌더 |
+| [tripo_process.py](../src/asset_auto/tripo_process.py) | 리깅 검사·유료 후처리·단계별 원격 기록과 복구 |
 | [store.py](../src/asset_auto/store.py) | revision 생성·완료 목록·원자적 JSON 기록 |
 | [godot_validate.gd](../src/asset_auto/godot_validate.gd) | GLB import 이후 장면·메시·충돌체 검사 |
 | [web.py](../src/asset_auto/web.py), [web/src](../web/src/main.js) | localhost API·파일 제공 및 Three.js 렌더 |
@@ -40,11 +44,13 @@ flowchart TD
 
 Tripo의 비용 계획은 로컬 읽기 전용이며 선택 필드 `max_credits`는 기본값 100으로 예상치만 제한합니다. 표준 생성 예상 비용은 30이며, 명시적으로 요청한 표준 생성은 추가 크레딧 확인 없이 진행합니다. 유료 제출·상태 조회·결과 다운로드를 구분하고, 원격 task ID를 revision에 저장해 알려진 작업을 다시 과금하지 않고 이어받습니다. 제출 성공 여부가 불확실하면 자동 재전송하지 않습니다. 키·입력·비용·복구 계약은 [Tripo 가이드](TRIPO.md)에 있습니다.
 
-`procedural`은 사용자가 명시적으로 요청한 경우 이름 있는 기본 도형을 조립하는 대안입니다. `import`는 제공된 기존 정적 GLB/Blend를 가져옵니다. 기존 모델 수정은 추론이나 유료 API를 다시 실행하지 않습니다. 가져온 정적 계층은 정규화를 위해 평탄화되며 armature는 거절합니다.
+`procedural`은 사용자가 명시적으로 요청한 경우 이름 있는 기본 도형을 조립하는 대안입니다. `import`는 제공된 기존 GLB/Blend를 가져옵니다. 기본 정적 경로는 정규화를 위해 계층을 평탄화하며 armature를 거절합니다. 명시적 `asset_kind: "character"` 가져오기는 별도 worker로 뼈·가중치·애니메이션을 보존합니다. 정적 모델 수정은 추론이나 유료 API를 다시 실행하지 않으며, 리그가 있는 부모는 정적 `edit`로 변경할 수 없습니다.
 
-생성·가져오기에서는 바닥 원점과 선택한 높이를 최종 단순화 이후 맞춥니다. 수정에서는 부모 revision의 `source.blend`를 읽어 새 revision을 만듭니다. 부분 변경의 배치를 유지하도록 전체 높이·원점 정규화를 다시 적용하지 않습니다.
+정적 생성·가져오기에서는 바닥 원점과 선택한 높이를 최종 단순화 이후 맞춥니다. 수정에서는 부모 revision의 `source.blend`를 읽어 새 revision을 만듭니다. 부분 변경의 배치를 유지하도록 전체 높이·원점 정규화를 다시 적용하지 않습니다. 캐릭터는 자동 감면·계층 평탄화를 하지 않습니다. 필요한 높이·바닥 정렬은 전체 메시와 armature의 공통 Empty 부모 변환으로 처리하며, 개별 메시·뼈의 상대 바인드와 동작 변환을 유지합니다.
 
 색·거칠기 수정은 선택된 부품의 재질을 분리해 다른 부품으로 변경이 번지는 것을 막습니다. `part: "*"`의 scale도 각 오브젝트 원점 기준이므로 조립체 전체 스케일과는 다릅니다. 감면은 텍스처 재베이크가 아니며, 용접·smooth shading만으로 구멍이나 형상 결함이 해결된다고 가정하지 않습니다.
+
+선택적 `tripo-process`는 완료된 부모의 현재 GLB 해시를 확인하고 새 revision에 `rig`·`animate`·`segment` 결과를 저장합니다. 분리는 현재 GLB를 그대로 업로드합니다. 리깅은 실제 입력 정면(`rig_forward_axis`, 기본 +Z)을 Tripo용 +X로 회전한 사본을 업로드하되 형상·재질·로컬 수정은 보존하고 원본·사본 해시를 기록합니다. 출력은 리그와 메시의 공통 부모 변환으로 회전을 되돌립니다. 애니메이션은 이전 Tripo 리그의 원격 ID와 방향 기록을 이어받습니다. manifest의 `remote_processing`은 그 출처를 기록합니다. 의미 분리 결과는 개별 부품 렌더로 확인하고 정확한 오브젝트를 `rename`합니다. 단순 연결 성분 분리를 의미 분리의 근거로 대신하지 않습니다. 자세한 흐름과 제약은 [캐릭터 후처리](CHARACTERS.md)에 있습니다.
 
 ## 작업 상태와 품질 상태
 
@@ -57,14 +63,18 @@ Tripo의 비용 계획은 로컬 읽기 전용이며 선택 필드 `max_credits`
 | manifest `numeric_checks_passed` / `needs_repair` | 수치 검사 결과 |
 | `review.json` | 실제 렌더 관찰 후 기록한 시각 판단 |
 | `tripo.json` | Tripo 원격 task와 출처·진행 상태, 미완료 revision에도 남음 |
+| `processing.json` / 단계 체크포인트 | 후처리의 부모 요청·입력 해시와 무료 검사·유료 작업 ID |
+| `animation-previews.json` / `part-previews.json` | 실제 동작 샘플 프레임 / 개별 부품 PNG 경로 |
 | `godot.json` | Godot 검사 시점의 결과 |
 | `three.json` | 브라우저가 보고한 GLTFLoader·WebGL draw 결과 |
 
 manifest의 `visual_review`, `engine_validation` 초기값은 완료 시점의 스냅샷입니다. 이후 검증의 최신 상태는 별도 sidecar에서 읽습니다. 목록/API는 review와 godot sidecar를 합쳐 보여주고, 웹은 선택한 모델의 현재 로드 결과를 직접 표시합니다.
 
-엔진 검사를 실행하지 않아 `pending`이 남거나 sidecar가 없어도 생성 실패를 뜻하지 않습니다. 기본 LLM 검토는 수치와 로컬 PNG로 수행합니다. 새로운 모델은 5방향을 확인하고, 좁은 수정은 관련 뷰부터 확인합니다. 런타임은 현재 매번 5방향 렌더를 생성하며, Godot·웹 프로세스는 별도 요청 명령에서만 실행합니다.
+엔진 검사를 실행하지 않아 `pending`이 남거나 sidecar가 없어도 생성 실패를 뜻하지 않습니다. 기본 LLM 검토는 수치와 로컬 PNG로 수행합니다. 새로운 모델은 5방향을 확인하고, 좁은 수정은 관련 뷰부터 확인합니다. 애니메이션은 샘플 프레임, 의미 분리는 개별 부품 PNG를 추가로 검사합니다. 런타임은 현재 매번 5방향 렌더를 생성하며, Godot·웹 프로세스는 별도 요청 명령에서만 실행합니다. 웹 뷰어에는 애니메이션 재생 제어가 없습니다.
 
 작업 상태 파일은 재시작 후에도 남습니다. 이는 실행 중 계산을 자동으로 이어서 재개한다는 뜻이 아닙니다. 프로세스가 사라진 running 작업은 상태 조회에서 `interrupted`로 바뀝니다. 재시도 전 로그를 확인합니다. Tripo 원격 계산은 로컬 worker 종료 후에도 계속될 수 있으므로 알려진 task는 `resume-tripo`로 조회·다운로드·후처리를 이어갑니다. 완료된 revision에는 resume으로 덮어쓰지 않습니다.
+
+리깅·애니메이션·분리는 `resume-tripo-process`로 미완료 자식 revision의 저장된 단계부터 이어갑니다. 무료 검사 ID와 유료 작업 ID를 구분하며, 이미 제출된 유료 단계를 중복 실행하지 않습니다. 제출 성공 여부를 알 수 없는 단계는 자동 재시도하지 않습니다.
 
 ## 디스크 구조
 
@@ -78,6 +88,9 @@ manifest의 `visual_review`, `engine_validation` 초기값은 완료 시점의 �
     asset.glb             게임·웹용 GLB
     inspection.json       수치·부품·경고
     tripo.json            Tripo 사용 시 원격 task·출처·상태
+    processing.json       후처리 요청과 부모 GLB 해시
+    animation-previews.json / part-previews.json
+                          동작 샘플 / 개별 부품 PNG 목록
     front.png ...         5방향 렌더
     review.json           시각 검토 시 생성
     godot.json            Godot 검증 시 생성
@@ -96,4 +109,4 @@ web/dist/                 로컬 빌드 결과
 
 명시적 Tripo 전용 설치는 Python·Blender·키만 필요하며 로컬 CUDA와 TRELLIS 가중치를 다운로드할 필요가 없습니다. 원격 이미지 업로드와 유료 생성이 추가되지만 로컬 저장·렌더 검토·수정 규칙은 같습니다.
 
-리깅·애니메이션용 리토폴로지·TRELLIS 다중 이미지 입력은 아직 구현되어 있지 않습니다. Tripo 멀티뷰 지원이 기존 정적 메시 제약이나 의미 부품 분리의 한계를 없애지는 않습니다.
+일반 생물 리깅·사용자 모션·다중 클립 병합·로컬 리그 편집·애니메이션용 리토폴로지·텍스처 재베이크·TRELLIS 다중 이미지 입력은 아직 구현되어 있지 않습니다. 이족 리깅과 세 프리셋, 베타 의미 분리의 실제 품질은 원격 작업 성공과 별도로 검사합니다.

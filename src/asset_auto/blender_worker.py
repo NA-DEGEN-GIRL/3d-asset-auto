@@ -2,7 +2,9 @@
 
 import json
 import math
+import re
 import sys
+import uuid
 from pathlib import Path
 
 import bmesh
@@ -110,9 +112,23 @@ def normalize(height):
 
 def edit(changes):
     available = {o.name: o for o in meshes()}
+    renames = {}
     for change in changes:
         if change["part"] not in available and change["part"] != "*":
             raise ValueError(f"Unknown part {change['part']}; available: {list(available)}")
+        target = change.get("rename")
+        if target is not None:
+            if change["part"] == "*" or not re.fullmatch(r"[A-Za-z][A-Za-z0-9_.-]{0,63}", target):
+                raise ValueError("Renaming requires one exact part and a safe identifier")
+            if change["part"] in renames:
+                raise ValueError(f"Repeated rename for part {change['part']}; use one final name")
+            renames[change["part"]] = target
+    final_names = [renames.get(name, name) for name in available]
+    other_names = {o.name for o in bpy.data.objects if o not in available.values()}
+    if len(set(final_names)) != len(final_names) or set(final_names) & other_names:
+        raise ValueError("Part rename collision; final object names must be unique")
+    # All requests address the original names, including swaps and later edits in this batch.
+    for change in changes:
         objects = list(available.values()) if change["part"] == "*" else [available[change["part"]]]
         for obj in objects:
             if change.get("merge_distance"):
@@ -152,8 +168,18 @@ def edit(changes):
                             for link in list(shader.inputs[socket].links):
                                 slot.material.node_tree.links.remove(link)
                             shader.inputs[socket].default_value = change[key]
-            activate(obj)
-            bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+            if change.get("scale"):
+                activate(obj)
+                bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)
+    # Temporary names prevent Blender's automatic .001 suffix during simultaneous swaps.
+    for original in renames:
+        available[original].name = f"asset_rename_{uuid.uuid4().hex}"
+    for original, target in renames.items():
+        obj = available[original]
+        obj.name = target
+        if obj.name != target:
+            raise ValueError(f"Blender could not preserve the exact part name: {target}")
+        obj["asset_part"] = target
     bpy.context.view_layer.update()
 
 
@@ -265,6 +291,7 @@ def render_views(out):
         data.shape = "DISK"
         data.size = size * extent
         light = bpy.data.objects.new(name, data)
+        light["asset_preview_light"] = name
         scene.collection.objects.link(light)
         light.location = center + Vector(direction) * extent
         light.rotation_euler = (center - light.location).to_track_quat("-Z", "Y").to_euler()
@@ -288,6 +315,59 @@ def render_views(out):
         bpy.ops.render.render(write_still=True)
 
 
+def render_part_previews(out):
+    """Render actual mesh parts for agent review; labels are never inferred here."""
+    scene = bpy.context.scene
+    objects = sorted(meshes(), key=lambda obj: obj.name)
+    camera = scene.camera
+    if camera is None or camera.data.type != "ORTHO":
+        raise ValueError("Part previews require the standard orthographic preview camera")
+    visibility = [(obj, obj.hide_render) for obj in objects]
+    camera_state = (camera.matrix_world.copy(), camera.data.ortho_scale,
+                    camera.data.clip_start, camera.data.clip_end)
+    render_state = (scene.render.resolution_x, scene.render.resolution_y,
+                    scene.cycles.samples, scene.render.filepath)
+    previews = []
+    try:
+        scene.render.resolution_x = scene.render.resolution_y = 384
+        scene.cycles.samples = 8
+        for obj in objects:
+            obj.hide_render = True
+        for index, obj in enumerate(objects[:32]):
+            obj.hide_render = False
+            low, high = bounds([obj])
+            center = (low + high) / 2
+            extent = max(max(high - low), 1e-4)
+            camera.location = center + Vector((3, -4, 2.5)) * extent
+            camera.rotation_euler = (center - camera.location).to_track_quat("-Z", "Y").to_euler()
+            orientation = camera.rotation_euler.to_quaternion()
+            right, up = orientation @ Vector((1, 0, 0)), orientation @ Vector((0, 1, 0))
+            points = [obj.matrix_world @ Vector(point) for point in obj.bound_box]
+            spans = [max(point.dot(axis) for point in points) - min(point.dot(axis) for point in points)
+                     for axis in (right, up)]
+            camera.data.ortho_scale = max(max(spans), 1e-4) * 1.15
+            camera.data.clip_start = max(extent * 0.001, 1e-6)
+            camera.data.clip_end = max(extent * 20, 1)
+            filename = f"part-{index:03d}.png"
+            scene.render.filepath = str(out / filename)
+            bpy.ops.render.render(write_still=True)
+            previews.append({"name": obj.name, "image": filename,
+                             "triangles": triangle_count(obj), "vertices": len(obj.data.vertices),
+                             "bounds": {"min": list(low), "max": list(high)}})
+            obj.hide_render = True
+    finally:
+        for obj, hidden in visibility:
+            obj.hide_render = hidden
+        camera.matrix_world, camera.data.ortho_scale, camera.data.clip_start, camera.data.clip_end = camera_state
+        (scene.render.resolution_x, scene.render.resolution_y,
+         scene.cycles.samples, scene.render.filepath) = render_state
+        bpy.context.view_layer.update()
+    (out / "part-previews.json").write_text(
+        json.dumps({"parts": previews, "total": len(objects), "truncated": len(objects) > 32}, indent=2),
+        encoding="utf-8",
+    )
+
+
 def main():
     request = json.loads(Path(sys.argv[sys.argv.index("--") + 1]).read_text(encoding="utf-8"))
     out = Path(request["output"])
@@ -303,7 +383,15 @@ def main():
         edit(request["changes"])
     else:
         normalize(request.get("target_height"))
-    optimize(request["triangle_budget"])
+    rename_only = bool(request.get("changes")) and all(
+        change.get("rename") is not None and not any(
+            change.get(key) is not None
+            for key in ("scale", "offset", "merge_distance", "shading", "color", "metallic", "roughness")
+        )
+        for change in request["changes"]
+    )
+    if not rename_only:
+        optimize(request["triangle_budget"])
     bpy.context.view_layer.update()
     if not request.get("changes"):
         # Simplification can move the extreme vertices. Reapply the requested final size and ground pivot.
@@ -327,6 +415,8 @@ def main():
         export_lights=False,
     )
     render_views(out)
+    if request.get("part_previews"):
+        render_part_previews(out)
 
 
 if __name__ == "__main__":

@@ -64,7 +64,7 @@ uv run --no-sync python scripts/bootstrap.py --only models
 uv run --no-sync python -m asset_auto.cli doctor
 ```
 
-`uv run --no-sync python scripts/bootstrap.py --only all` also installs Godot. It does not build the viewer. The installer does not load a resident model server, configure image-generation credentials, or install rigging components. Different runtime roots have separate GPU locks, so use one shared root for clients targeting the same GPU.
+`uv run --no-sync python scripts/bootstrap.py --only all` also installs Godot. It does not build the viewer. The installer does not load a resident model server, configure image-generation credentials, or download a local rigging model. Optional rigging/animation/segmentation run through Tripo with Blender processing. Different runtime roots have separate GPU locks, so use one shared root for clients targeting the same GPU.
 
 For an explicitly requested procedural-only workflow or processing development, `--only blender` remains available. This is an alternative profile, not a silent downgrade when default TRELLIS generation is blocked. Existing named-part edits and supplied mesh imports use Blender without repeating inference.
 
@@ -82,6 +82,8 @@ Configure `TRIPO_API_KEY` in the process environment or put only the key in the 
 Read [docs/TRIPO.md](docs/TRIPO.md) for supported PNG/JPEG inputs, single-image/multiview specs, `tripo-plan`, read-only balance verification and charged submission. `doctor` cannot prove the key is valid or the account has credit. Missing TRELLIS or local models does not block explicitly selected Tripo, but Blender is still needed for output processing and render review. An existing default installation can add credentials without reinstalling its tools.
 
 An explicit request to generate with Tripo covers one standard generation per requested asset. The optional `tripo.max_credits` defaults to 100; standard generation is estimated at 30 credits. Do not pause for a separate credit confirmation within that scope. Honor a smaller user limit and keep unrequested paid retries, upgrades and variants outside the default scope.
+
+The same installation supports optional Tripo rigging, preset animation and semantic segmentation of completed revisions, including TRELLIS/import assets. Read [docs/CHARACTERS.md](docs/CHARACTERS.md) for processing requests, per-operation prices and character-preserving imports. No extra GPU weights or animation viewer are required. Processing a character preserves its rig rather than applying static mesh edits.
 
 ## Optional project checks and viewer
 
@@ -171,6 +173,8 @@ Replace both paths with the actual checkout. Use an absolute `uv` executable pat
 Core tool names: `asset_capabilities`, `generate_asset`, `edit_asset`, `asset_job_status`, `list_assets`, `inspect_asset`, `validate_in_godot`. Generation, edits and Godot checks return a submitted job; query its status to obtain results. Read [mcp_server.py](src/asset_auto/mcp_server.py) for the full current tool list. The visual `review` operation remains a CLI command. MCP does not supply browser or image-inspection tools. A client using Tripo must inherit the key environment or use the same private key file; never place the secret in a shared MCP config.
 
 Tripo additions are `tripo_plan`, `tripo_balance` and `resume_tripo_asset`; the last returns a job ID to query with `asset_job_status`.
+
+Character/part processing adds `tripo_process_plan`, `process_tripo_asset` and `resume_tripo_processing`. Processing and recovery return jobs; plan is local read-only. Their request contract is [PostprocessRequest](src/asset_auto/models.py), with examples in the [character guide](docs/CHARACTERS.md).
 
 ## 6. Existing tools and configuration
 

@@ -23,6 +23,7 @@ ESTIMATED_CREDITS = 30
 PRICE_SOURCE = "https://developers.tripo3d.ai/en/pricing"
 PRICE_CHECKED = "2026-09-12"
 MAX_IMAGE_BYTES = 20_000_000
+MAX_UPLOAD_MODEL_BYTES = 150_000_000
 MAX_MODEL_BYTES = 1_000_000_000
 VIEW_ORDER = ("front", "left", "back", "right")
 TERMINAL_FAILURES = {"failed", "cancelled", "banned", "expired"}
@@ -130,6 +131,27 @@ class TripoClient:
 
     def create(self, mode, payload):
         return self.request("POST", f"/generation/{mode}", payload)
+
+    def upload_model(self, path):
+        from .pipeline import validate_glb
+
+        path = Path(path)
+        if not path.is_file() or path.suffix.lower() != ".glb":
+            raise ValueError("Tripo model input must be an existing GLB file")
+        if not 0 < path.stat().st_size <= MAX_UPLOAD_MODEL_BYTES:
+            raise ValueError("Tripo model input must be nonempty and no larger than 150 MB")
+        validate_glb(path)
+        boundary = "assetauto" + uuid.uuid4().hex
+        prefix = (
+            f"--{boundary}\r\nContent-Disposition: form-data; name=\"file\"; "
+            'filename="model.glb"\r\nContent-Type: model/gltf-binary\r\n\r\n'
+        ).encode()
+        body = prefix + path.read_bytes() + f"\r\n--{boundary}--\r\n".encode()
+        data = self.request("POST", "/files", body, f"multipart/form-data; boundary={boundary}")
+        token = data.get("file_token")
+        if not isinstance(token, str) or not token or len(token) > 4096:
+            raise TripoError("Tripo model upload did not return a file token")
+        return token
 
     def task(self, task_id):
         if not isinstance(task_id, str) or not task_id or len(task_id) > 200:

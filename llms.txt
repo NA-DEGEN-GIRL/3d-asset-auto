@@ -11,6 +11,7 @@
 - [Request fields](.agents/skills/3d-assets/references/specs.md): Generation and edit specifications.
 - [Runtime reference](.agents/skills/3d-assets/references/runtime.md): CLI commands and artifact layout.
 - [Tripo option](docs/TRIPO.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, automatic standard generation with optional credit limit, and known-task recovery.
+- [Character and part processing](docs/CHARACTERS.md): Optional Tripo biped rigging, three animation presets, semantic segmentation beta, character imports and stage recovery.
 
 ## Understand and troubleshoot
 
@@ -18,4 +19,4 @@
 - [Architecture](docs/ARCHITECTURE.md): Components, coordinate conventions, revisions and separate quality gates.
 - [Troubleshooting](docs/TROUBLESHOOTING.md): Offline viewer, downloads, environment locks and interrupted jobs.
 
-This file is a navigation aid, not an installer or a guarantee that every client automatically reads it. Install the shared checkout before linking its skill. Rigging, animation, TRELLIS multi-image conditioning and semantic mesh segmentation are not implemented. Multiview is available only through explicit Tripo selection; live API quality and performance remain unverified until an authorized paid test is completed.
+This file is a navigation aid, not an installer or a guarantee that every client automatically reads it. Install the shared checkout before linking its skill. TRELLIS multi-image conditioning, general creature rigs, custom motion, multi-clip merging, local rig edits and texture rebaking are not implemented. Optional Tripo supports multiview, biped rigs, idle/walk/run and semantic segmentation beta; quality must be checked with actual renders, animation samples and part previews.

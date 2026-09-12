@@ -20,7 +20,8 @@ def test_real_stdio_handshake_and_tools(tmp_path):
             await session.initialize()
             listing = await session.list_tools()
             assert {
-                "generate_asset", "edit_asset", "asset_job_status", "tripo_plan", "tripo_balance", "resume_tripo_asset"
+                "generate_asset", "edit_asset", "asset_job_status", "tripo_plan", "tripo_balance", "resume_tripo_asset",
+                "tripo_process_plan", "process_tripo_asset", "resume_tripo_processing",
             } <= {t.name for t in listing.tools}
             result = await session.call_tool("asset_capabilities", {})
             assert not result.isError
@@ -33,5 +34,22 @@ def test_real_stdio_handshake_and_tools(tmp_path):
             plan = json.loads(planned.content[0].text)
             assert plan["estimated_credits"] == 30 and plan["max_credits"] == 100 and plan["within_budget"]
             assert not (tmp_path / ".assets").exists()
+            # Agents need cost/provenance and frame paths to review a completed character job.
+            completed = tmp_path / ".assets" / "jobs" / "completed-character"
+            completed.mkdir(parents=True)
+            asset = {
+                "asset_id": "character", "revision": "r2", "parent": "r1", "state": "numeric-pass",
+                "asset_type": "character", "inspection": {"passed": True},
+                "remote_processing": {"operation": "animate", "credits_consumed": 10},
+                "animation_previews": {"clips": [{"name": "walk", "samples": [{"file": "walk.png"}]}]},
+            }
+            (completed / "job.json").write_text(json.dumps({
+                "state": "succeeded", "payload": {"private_request": True}, "result": asset,
+            }), encoding="utf-8")
+            result = await session.call_tool("asset_job_status", {"job_id": "completed-character"})
+            assert not result.isError
+            status = json.loads(result.content[0].text)
+            assert "payload" not in status
+            assert status["result"] == asset
 
     asyncio.run(run())

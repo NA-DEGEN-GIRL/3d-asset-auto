@@ -39,3 +39,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
       - run: uv run --no-sync python scripts/smoke.py
+      - run: uv run --no-sync python scripts/smoke_character.py
+      - run: uv run --no-sync python scripts/smoke_parts.py

@@ -74,7 +74,7 @@ uv run --no-sync python -m asset_auto.cli review my-chest-ai REVISION --result p
 
 기존 revision의 실제 부품 이름을 `inspect`로 읽고 필요한 부분을 수정합니다. 수정에 TRELLIS를 다시 돌릴 필요는 없습니다. 생성물이 `Mesh_0` 하나이면 손잡이·뚜껑 같은 의미 부품은 자동으로 분리되어 있지 않습니다.
 
-Tripo로 만든 revision도 같은 로컬 수정 명령을 사용하며, 수정 자체는 새로운 유료 생성 작업을 만들지 않습니다.
+Tripo로 만든 정적 revision도 같은 로컬 수정 명령을 사용하며, 수정 자체는 새로운 유료 생성 작업을 만들지 않습니다. 부품 분리가 필요하면 [Tripo 부품 분리](docs/CHARACTERS.md#자동-부품-분리와-이름-확인)를 요청하고 개별 렌더로 확인한 실제 이름을 사용합니다. 리그가 있는 부모에는 정적 `edit`를 쓰지 않습니다.
 
 예를 들어 사용자가 명시적으로 절차적 검 예제를 요청했다면 `examples/sword.json`으로 생성한 후 `grip`만 수정할 수 있습니다. `.work/grip-edit.json`에 저장할 예:
 
@@ -99,6 +99,10 @@ uv run --no-sync python -m asset_auto.cli edit .work/grip-edit.json
 
 GLB는 **Y-up·미터**, Blender의 레시피와 내부 수치는 **Z-up·미터**입니다. 생략한 엔진 검사는 미검증이며 에셋 생성 실패가 아닙니다.
 
+## 선택: 리깅·애니메이션·부품 분리
+
+완료된 모델을 Tripo로 후처리하려면 [캐릭터 가이드](docs/CHARACTERS.md)의 `tripo-process`를 사용합니다. 이족 리깅, `idle`·`walk`·`run` 동작, 의미 기반 베타 분리는 각각 새 revision으로 저장합니다. 애니메이션은 샘플 프레임, 분리는 개별 부품 렌더까지 LLM이 검사합니다. 기존 웹 뷰어에는 애니메이션 재생 제어가 없으며, 이 작업을 위해 웹 앱을 자동으로 만들지 않습니다.
+
 ## 선택: 대상 프로젝트의 Godot 검사
 
 Godot 프로젝트 통합에 필요하거나 요청받았을 때 [선택 설치](INSTALL.md#optional-project-checks-and-viewer) 후 실행합니다:
@@ -122,6 +126,10 @@ GLB를 실제로 가져와 장면·메시·재질·볼록 충돌체를 확인합
 > `$3d-assets` 이 프로젝트에 맞는 나무 상자를 만들어 줘. 참조 이미지를 준비하고 TRELLIS로 생성한 뒤 결과를 직접 검토해 줘.
 
 > `$3d-assets` Tripo3D로 이 정면·후면 이미지의 상자를 만들고 GLB와 렌더 검토 결과를 전달해 줘.
+
+> `$3d-assets` 이 캐릭터를 Tripo로 리깅하고 걷기 동작을 넣어 줘. 팔·다리가 제대로 움직이는지 직접 검사해 줘.
+
+> `$3d-assets` Tripo로 이 정적 모델의 부품을 분리하고 개별 렌더에서 확인한 이름을 붙여 줘.
 
 웹을 원할 때만 다음을 덧붙일 수 있습니다:
 

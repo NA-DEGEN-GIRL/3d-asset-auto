@@ -4,8 +4,17 @@ import sys
 from pathlib import Path
 
 from . import jobs
-from .models import AssetSpec, EditRequest
-from .pipeline import edit_asset, generate, resume_tripo, review, validate_godot
+from .models import AssetSpec, EditRequest, PostprocessRequest
+from .pipeline import (
+    edit_asset,
+    generate,
+    postprocess,
+    postprocess_plan,
+    resume_postprocess,
+    resume_tripo,
+    review,
+    validate_godot,
+)
 from .settings import capabilities, root_path
 from .store import Store, read_json
 
@@ -19,11 +28,17 @@ def main():
     commands.add_parser("tripo-balance")
     command = commands.add_parser("tripo-plan")
     command.add_argument("spec", type=Path)
+    command = commands.add_parser("tripo-process-plan")
+    command.add_argument("spec", type=Path)
     command = commands.add_parser("resume-tripo")
     command.add_argument("asset_id")
     command.add_argument("revision")
     command.add_argument("--async", dest="background", action="store_true")
-    for operation in ("generate", "edit"):
+    command = commands.add_parser("resume-tripo-process")
+    command.add_argument("asset_id")
+    command.add_argument("revision")
+    command.add_argument("--async", dest="background", action="store_true")
+    for operation in ("generate", "edit", "tripo-process"):
         command = commands.add_parser(operation)
         command.add_argument("spec", type=Path)
         command.add_argument("--async", dest="background", action="store_true")
@@ -55,6 +70,14 @@ def main():
             from .tripo import plan
 
             result = plan(root, AssetSpec.model_validate(read_json(args.spec)))
+        elif args.command == "tripo-process-plan":
+            result = postprocess_plan(root, PostprocessRequest.model_validate(read_json(args.spec)))
+        elif args.command == "tripo-process":
+            request = PostprocessRequest.model_validate(read_json(args.spec))
+            result = jobs.submit(root, args.command, request.model_dump()) if args.background else postprocess(root, request)
+        elif args.command == "resume-tripo-process":
+            payload = {"asset_id": args.asset_id, "revision": args.revision}
+            result = jobs.submit(root, args.command, payload) if args.background else resume_postprocess(root, **payload)
         elif args.command == "resume-tripo":
             if args.background:
                 result = jobs.submit(root, "resume-tripo", {"asset_id": args.asset_id, "revision": args.revision})
