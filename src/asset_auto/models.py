@@ -55,12 +55,19 @@ class Recipe(StrictModel):
         return self
 
 
+class TripoOptions(StrictModel):
+    model: Literal["v3.1-20260211"] = "v3.1-20260211"
+    max_credits: int = Field(gt=0, le=100000)
+
+
 class AssetSpec(StrictModel):
     asset_id: AssetId
     prompt: str = ""
-    provider: Literal["procedural", "trellis", "import"] = "trellis"
+    provider: Literal["procedural", "trellis", "tripo", "import"] = "trellis"
     recipe: Recipe | None = None
     image: str | None = None
+    views: dict[Literal["front", "left", "back", "right"], str] | None = None
+    tripo: TripoOptions | None = None
     source: str | None = None
     triangle_budget: int = Field(12000, ge=12, le=1000000)
     target_height: float | None = Field(None, gt=0, le=10000)
@@ -70,8 +77,21 @@ class AssetSpec(StrictModel):
 
     @model_validator(mode="after")
     def required_input(self):
-        if self.image and self.provider != "trellis":
-            raise ValueError("Reference images require the trellis provider")
+        if self.image and self.provider not in ("trellis", "tripo"):
+            raise ValueError("Reference images require the trellis provider or explicit tripo provider")
+        if (self.views is not None or self.tripo is not None) and self.provider != "tripo":
+            raise ValueError("Tripo options and multi-view inputs require explicit provider: tripo")
+        if self.provider == "tripo":
+            if self.tripo is None:
+                raise ValueError("Tripo requires explicit tripo.max_credits for the paid request")
+            if bool(self.image) == bool(self.views):
+                raise ValueError("Tripo requires one image or named multi-view inputs, not both")
+            if self.views and (
+                "front" not in self.views or len(self.views) < 2 or any(not v.strip() for v in self.views.values())
+            ):
+                raise ValueError("Tripo multi-view requires front and at least one other nonempty view")
+            if self.recipe is not None or self.source is not None:
+                raise ValueError("Tripo requests cannot contain procedural recipes or import sources")
         if self.provider == "procedural" and self.recipe is None:
             raise ValueError("procedural requires recipe")
         if self.provider == "trellis" and not self.image:

@@ -5,6 +5,9 @@ The wrapper accepts all `assetctl` arguments. In the runtime repository itself, 
 ```text
 doctor
 generate <spec.json> [--async]
+tripo-plan <spec.json>
+tripo-balance
+resume-tripo <asset_id> <revision> [--async]
 edit <changes.json> [--async]
 job <job_id>
 list
@@ -15,7 +18,9 @@ serve --port 8765
 mcp
 ```
 
-`generate` and `edit` produce GLB/source, numeric inspection and local PNG renders. They do not run Godot, launch a server, build a web app or require browser inspection. Use the host image-inspection tool to review PNGs. New generation defaults to `trellis` and requires a reference image; procedural creation is an explicit user-authorized alternative.
+`generate` and `edit` produce GLB/source, numeric inspection and local PNG renders. They do not run Godot, launch a server, build a web app or require browser inspection. Use the host image-inspection tool to review PNGs. New generation defaults to `trellis` and requires a reference image. Explicitly user-selected `tripo` accepts single-image or named multiview input; procedural creation also requires user authorization. Read the [Tripo guide](../../../../docs/TRIPO.md) before any paid submission.
+
+`tripo-plan` is local and makes no API calls. `tripo-balance` queries the account without submitting generation. `resume-tripo` continues an incomplete revision with a known remote task; it does not create another paid task. A completed revision remains immutable, and an unknown submission outcome must be reconciled rather than blindly resubmitted.
 
 `godot` and `serve` are optional. Use the target project's relevant importer when integration warrants it. Start/open the viewer only for a requested interactive preview or browser check. `serve` binds only to 127.0.0.1; the viewer is http://127.0.0.1:8765/. On Windows use `start-viewer.cmd` for a retained background server. On Linux use `sh start-viewer.sh` and retain its terminal. Opening a browser does not start the server. Selecting a revision in the viewer records its Three.js load/draw result; that is not visual approval.
 
@@ -31,8 +36,9 @@ Each completed revision lives in `<runtime-root>/.assets/<asset_id>/<revision>/`
 - `review.json`: explicit agent/human visual observations, when recorded.
 - `godot.json`: real Godot import/instantiation/material/convex-collision check, when run.
 - `three.json`: browser-reported GLTFLoader + WebGL draw check, when viewed.
-- Worker requests/logs and, for TRELLIS, the copied input reference and raw generated GLB.
+- Worker requests/logs, copied input references and raw generated GLB for inference providers.
+- `tripo.json`: Tripo task ID, status and provenance for paid cloud generation, including an interrupted/incomplete revision.
 
-An incomplete revision has no manifest and is excluded from the library. Jobs retain success/failure and results under `.assets/jobs/`. Inspect failure logs before retrying; a failure never replaces the previous completed revision.
+An incomplete revision has no manifest and is excluded from the library. Jobs retain success/failure and results under `.assets/jobs/`. Inspect failure logs before retrying; a failure never replaces the previous completed revision. For Tripo, preserve the task record and use known-task resume to avoid another charge.
 
 The runtime configuration is optional, local, and ignored by Git: `asset-system.local.json` with `blender`, `trellis`, `godot`, `models` path overrides. Environment overrides: `ASSET_AUTO_ROOT`, `ASSET_AUTO_BLENDER`, `ASSET_AUTO_TRELLIS`, `ASSET_AUTO_GODOT`, `ASSET_AUTO_MODELS`. Relative tool/model paths resolve against the runtime root.

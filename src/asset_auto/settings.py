@@ -3,6 +3,8 @@ import os
 import shutil
 from pathlib import Path
 
+from .tripo_credentials import key_configured
+
 
 def root_path():
     return Path(os.environ.get("ASSET_AUTO_ROOT", Path.cwd())).resolve()
@@ -74,5 +76,19 @@ def capabilities(root):
     result["providers"]["trellis"] = (
         result["tools"]["trellis"]["available"] and result["tools"]["blender"]["available"] and not missing
     )
+    credential_present = key_configured(root)
+    result["providers"]["tripo"] = result["tools"]["blender"]["available"] and credential_present
+    result["tripo"] = {
+        "key_configured": credential_present,
+        "authentication_verified": False,
+        "explicit_selection_required": True,
+        "paid": True,
+        "model": "v3.1-20260211",
+    }
+    result["multiview_generation"] = result["providers"]["tripo"]
+    result["provider_features"] = {
+        "trellis": {"multiview": False, "local": True},
+        "tripo": {"multiview": True, "local": False},
+    }
     result["models"] = {"directory": str(model_dir(root)), "missing": missing}
     return result

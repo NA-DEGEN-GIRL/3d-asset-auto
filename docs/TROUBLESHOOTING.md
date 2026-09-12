@@ -6,7 +6,7 @@
 uv run --no-sync python -m asset_auto.cli doctor
 ```
 
-기본 구성은 TRELLIS·모델·Blender입니다. Godot·웹은 선택 기능이며, 해당 도구가 없어도 생성과 로컬 PNG 검토는 진행할 수 있습니다. 반대로 TRELLIS가 없거나 이미지 입력이 빠졌다면 기본 새 모델 생성의 차단 요인입니다. Blender 절차적 모델링으로 조용히 대체하지 않습니다.
+기본 구성은 TRELLIS·모델·Blender입니다. Godot·웹은 선택 기능이며, 해당 도구가 없어도 생성과 로컬 PNG 검토는 진행할 수 있습니다. 반대로 TRELLIS가 없거나 이미지 입력이 빠졌다면 기본 새 모델 생성의 차단 요인입니다. 사용자가 명시적으로 선택한 Tripo는 로컬 GPU·모델 없이도 사용할 수 있지만 키·크레딧·Blender가 필요합니다. provider를 자동 전환하거나 Blender 절차적 모델링으로 조용히 대체하지 않습니다.
 
 ## 아이템 클릭 시 Failed to fetch / 사이트 연결 거부
 
@@ -56,7 +56,7 @@ npm --prefix web run build
 uv run --no-sync python scripts/bootstrap.py --only blender
 ```
 
-기존 설치를 쓰려면 [경로 설정](../INSTALL.md#6-existing-tools-and-configuration)을 확인합니다. 기본 설치는 TRELLIS가 true여야 하고 Godot는 false여도 됩니다. 파일 발견은 실행 성공을 뜻하지 않으므로 실제 생성으로 마무리합니다.
+기존 설치를 쓰려면 [경로 설정](../INSTALL.md#6-existing-tools-and-configuration)을 확인합니다. 기본 설치는 TRELLIS가 true여야 하고 Godot는 false여도 됩니다. 명시적 Tripo 전용 설치에는 TRELLIS가 필요하지 않습니다. 파일 발견은 실행 성공을 뜻하지 않으므로 실제 생성으로 마무리합니다.
 
 ## 참조 이미지가 필요하다는 오류 / 기존 절차적 요청
 
@@ -76,7 +76,15 @@ uv run --no-sync python -m asset_auto.cli job JOB_ID
 
 `submitted`는 시작 응답입니다. 실제 상태와 오류는 `.assets/jobs/JOB_ID/job.json`, `worker.log`에 있습니다. revision 폴더의 `trellis.log`, `blender.log`도 확인합니다. `running` 중 GPU lock 대기일 수 있으므로 같은 작업을 중복 제출하지 않습니다. 완료 manifest가 없는 폴더는 라이브러리에 표시되지 않습니다.
 
-`interrupted`는 worker가 사라진 상태이며 자동 재개되지 않습니다. 로그를 읽고 원인을 해결한 뒤 의도적으로 새 작업을 제출합니다. GPU 메모리가 부족하면 다른 GPU 작업과 사용량을 확인하고 처음 검증은 resolution 512로 진행합니다. 모든 하드웨어에 성공을 보장하는 설정은 아닙니다.
+`interrupted`는 worker가 사라진 상태이며 자동 재개되지 않습니다. TRELLIS는 로그를 읽고 원인을 해결한 뒤 의도적으로 새 작업을 제출합니다. GPU 메모리가 부족하면 다른 GPU 작업과 사용량을 확인하고 처음 검증은 resolution 512로 진행합니다. 모든 하드웨어에 성공을 보장하는 설정은 아닙니다.
+
+Tripo 작업은 로컬 중단 뒤에도 원격 서버에서 계속될 수 있습니다. `tripo.json`에 알려진 task가 있으면 `resume-tripo ASSET_ID REVISION --async`로 이어갑니다. 제출 결과가 불명확하고 task ID가 없으면 대시보드에서 먼저 확인하고, `generate`를 반복하지 않습니다. 자세한 절차는 [Tripo 중단과 복구](TRIPO.md#중단과-복구)를 참고합니다.
+
+## Tripo 키·잔액·예산·입력 오류
+
+`tripo-plan SPEC`은 키 없이 로컬 입력과 예상 비용을 검사할 수 있습니다. API 인증·잔액은 `tripo-balance`로 확인합니다. 키를 출력하지 말고 실행 환경의 `TRIPO_API_KEY` 또는 키 파일 위치만 확인합니다. 기본 파일은 런타임 루트의 `.secrets/tripo_api_key`, 별도 경로는 `TRIPO_API_KEY_FILE`입니다.
+
+`tripo.max_credits`가 없거나 예상 비용보다 작으면 사용자가 허용한 범위를 확인합니다. 오류를 없애려고 값을 임의로 올리지 않습니다. 잔액 부족 시 자동 충전·새 provider 선택·재제출을 하지 않습니다. 입력은 최대 20 MB PNG/JPEG이며, `image`와 `views`는 동시에 쓸 수 없습니다. 멀티뷰는 `front`와 다른 이름의 뷰 1개 이상이 필요합니다. [지원 입력과 비용](TRIPO.md#지원-입력과-비용)을 참고합니다.
 
 ## Unknown part / armature 거절
 

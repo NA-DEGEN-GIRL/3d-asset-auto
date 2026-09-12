@@ -10,6 +10,7 @@ __pycache__/
 node_modules/
 .env
 .env.*
+.secrets/
 !.env.example
 asset-system.local.json
 web/dist/

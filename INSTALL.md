@@ -7,6 +7,7 @@ Install one shared runtime checkout, then point the agent skill or an optional M
 | Profile | Install | Enables |
 | --- | --- | --- |
 | Default core | Python environment, trellis.cpp CUDA bundle, F16 models, Blender | Reference image → TRELLIS.2 → Blender processing → local render review → GLB |
+| Explicit Tripo-only | Python environment, Blender, Tripo API credentials and credits | Paid cloud image/multiview generation → local Blender processing; no local CUDA or TRELLIS weights |
 | Godot adapter | Godot binary | Import checks when relevant to the destination project |
 | Interactive viewer | Node.js/npm and web bundle | A user-requested interactive preview or browser check |
 | MCP addition | Python `mcp` extra and client configuration | The same runtime operations through stdio tools |
@@ -15,7 +16,7 @@ Default requirements: Windows/Linux x64, Git, uv and a compatible NVIDIA GPU/dri
 
 The model download is about 16.5 GB, plus tool archives, extracted tools, Python/npm dependencies and generated outputs. Keep additional disk space for revisions. Model weights, installed tools and local assets are not in Git. A fresh clone starts with an empty library.
 
-If a required prerequisite is missing, use the host's established package manager or official distribution. Inspect existing versions first. Do not replace a working system Python or install GPU drivers without a demonstrated need. If TRELLIS cannot run, report the blocker instead of calling a Blender-only installation the default system.
+If a required prerequisite is missing, use the host's established package manager or official distribution. Inspect existing versions first. Do not replace a working system Python or install GPU drivers without a demonstrated need. If TRELLIS cannot run, report the blocker instead of calling a Blender-only installation the default system. Select Tripo only when the user explicitly chooses it; credentials or a GPU failure do not authorize switching providers.
 
 ## 2. Default installation
 
@@ -66,6 +67,19 @@ uv run --no-sync python -m asset_auto.cli doctor
 `uv run --no-sync python scripts/bootstrap.py --only all` also installs Godot. It does not build the viewer. The installer does not load a resident model server, configure image-generation credentials, or install rigging components. Different runtime roots have separate GPU locks, so use one shared root for clients targeting the same GPU.
 
 For an explicitly requested procedural-only workflow or processing development, `--only blender` remains available. This is an alternative profile, not a silent downgrade when default TRELLIS generation is blocked. Existing named-part edits and supplied mesh imports use Blender without repeating inference.
+
+## Optional Tripo cloud provider
+
+For a user-selected Tripo-only installation, clone and enter the checkout as above, then run:
+
+```sh
+uv sync --locked --python 3.13
+uv run --no-sync python scripts/bootstrap.py --only blender
+```
+
+Configure `TRIPO_API_KEY` in the process environment or put only the key in the ignored runtime file `.secrets/tripo_api_key`. `TRIPO_API_KEY_FILE` can point to another private key file. Do not paste the key into a chat, spec, command argument or tracked configuration. No Tripo SDK or separate cloud service is installed by this adapter.
+
+Read [docs/TRIPO.md](docs/TRIPO.md) for supported PNG/JPEG inputs, single-image/multiview specs, `tripo-plan`, read-only balance verification and charged submission. `doctor` cannot prove the key is valid or the account has credit. Missing TRELLIS or local models does not block explicitly selected Tripo, but Blender is still needed for output processing and render review. An existing default installation can add credentials without reinstalling its tools.
 
 ## Optional project checks and viewer
 
@@ -152,7 +166,9 @@ Generic stdio launch configuration (adapt the enclosing structure to the client)
 
 Replace both paths with the actual checkout. Use an absolute `uv` executable path if the client does not inherit PATH. This is not a complete client-specific config file and is not automatically registered by installation.
 
-Expected tool names: `asset_capabilities`, `generate_asset`, `edit_asset`, `asset_job_status`, `list_assets`, `inspect_asset`, `validate_in_godot`. Generation, edits and Godot checks return a submitted job; query its status to obtain results. The visual `review` operation remains a CLI command. MCP does not supply browser or image-inspection tools.
+Core tool names: `asset_capabilities`, `generate_asset`, `edit_asset`, `asset_job_status`, `list_assets`, `inspect_asset`, `validate_in_godot`. Generation, edits and Godot checks return a submitted job; query its status to obtain results. Read [mcp_server.py](src/asset_auto/mcp_server.py) for the full current tool list. The visual `review` operation remains a CLI command. MCP does not supply browser or image-inspection tools. A client using Tripo must inherit the key environment or use the same private key file; never place the secret in a shared MCP config.
+
+Tripo additions are `tripo_plan`, `tripo_balance` and `resume_tripo_asset`; the last returns a job ID to query with `asset_job_status`.
 
 ## 6. Existing tools and configuration
 
@@ -169,11 +185,11 @@ Optional `asset-system.local.json` in the runtime root:
 
 These are placeholders; omit keys for tools managed by the installer. Tool lookup order is environment override → local config → portable `.runtime` discovery → PATH. Model lookup is environment → local config → `.runtime/models`. Environment names are `ASSET_AUTO_BLENDER`, `ASSET_AUTO_TRELLIS`, `ASSET_AUTO_GODOT`, `ASSET_AUTO_MODELS`. Relative tool/model paths resolve against the runtime root.
 
-Runtime root selection for the CLI is `--root` (before the subcommand) → `ASSET_AUTO_ROOT` → current working directory. For example, `python -m asset_auto.cli --root /absolute/runtime doctor`. Input `image`/`source` paths in specs resolve against that runtime root, not the JSON file's directory. Use absolute paths for files in another project.
+Runtime root selection for the CLI is `--root` (before the subcommand) → `ASSET_AUTO_ROOT` → current working directory. For example, `python -m asset_auto.cli --root /absolute/runtime doctor`. Input paths resolve against that runtime root, not the JSON file's directory. Use absolute paths for files in another project, including Tripo `image` and named `views`.
 
 ## 7. Installation acceptance and updates
 
-Report the chosen profile, absolute checkout path, actual versions/paths, generated asset/revision, TRELLIS execution evidence, numeric/visual findings and skill/MCP connection status. Include a viewer URL or engine result only when requested/relevant and actually tested. Default installation acceptance requires real TRELLIS generation and Blender output inspection, not Godot or Three.js. A successful `doctor` or submitted job alone is insufficient.
+Report the chosen profile, absolute checkout path, actual versions/paths, generated asset/revision, provider execution evidence, numeric/visual findings and skill/MCP connection status. Include a viewer URL or engine result only when requested/relevant and actually tested. Default installation acceptance requires real TRELLIS generation and Blender output inspection, not Godot or Three.js. For explicit Tripo, distinguish local setup/read-only account checks from an authorized paid generation and inspect its Blender outputs after completion. A successful `doctor` or submitted job alone is insufficient.
 
 For updates, inspect the worktree and use a fast-forward pull when clean and appropriate. Stop verified active worker/viewer processes before changing their Python environment; on Windows, reinstallation can fail while executables are in use. Run `uv sync --locked` (with `--extra mcp` if used). Rebuild/restart the viewer only if that optional component is in use. Re-run bootstrap only for tool/model components that need installation or a changed pin.
 

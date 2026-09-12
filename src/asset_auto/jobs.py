@@ -10,7 +10,7 @@ from pathlib import Path
 import psutil
 
 from .models import AssetSpec, EditRequest
-from .pipeline import edit_asset, generate, validate_godot
+from .pipeline import edit_asset, generate, resume_tripo, validate_godot
 from .store import child, now, read_json, write_json
 
 
@@ -23,6 +23,10 @@ def submit(root, operation, payload):
         payload = AssetSpec.model_validate(payload).model_dump()
     elif operation == "edit":
         payload = EditRequest.model_validate(payload).model_dump()
+    elif operation == "resume-tripo":
+        directory = child(root / ".assets", payload["asset_id"], payload["revision"])
+        if read_json(directory / "generation.json").get("provider") != "tripo":
+            raise ValueError("Only an existing Tripo generation can be resumed")
     elif operation != "godot":
         raise ValueError("Unsupported operation")
     job_id = uuid.uuid4().hex
@@ -86,11 +90,18 @@ def run(root: Path, job_id):
         state="running", pid=os.getpid(), started_at=now(), process_created_at=psutil.Process().create_time()
     )
     write_json(directory / "job.json", record)
+
+    def save_recovery(recovery):
+        record["recovery"] = recovery
+        write_json(directory / "job.json", record)
+
     try:
         if record["operation"] == "generate":
-            result = generate(root, AssetSpec.model_validate(record["payload"]))
+            result = generate(root, AssetSpec.model_validate(record["payload"]), on_revision=save_recovery)
         elif record["operation"] == "edit":
             result = edit_asset(root, EditRequest.model_validate(record["payload"]))
+        elif record["operation"] == "resume-tripo":
+            result = resume_tripo(root, **record["payload"])
         else:
             result = validate_godot(root, **record["payload"])
         record.update(state="succeeded", result=result)

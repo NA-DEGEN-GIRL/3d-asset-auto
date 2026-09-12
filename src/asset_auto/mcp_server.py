@@ -20,8 +20,28 @@ def build_server(root):
 
     @server.tool()
     def generate_asset(spec: dict) -> dict:
-        """Submit a validated procedural, image-to-3D, or import spec. Returns a persistent job ID."""
+        """Submit a validated spec. Default TRELLIS; paid Tripo requires explicit provider and max_credits."""
         return jobs.submit(root, "generate", spec)
+
+    @server.tool()
+    def tripo_plan(spec: dict) -> dict:
+        """Read-only local input and estimated-credit plan; no uploads or paid submissions."""
+        from .models import AssetSpec
+        from .tripo import plan
+
+        return plan(root, AssetSpec.model_validate(spec))
+
+    @server.tool()
+    def tripo_balance() -> dict:
+        """Read available account credits. Does not create a paid task or reveal the API key."""
+        from .tripo import TripoClient
+
+        return TripoClient(root).balance()
+
+    @server.tool()
+    def resume_tripo_asset(asset_id: str, revision: str) -> dict:
+        """Continue a recorded remote task without creating a second paid generation."""
+        return jobs.submit(root, "resume-tripo", {"asset_id": asset_id, "revision": revision})
 
     @server.tool()
     def edit_asset(request: dict) -> dict:

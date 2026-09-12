@@ -11,7 +11,7 @@ from filelock import FileLock
 
 from .models import AssetSpec, EditRequest
 from .settings import executable, model_dir
-from .store import Store, now, read_json, write_json
+from .store import Store, child, now, read_json, write_json
 
 
 def run_logged(command, log, timeout=900, cwd=None):
@@ -114,13 +114,36 @@ def finalize(root, spec, revision, out, parent=None, edits=None):
         "coordinate_system": "glTF Y-up, meters",
         "renders": [f"{v}.png" for v in ("front", "back", "left", "right", "perspective")],
     }
+    if spec.provider == "tripo":
+        checkpoint = out / "tripo.json"
+        if parent:
+            original = read_json(Store(root).revision(spec.asset_id, parent) / "manifest.json")
+            manifest["remote_generation"] = original.get("remote_generation")
+        elif checkpoint.exists():
+            remote = read_json(checkpoint)
+            manifest["remote_generation"] = {
+                key: remote[key]
+                for key in (
+                    "api_version", "model", "task_id", "estimated_credits", "credits_consumed",
+                    "max_credits", "budget_scope", "price_checked", "reported_over_budget",
+                )
+                if key in remote
+            }
     write_json(out / "manifest.json", manifest)
     return manifest
 
 
-def generate(root: Path, spec: AssetSpec):
+def generate(root: Path, spec: AssetSpec, *, on_revision=None):
     store = Store(root)
     revision, out = store.new_revision(spec.asset_id)
+    if spec.provider == "tripo":
+        write_json(out / "generation.json", {"provider": "tripo", "spec": spec.model_dump(), "started_at": now()})
+        if on_revision is not None:
+            on_revision({"asset_id": spec.asset_id, "revision": revision, "operation": "resume-tripo"})
+        try:
+            return finish_tripo(root, spec, revision, out)
+        except Exception as error:
+            raise RuntimeError(f"{error} (asset_id={spec.asset_id}, revision={revision})") from error
     request = {
         "output": str(out),
         "triangle_budget": spec.triangle_budget,
@@ -162,6 +185,38 @@ def generate(root: Path, spec: AssetSpec):
         request.update(operation="import", source=str(raw))
     blender(root, request, out)
     return finalize(root, spec, revision, out)
+
+
+def finish_tripo(root, spec, revision, out, *, resume=False):
+    from .tripo import generate as remote_generate
+
+    with FileLock(out / "tripo.lock", timeout=0):
+        if (out / "manifest.json").exists():
+            return read_json(out / "manifest.json")
+        # Check Blender availability before any paid submission.
+        executable(root, "blender")
+        remote_generate(root, spec, out, resume=resume)
+        raw = out / "generated.glb"
+        validate_glb(raw)
+        blender(
+            root,
+            {"operation": "import", "source": str(raw), "output": str(out),
+             "triangle_budget": spec.triangle_budget, "target_height": spec.target_height},
+            out,
+        )
+        return finalize(root, spec, revision, out)
+
+
+def resume_tripo(root, asset_id, revision):
+    # Incomplete revisions intentionally have no manifest, so Store.revision cannot resolve them.
+    out = child(root / ".assets", asset_id, revision)
+    generation = read_json(out / "generation.json")
+    if generation.get("provider") != "tripo":
+        raise ValueError("Only an existing Tripo generation can be resumed")
+    spec = AssetSpec.model_validate(generation["spec"])
+    if spec.asset_id != asset_id or spec.provider != "tripo":
+        raise ValueError("Stored Tripo request does not match this revision")
+    return finish_tripo(root, spec, revision, out, resume=True)
 
 
 def edit_asset(root: Path, change: EditRequest):

@@ -5,7 +5,7 @@ from pathlib import Path
 
 from . import jobs
 from .models import AssetSpec, EditRequest
-from .pipeline import edit_asset, generate, review, validate_godot
+from .pipeline import edit_asset, generate, resume_tripo, review, validate_godot
 from .settings import capabilities, root_path
 from .store import Store, read_json
 
@@ -16,6 +16,13 @@ def main():
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor")
     commands.add_parser("list")
+    commands.add_parser("tripo-balance")
+    command = commands.add_parser("tripo-plan")
+    command.add_argument("spec", type=Path)
+    command = commands.add_parser("resume-tripo")
+    command.add_argument("asset_id")
+    command.add_argument("revision")
+    command.add_argument("--async", dest="background", action="store_true")
     for operation in ("generate", "edit"):
         command = commands.add_parser(operation)
         command.add_argument("spec", type=Path)
@@ -40,6 +47,19 @@ def main():
             result = capabilities(root)
         elif args.command == "list":
             result = Store(root).list()
+        elif args.command == "tripo-balance":
+            from .tripo import TripoClient
+
+            result = TripoClient(root).balance()
+        elif args.command == "tripo-plan":
+            from .tripo import plan
+
+            result = plan(root, AssetSpec.model_validate(read_json(args.spec)))
+        elif args.command == "resume-tripo":
+            if args.background:
+                result = jobs.submit(root, "resume-tripo", {"asset_id": args.asset_id, "revision": args.revision})
+            else:
+                result = resume_tripo(root, args.asset_id, args.revision)
         elif args.command in ("generate", "edit"):
             payload = read_json(args.spec)
             if args.background:
