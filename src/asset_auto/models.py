@@ -57,7 +57,7 @@ class Recipe(StrictModel):
 
 class TripoOptions(StrictModel):
     model: Literal["v3.1-20260211"] = "v3.1-20260211"
-    max_credits: int = Field(gt=0, le=100000)
+    max_credits: int = Field(100, gt=0, le=100000)
 
 
 class AssetSpec(StrictModel):
@@ -83,7 +83,7 @@ class AssetSpec(StrictModel):
             raise ValueError("Tripo options and multi-view inputs require explicit provider: tripo")
         if self.provider == "tripo":
             if self.tripo is None:
-                raise ValueError("Tripo requires explicit tripo.max_credits for the paid request")
+                self.tripo = TripoOptions()
             if bool(self.image) == bool(self.views):
                 raise ValueError("Tripo requires one image or named multi-view inputs, not both")
             if self.views and (

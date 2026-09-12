@@ -81,6 +81,8 @@ Configure `TRIPO_API_KEY` in the process environment or put only the key in the 
 
 Read [docs/TRIPO.md](docs/TRIPO.md) for supported PNG/JPEG inputs, single-image/multiview specs, `tripo-plan`, read-only balance verification and charged submission. `doctor` cannot prove the key is valid or the account has credit. Missing TRELLIS or local models does not block explicitly selected Tripo, but Blender is still needed for output processing and render review. An existing default installation can add credentials without reinstalling its tools.
 
+An explicit request to generate with Tripo covers one standard generation per requested asset. The optional `tripo.max_credits` defaults to 100; standard generation is estimated at 30 credits. Do not pause for a separate credit confirmation within that scope. Honor a smaller user limit and keep unrequested paid retries, upgrades and variants outside the default scope.
+
 ## Optional project checks and viewer
 
 Choose an engine check from the destination project's needs; for an unknown destination, keep the result portable. Godot and Three.js do not both need to run. Unperformed optional checks are untested, not a core failure.

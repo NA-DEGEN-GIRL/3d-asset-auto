@@ -48,7 +48,6 @@ def spec_for(image="front.png", **overrides):
         "asset_id": "tripo-prop",
         "provider": "tripo",
         "image": image,
-        "tripo": {"max_credits": 30},
     }
     return AssetSpec.model_validate(values | overrides)
 
@@ -113,13 +112,26 @@ class FakeOpener:
 
 
 def test_tripo_is_explicit_and_trellis_remains_default():
-    assert AssetSpec(asset_id="local-prop", image="front.png").provider == "trellis"
+    local = AssetSpec(asset_id="local-prop", image="front.png")
+    assert local.provider == "trellis" and local.tripo is None
     with pytest.raises(ValidationError, match="explicit provider: tripo"):
         AssetSpec(asset_id="local-prop", image="front.png", tripo={"max_credits": 30})
     with pytest.raises(ValidationError, match="explicit provider: tripo"):
         AssetSpec(asset_id="local-prop", views={"front": "front.png", "back": "back.png"})
-    with pytest.raises(ValidationError, match="max_credits"):
-        spec_for(tripo=None)
+
+
+@pytest.mark.parametrize("options", [{}, {"tripo": None}, {"tripo": {}}, {"tripo": {"model": "v3.1-20260211"}}])
+def test_explicit_tripo_defaults_to_standard_budget_and_records_it(tmp_path, reference, options):
+    spec = spec_for(**options)
+    proposed = tripo.plan(tmp_path, spec)
+    assert proposed["max_credits"] == 100 and proposed["within_budget"]
+    assert proposed["estimated_credits"] == 30
+    assert spec.model_dump()["tripo"] == {"model": "v3.1-20260211", "max_credits": 100}
+    out = tmp_path / "revision"
+    client = FakeProvider(out)
+    record = tripo.generate(tmp_path, spec, out, client=client)
+    assert record["max_credits"] == 100
+    assert sum(call[0] == "create" for call in client.calls) == 1
 
 
 @pytest.mark.parametrize(
@@ -140,7 +152,7 @@ def test_input_modes_require_single_image_or_named_front_and_other_view(changes)
 
 
 @pytest.mark.parametrize("budget", [0, -1, 100001, 1.5, None])
-def test_paid_budget_is_explicit_and_bounded(budget):
+def test_paid_budget_overrides_are_bounded(budget):
     with pytest.raises(ValidationError):
         spec_for(tripo={"max_credits": budget})
     with pytest.raises(ValidationError):

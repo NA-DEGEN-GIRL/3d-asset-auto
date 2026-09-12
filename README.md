@@ -46,7 +46,7 @@ LLM은 제공된 이미지나 사용 가능한 이미지 생성 도구로 참조
 
 처음 설치할 때는 [INSTALL.md](INSTALL.md)를 따릅니다. 기본 설치는 **TRELLIS + 모델 가중치 + Blender**이며, Godot·Node.js·웹 빌드는 포함하지 않습니다.
 
-사용자가 Tripo 전용 설치를 선택하면 Python·Blender·API 키만으로 사용할 수 있어 로컬 CUDA와 TRELLIS 가중치는 필요하지 않습니다. 입력 이미지가 Tripo로 업로드되며 유료 크레딧이 소모됩니다. 비용 계획과 명시적 요청 예시는 [Tripo 가이드](docs/TRIPO.md)에 있습니다.
+사용자가 Tripo 전용 설치를 선택하면 Python·Blender·API 키만으로 사용할 수 있어 로컬 CUDA와 TRELLIS 가중치는 필요하지 않습니다. 입력 이미지가 Tripo로 업로드되며 유료 크레딧이 소모됩니다. “Tripo로 만들어 줘”라고 요청하면 에셋당 표준 생성 1회를 자동 진행합니다. 예상 비용은 30크레딧, 기본 비용 가드는 100이며 별도 입력·재승인이 필요하지 않습니다. 상세 범위는 [Tripo 가이드](docs/TRIPO.md)에 있습니다.
 
 설치가 끝났다면 [QUICKSTART.md](QUICKSTART.md)의 참조 이미지 요청 JSON을 `.work/asset.json`에 준비하고 저장소 루트에서:
 
@@ -63,7 +63,7 @@ uv run --no-sync python -m asset_auto.cli generate .work/asset.json --async
 
 > `$3d-assets` 기존 검의 grip만 버건디색으로 바꾸고 이전 버전은 보존해 줘.
 
-> `$3d-assets` Tripo3D로 이 정면·후면 이미지를 사용해 상자를 만들어 줘. 표준 생성 1회, 예상 30크레딧으로 진행하고 렌더를 검사해 줘.
+> `$3d-assets` Tripo3D로 이 정면·후면 이미지를 사용해 상자를 만들고 렌더를 검사해 줘.
 
 스킬 폴더만 복사하면 런타임이 설치되지는 않습니다. 다른 게임 프로젝트에서 쓰려면 [INSTALL의 스킬 연결 절차](INSTALL.md#4-connect-the-agent-skill)를 따릅니다.
 

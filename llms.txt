@@ -10,7 +10,7 @@
 - [Asset skill](.agents/skills/3d-assets/SKILL.md): Workflow for creating and reviewing assets.
 - [Request fields](.agents/skills/3d-assets/references/specs.md): Generation and edit specifications.
 - [Runtime reference](.agents/skills/3d-assets/references/runtime.md): CLI commands and artifact layout.
-- [Tripo option](docs/TRIPO.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, credit planning, paid submission and known-task recovery.
+- [Tripo option](docs/TRIPO.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, automatic standard generation with optional credit limit, and known-task recovery.
 
 ## Understand and troubleshoot
 

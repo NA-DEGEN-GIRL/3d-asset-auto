@@ -28,11 +28,10 @@ def test_real_stdio_handshake_and_tools(tmp_path):
             assert invalid.isError
             planned = await session.call_tool("tripo_plan", {"spec": {
                 "asset_id": "cloud-prop", "provider": "tripo", "image": "reference.png",
-                "tripo": {"max_credits": 30},
             }})
             assert not planned.isError
             plan = json.loads(planned.content[0].text)
-            assert plan["estimated_credits"] == 30 and plan["within_budget"]
+            assert plan["estimated_credits"] == 30 and plan["max_credits"] == 100 and plan["within_budget"]
             assert not (tmp_path / ".assets").exists()
 
     asyncio.run(run())

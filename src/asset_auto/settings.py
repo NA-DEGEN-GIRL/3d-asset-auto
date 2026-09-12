@@ -3,6 +3,7 @@ import os
 import shutil
 from pathlib import Path
 
+from .models import TripoOptions
 from .tripo_credentials import key_configured
 
 
@@ -84,6 +85,7 @@ def capabilities(root):
         "explicit_selection_required": True,
         "paid": True,
         "model": "v3.1-20260211",
+        "default_max_credits": TripoOptions().max_credits,
     }
     result["multiview_generation"] = result["providers"]["tripo"]
     result["provider_features"] = {

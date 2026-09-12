@@ -20,7 +20,7 @@ def build_server(root):
 
     @server.tool()
     def generate_asset(spec: dict) -> dict:
-        """Submit a validated spec. Default TRELLIS; paid Tripo requires explicit provider and max_credits."""
+        """Submit a validated spec. Default TRELLIS; explicit Tripo uses a 100-credit estimate guard by default."""
         return jobs.submit(root, "generate", spec)
 
     @server.tool()
