@@ -29,6 +29,9 @@ let model, current, entries = [], serial = 0, fit = 1;
 const loader = new GLTFLoader();
 const fileURL = (item, name) => `/assets/${encodeURIComponent(item.asset_id)}/${encodeURIComponent(item.revision)}/${name}`;
 const text = (id, value) => { $(id).textContent = value; };
+const errorMessage = (error) => error instanceof TypeError && /failed to fetch|networkerror|load failed/i.test(error.message)
+  ? '로컬 서버에 연결할 수 없습니다. 프로젝트 폴더의 start-viewer.cmd를 실행한 뒤 목록 새로고침을 눌러 주세요.'
+  : String(error.message);
 
 new ResizeObserver(() => {
   const { width, height } = viewport.getBoundingClientRect();
@@ -117,12 +120,18 @@ async function selectRevision(item) {
     viewport.dataset.loaded='true';viewport.dataset.meshes=String(meshes);viewport.dataset.triangles=String(triangles);
     viewport.dataset.asset=item.asset_id;viewport.dataset.revision=item.revision;
     text('web-status','로드 · 렌더 통과');$('loading').classList.add('hidden');
-    const report=await fetch(`/api/assets/${item.asset_id}/${item.revision}/browser-report`,{method:'POST',
-      headers:{'Content-Type':'application/json'},body:JSON.stringify({meshes,triangles,draw_calls:drawCalls,three_version:THREE.REVISION})});
-    if(!report.ok) text('web-status','렌더 통과 · 기록 실패');
+    // Saving a report must not turn a successful model render into a load failure.
+    try {
+      const report=await fetch(`/api/assets/${item.asset_id}/${item.revision}/browser-report`,{method:'POST',
+        headers:{'Content-Type':'application/json'},body:JSON.stringify({meshes,triangles,draw_calls:drawCalls,three_version:THREE.REVISION})});
+      if(ticket===serial&&!report.ok) text('web-status','렌더 통과 · 기록 실패');
+    } catch(error) {
+      if(ticket===serial) text('web-status','렌더 통과 · 기록 연결 끊김');
+      console.warn('Browser report could not be saved',error);
+    }
   } catch(error) {
     if(ticket!==serial)return;
-    text('web-status','로드 실패');text('loading',String(error.message));$('loading').classList.remove('hidden');
+    text('web-status','로드 실패');text('loading',errorMessage(error));$('loading').classList.remove('hidden');
     console.error(error);
   }
 }
@@ -143,7 +152,7 @@ async function refresh() {
       info.textContent=`${entries.filter(x=>x.asset_id===id).length}개 버전 · ${item.provider}`;card.append(image,name,info);card.onclick=()=>selectAsset(id);return card;}));
     if(ids.length)selectAsset(current&&ids.includes(current.asset_id)?current.asset_id:ids[0]);
     else text('loading','아직 생성된 에셋이 없습니다. 에셋을 생성한 뒤 목록을 새로고침하세요.');
-  }catch(error){text('loading',error.message);$('loading').classList.remove('hidden');}
+  }catch(error){text('loading',errorMessage(error));$('loading').classList.remove('hidden');}
 }
 $('refresh').onclick=refresh;$('reset').onclick=resetView;$('wireframe').onchange=wireframe;
 $('rotate').onchange=()=>{controls.autoRotate=$('rotate').checked;};$('grid').onchange=()=>{grid.visible=$('grid').checked;};

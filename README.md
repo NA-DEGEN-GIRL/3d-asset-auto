@@ -25,7 +25,7 @@ uv run --no-sync python -m asset_auto.cli serve
 
 Open **http://127.0.0.1:8765/** to orbit/zoom, toggle wireframe and grid, select revisions, inspect parts and render views, and download GLBs. Refresh the library after a generation or validation completes. The viewer is local-only and serves only explicit asset files; it exposes no model-generation or arbitrary-script HTTP endpoint.
 
-After setup, Windows users can run `start-viewer.cmd`; Linux users can run `sh start-viewer.sh`. Keep that process running while using the viewer. To select another port, use the CLI's `serve --port` option.
+After setup, Windows users can run `start-viewer.cmd`. It starts a hidden background server independent of the launching terminal, checks readiness, and reuses an already running viewer. Logs are under `.work/viewer/`; rerun the launcher after reboot. Linux users can run `sh start-viewer.sh` and keep that terminal running. To select another port, use the CLI's `serve --port` option.
 
 `--async` launches a separate job process. Its JSON state and logs survive the submitting agent process. Completed revisions are immutable; edit operations create a new revision with a parent link. Failed work is retained for diagnosis and excluded from the asset library.
 

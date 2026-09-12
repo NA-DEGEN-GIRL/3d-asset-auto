@@ -1,3 +1,4 @@
 @echo off
 cd /d "%~dp0"
-".venv\Scripts\python.exe" -m asset_auto.cli serve
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File "%~dp0scripts\start_viewer.ps1"
+if errorlevel 1 pause
