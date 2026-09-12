@@ -15,7 +15,9 @@ serve --port 8765
 mcp
 ```
 
-`serve` binds only to 127.0.0.1. The viewer is http://127.0.0.1:8765/. On Windows use the repository's `start-viewer.cmd`: it starts a hidden background process, checks readiness and reuses an existing viewer. On Linux use `sh start-viewer.sh` and retain its terminal. Opening a browser does not start the server. A browser must select the actual revision for its Three.js load/draw report to be recorded.
+`generate` and `edit` produce GLB/source, numeric inspection and local PNG renders. They do not run Godot, launch a server, build a web app or require browser inspection. Use the host image-inspection tool to review PNGs. New generation defaults to `trellis` and requires a reference image; procedural creation is an explicit user-authorized alternative.
+
+`godot` and `serve` are optional. Use the target project's relevant importer when integration warrants it. Start/open the viewer only for a requested interactive preview or browser check. `serve` binds only to 127.0.0.1; the viewer is http://127.0.0.1:8765/. On Windows use `start-viewer.cmd` for a retained background server. On Linux use `sh start-viewer.sh` and retain its terminal. Opening a browser does not start the server. Selecting a revision in the viewer records its Three.js load/draw result; that is not visual approval.
 
 For first installation, personal-skill links or MCP client setup, read the repository's [INSTALL.md](../../../../INSTALL.md). This wrapper requires the shared checkout and its `.venv`; copying only the skill folder is insufficient.
 

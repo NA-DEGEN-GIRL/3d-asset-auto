@@ -1,5 +1,6 @@
 """Install pinned portable tools and verified TRELLIS weights into .runtime.
 
+Defaults to TRELLIS, its models and Blender. Godot is an optional component.
 Run with Python 3.11+; no admin access or global configuration changes.
 """
 
@@ -144,7 +145,12 @@ def models():
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument("--only", choices=["blender", "trellis", "godot", "models", "all"], default="all")
+    parser.add_argument(
+        "--only",
+        choices=["core", "blender", "trellis", "godot", "models", "all"],
+        default="core",
+        help="Default core: Blender, TRELLIS and models. Godot is opt-in; all includes it.",
+    )
     args = parser.parse_args()
     system = platform.system()
     if system not in ("Windows", "Linux") or platform.machine().lower() not in ("amd64", "x86_64"):
@@ -162,7 +168,12 @@ def main():
         f"Godot_v{GODOT}_win64.exe.zip" if system == "Windows" else f"Godot_v{GODOT}_linux.x86_64.zip",
         RUNTIME / "godot",
     )
-    chosen = tasks if args.only == "all" else {args.only: tasks[args.only]}
+    if args.only == "all":
+        chosen = tasks
+    elif args.only == "core":
+        chosen = {name: tasks[name] for name in ("blender", "trellis", "models")}
+    else:
+        chosen = {args.only: tasks[args.only]}
     records = RUNTIME / "installed"
     records.mkdir(parents=True, exist_ok=True)
     failures = []

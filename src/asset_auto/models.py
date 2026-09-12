@@ -58,7 +58,7 @@ class Recipe(StrictModel):
 class AssetSpec(StrictModel):
     asset_id: AssetId
     prompt: str = ""
-    provider: Literal["procedural", "trellis", "import"] = "procedural"
+    provider: Literal["procedural", "trellis", "import"] = "trellis"
     recipe: Recipe | None = None
     image: str | None = None
     source: str | None = None
@@ -70,6 +70,8 @@ class AssetSpec(StrictModel):
 
     @model_validator(mode="after")
     def required_input(self):
+        if self.image and self.provider != "trellis":
+            raise ValueError("Reference images require the trellis provider")
         if self.provider == "procedural" and self.recipe is None:
             raise ValueError("procedural requires recipe")
         if self.provider == "trellis" and not self.image:

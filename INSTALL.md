@@ -6,17 +6,18 @@ Install one shared runtime checkout, then point the agent skill or an optional M
 
 | Profile | Install | Enables |
 | --- | --- | --- |
-| Basic | Python environment, web bundle, Blender, Godot | Procedural props, static imports/edits, engine and browser checks; no NVIDIA GPU required |
-| GPU addition | trellis.cpp CUDA bundle and F16 GGUF models | Single-image TRELLIS.2 inference |
+| Default core | Python environment, trellis.cpp CUDA bundle, F16 models, Blender | Reference image → TRELLIS.2 → Blender processing → local render review → GLB |
+| Godot adapter | Godot binary | Import checks when relevant to the destination project |
+| Interactive viewer | Node.js/npm and web bundle | A user-requested interactive preview or browser check |
 | MCP addition | Python `mcp` extra and client configuration | The same runtime operations through stdio tools |
 
-Requirements: Windows/Linux x64, Git, uv and Node.js/npm. The commands below select Python 3.13 through uv; CI uses Python 3.13 and Node.js 22. The Python package declares 3.11+, but 3.13 is the exercised setup. GPU generation needs a compatible NVIDIA GPU/driver and enough VRAM for the selected workload. It has been exercised on an RTX 5090; no universal minimum VRAM is asserted.
+Default requirements: Windows/Linux x64, Git, uv and a compatible NVIDIA GPU/driver with enough VRAM for the workload. The commands below select Python 3.13 through uv; the package declares 3.11+, but 3.13 is the exercised setup. GPU generation has been exercised on an RTX 5090; no universal minimum VRAM is asserted. Node.js/npm (Node.js 22 in CI) is needed only for the optional viewer. Godot is not a core dependency.
 
 The model download is about 16.5 GB, plus tool archives, extracted tools, Python/npm dependencies and generated outputs. Keep additional disk space for revisions. Model weights, installed tools and local assets are not in Git. A fresh clone starts with an empty library.
 
-If Git, uv or Node.js are missing, install them through the host's established package manager or official distribution. Inspect existing versions first. Do not replace a working system Python or install GPU drivers as part of this repository setup without a demonstrated need.
+If a required prerequisite is missing, use the host's established package manager or official distribution. Inspect existing versions first. Do not replace a working system Python or install GPU drivers without a demonstrated need. If TRELLIS cannot run, report the blocker instead of calling a Blender-only installation the default system.
 
-## 2. Basic installation
+## 2. Default installation
 
 Clone into the user's chosen location. For an existing checkout, inspect `git status` and `git remote -v`; preserve local changes and installed assets. Do not clone over or reset an existing directory.
 
@@ -38,22 +39,23 @@ From the repository root, on either OS:
 
 ```sh
 uv sync --locked --python 3.13
-uv run --no-sync python scripts/bootstrap.py --only blender
-uv run --no-sync python scripts/bootstrap.py --only godot
-npm --prefix web ci
-npm --prefix web run build
+uv run --no-sync python scripts/bootstrap.py
 uv run --no-sync python -m asset_auto.cli doctor
 ```
 
-Expected: `providers.procedural` and `tools.godot.available` are true. `providers.trellis` may be false for a basic installation. `doctor` discovers paths and expected filenames; it does not prove that binaries launch, weights are usable or CUDA inference works.
+The installer defaults to `--only core`: Blender, TRELLIS and its models, excluding Godot. Expected: `providers.trellis` is true and `models.missing` is empty. Missing Godot or `web/dist` is normal. `doctor` discovers paths and expected filenames; it does not prove binaries launch or CUDA inference works.
 
-Run an actual first asset and engine check using [QUICKSTART.md](QUICKSTART.md). Start the viewer with `./start-viewer.cmd` in PowerShell or `sh start-viewer.sh` on Linux. Open http://127.0.0.1:8765/ and verify a selected model visibly renders. Windows runs a hidden background server with logs in `.work/viewer/`; Linux's launcher runs in the foreground. This does not install a boot/login service.
+Run a real reference-image generation using [QUICKSTART.md](QUICKSTART.md). Inspect numeric results and open the local PNG renders with the agent's image-inspection tool. Deliver the GLB/source and observations. This completes the normal asset workflow without an engine, browser or web server.
 
 The pinned portable tool versions are defined in [scripts/bootstrap.py](scripts/bootstrap.py). Downloads go under `.runtime/`, and checksums/source metadata under `.runtime/installed/`. For release API rate limits, the installer accepts an existing `GITHUB_TOKEN` environment variable for HTTPS requests to `api.github.com` only. It does not require a token on an ordinary successful public download. Never put a token in a committed file or printed command.
 
-## 3. Add TRELLIS GPU generation (optional)
+## 3. TRELLIS inputs and verification
 
-From the configured checkout:
+Use `nvidia-smi` to inspect the actual GPU, driver and available VRAM, then run one reference-image request at resolution 512 as described in QUICKSTART. Report GPU installation verified only after real inference succeeds. The CLI requires GPU execution and does not silently fall back to CPU inference or procedural modeling.
+
+For a text-only request, the agent prepares a reference using its available image-generation tool. This runtime has no text-to-image service. If neither an image nor that capability is available, request a reference instead of constructing Blender primitives from the prompt. Both the skill and `AssetSpec` default to TRELLIS; omitting `provider` still requires `image`.
+
+To repair only missing GPU components in an existing installation:
 
 ```sh
 uv run --no-sync python scripts/bootstrap.py --only trellis
@@ -61,9 +63,29 @@ uv run --no-sync python scripts/bootstrap.py --only models
 uv run --no-sync python -m asset_auto.cli doctor
 ```
 
-Expected: `models.missing` is empty and `providers.trellis` is true. Use `nvidia-smi` to inspect the actual GPU, driver and available VRAM, then run one real reference-image request at resolution 512 as described in QUICKSTART. Report GPU installation verified only after this succeeds. The CLI requires GPU execution; it does not silently fall back to CPU inference.
+`uv run --no-sync python scripts/bootstrap.py --only all` also installs Godot. It does not build the viewer. The installer does not load a resident model server, configure image-generation credentials, or install rigging components. Different runtime roots have separate GPU locks, so use one shared root for clients targeting the same GPU.
 
-`uv run --no-sync python scripts/bootstrap.py` installs all four components if a full installation is wanted from the start. The installer does not load a resident model server, configure image-generation credentials, or install rigging components. Different runtime roots have separate GPU locks, so use one shared root for clients targeting the same GPU.
+For an explicitly requested procedural-only workflow or processing development, `--only blender` remains available. This is an alternative profile, not a silent downgrade when default TRELLIS generation is blocked. Existing named-part edits and supplied mesh imports use Blender without repeating inference.
+
+## Optional project checks and viewer
+
+Choose an engine check from the destination project's needs; for an unknown destination, keep the result portable. Godot and Three.js do not both need to run. Unperformed optional checks are untested, not a core failure.
+
+For a relevant Godot check, reuse that project's installed Godot through local configuration, or install the adapter:
+
+```sh
+uv run --no-sync python scripts/bootstrap.py --only godot
+uv run --no-sync python -m asset_auto.cli godot ASSET_ID REVISION
+```
+
+For an explicitly requested interactive viewer or browser rendering check, prefer an existing project app. To use this optional viewer, install Node.js/npm and then run:
+
+```sh
+npm --prefix web ci
+npm --prefix web run build
+```
+
+Start with `./start-viewer.cmd` in PowerShell or `sh start-viewer.sh` on Linux, then open http://127.0.0.1:8765/. Windows runs a hidden background server with logs in `.work/viewer/`; Linux keeps a foreground terminal. No boot/login service is installed. Do not start or build a web app merely to let the agent inspect a model; local PNG review is the default.
 
 ## 4. Connect the agent skill
 
@@ -151,8 +173,8 @@ Runtime root selection for the CLI is `--root` (before the subcommand) → `ASSE
 
 ## 7. Installation acceptance and updates
 
-Report the chosen profile, absolute checkout path, actual versions/paths, selected generated asset/revision, checks executed, viewer URL, skill/MCP connection status and any unavailable capability. Installation is complete for the **requested profile** after a real generation/import and requested engine/browser checks pass. A successful `doctor` or submitted job alone is insufficient.
+Report the chosen profile, absolute checkout path, actual versions/paths, generated asset/revision, TRELLIS execution evidence, numeric/visual findings and skill/MCP connection status. Include a viewer URL or engine result only when requested/relevant and actually tested. Default installation acceptance requires real TRELLIS generation and Blender output inspection, not Godot or Three.js. A successful `doctor` or submitted job alone is insufficient.
 
-For updates, inspect the worktree and use a fast-forward pull when clean and appropriate. Stop the verified viewer/worker processes before changing their Python environment; on Windows, reinstallation can fail while executables are in use. Run `uv sync --locked` (with `--extra mcp` if used), rebuild with `npm --prefix web ci` and `npm --prefix web run build`, then restart the viewer. Re-run bootstrap only for tool/model components that need installation or a changed pin.
+For updates, inspect the worktree and use a fast-forward pull when clean and appropriate. Stop verified active worker/viewer processes before changing their Python environment; on Windows, reinstallation can fail while executables are in use. Run `uv sync --locked` (with `--extra mcp` if used). Rebuild/restart the viewer only if that optional component is in use. Re-run bootstrap only for tool/model components that need installation or a changed pin.
 
 Preserve `.assets/` and local configuration. Do not use `git clean -fdx` or remove `.runtime/` as a general repair step. See [troubleshooting](docs/TROUBLESHOOTING.md) for process, download and job failures.

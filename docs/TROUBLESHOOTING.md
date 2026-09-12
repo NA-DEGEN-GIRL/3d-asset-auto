@@ -6,6 +6,8 @@
 uv run --no-sync python -m asset_auto.cli doctor
 ```
 
+기본 구성은 TRELLIS·모델·Blender입니다. Godot·웹은 선택 기능이며, 해당 도구가 없어도 생성과 로컬 PNG 검토는 진행할 수 있습니다. 반대로 TRELLIS가 없거나 이미지 입력이 빠졌다면 기본 새 모델 생성의 차단 요인입니다. Blender 절차적 모델링으로 조용히 대체하지 않습니다.
+
 ## 아이템 클릭 시 Failed to fetch / 사이트 연결 거부
 
 브라우저에 목록이 남아 있어도 서버가 종료되면 GLB 요청은 실패할 수 있습니다. Windows에서는 `start-viewer.cmd`를 다시 실행하고 브라우저를 새로고침합니다. Linux에서는 `sh start-viewer.sh`를 실행한 터미널을 유지합니다.
@@ -48,13 +50,17 @@ npm --prefix web run build
 
 ## 도구 또는 모델이 없다고 나옴
 
-누락한 구성 요소만 설치합니다. 이름은 `blender`, `godot`, `trellis`, `models` 중 선택합니다:
+누락한 구성 요소만 설치합니다. 이름은 `blender`, `godot`, `trellis`, `models` 중 선택합니다. 기본 핵심 구성 전체는 `--only core`이며 인자 없이 실행해도 같습니다:
 
 ```sh
 uv run --no-sync python scripts/bootstrap.py --only blender
 ```
 
-기존 설치를 쓰려면 [경로 설정](../INSTALL.md#6-existing-tools-and-configuration)을 확인합니다. 기본 설치에서 TRELLIS가 false인 것은 정상입니다. 파일 발견은 실행 성공을 뜻하지 않으므로 실제 생성으로 마무리합니다.
+기존 설치를 쓰려면 [경로 설정](../INSTALL.md#6-existing-tools-and-configuration)을 확인합니다. 기본 설치는 TRELLIS가 true여야 하고 Godot는 false여도 됩니다. 파일 발견은 실행 성공을 뜻하지 않으므로 실제 생성으로 마무리합니다.
+
+## 참조 이미지가 필요하다는 오류 / 기존 절차적 요청
+
+provider를 생략하면 이제 `trellis`입니다. 이미지를 준비해 `image` 경로를 넣습니다. `image`와 `provider: "procedural"` 또는 `"import"`를 섞은 요청은 거절됩니다. 사용자가 명시적으로 절차적 생성을 요청한 경우만 `provider: "procedural"`과 recipe를 사용합니다. 저장된 기존 revision은 provider를 포함하므로 기존 모델 수정에는 이 기본값 변경이 영향을 주지 않습니다.
 
 ## 다운로드 403 / checksum mismatch
 

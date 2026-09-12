@@ -17,6 +17,22 @@ from asset_auto.web import create_app
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_default_generation_requires_trellis_reference_not_implicit_procedural_fallback():
+    spec = AssetSpec(asset_id="test-prop", image="reference.png")
+    assert spec.provider == "trellis"
+    recipe = json.loads((ROOT / "examples/sword.json").read_text())
+    recipe.pop("provider")
+    with pytest.raises(ValidationError, match="trellis requires a reference image"):
+        AssetSpec.model_validate(recipe)
+    recipe["provider"] = "procedural"
+    assert AssetSpec.model_validate(recipe).provider == "procedural"
+    recipe["image"] = "reference.png"
+    with pytest.raises(ValidationError, match="Reference images require the trellis provider"):
+        AssetSpec.model_validate(recipe)
+    with pytest.raises(ValidationError, match="Reference images require the trellis provider"):
+        AssetSpec(asset_id="test-import", provider="import", source="mesh.glb", image="reference.png")
+
+
 def test_recipe_and_partial_edit_validation():
     value = json.loads((ROOT / "examples/sword.json").read_text())
     assert AssetSpec.model_validate(value).recipe.parts[0].name == "blade"

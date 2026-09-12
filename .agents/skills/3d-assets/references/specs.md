@@ -1,5 +1,7 @@
 # Request specifications
 
+New generation defaults to `provider: "trellis"`. A reference image is required, even when provider is omitted. Image-to-3D must use TRELLIS, not a Blender primitive reconstruction of the image. An `image` field with `procedural` or `import` is rejected. Procedural generation is an explicitly user-authorized alternative; supplied existing meshes can be imported without new inference.
+
 Generation example (image path must exist; prompt is provenance, not a text-to-image command):
 
 ```json

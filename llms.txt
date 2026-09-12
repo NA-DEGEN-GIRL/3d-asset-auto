@@ -1,10 +1,10 @@
 # 3D Asset Auto
 
-> Local static 3D asset runtime for coding agents: procedural or TRELLIS.2 image generation, versioned Blender edits, GLB export, Godot and Three.js checks. Natural language belongs to the agent; the runtime executes validated JSON.
+> Local 3D asset runtime: reference image → TRELLIS.2 → Blender processing → agent inspection of local PNGs → GLB delivery. New assets use TRELLIS; procedural reconstruction of references is not a substitute. Godot checks are project-dependent and interactive viewers require a user request.
 
 ## Install and operate
 
-- [Install](INSTALL.md): Windows/Linux profiles, real acceptance checks, skill links, optional MCP and updates.
+- [Install](INSTALL.md): Default TRELLIS/models/Blender installation, skill links, optional engine/viewer/MCP components and updates.
 - [Quick start](QUICKSTART.md): Korean usage guide with generation, edits, asynchronous jobs and visual review.
 - [Agent instructions](AGENTS.md): Repository commands, source contracts and maintenance invariants.
 - [Asset skill](.agents/skills/3d-assets/SKILL.md): Workflow for creating and reviewing assets.
