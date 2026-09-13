@@ -17,6 +17,7 @@ LLM은 제공된 이미지나 사용 가능한 이미지 생성 도구로 참조
 | 유료 Tripo 단일 이미지·멀티뷰 사용하기 | [Tripo 가이드](docs/TRIPO.md) — 키 설정·비용·중단 복구 |
 | 리깅·애니메이션·자동 부품 분리 | [캐릭터 후처리](docs/CHARACTERS.md) — 기본 로컬 처리·선택적 Tripo |
 | 사용자 동작·리그 수정·클립 합치기 | [Blender 편집](docs/BLENDER.md) — 생성 provider와 독립적인 로컬 작업 |
+| 문장으로 로컬 사람 모션 생성 | [Kimodo](docs/KIMODO.md) — 선택 설치·기존 리그 적용·클립 누적 |
 | 기능·동작의 사용 조건과 품질 검사 | [품질 명세](docs/QUALITY.md) — 표현 방식·재생 정책·핵심 시점·검사 범위 |
 | 저장소 수정·유지보수하기 | [AGENTS.md](AGENTS.md) — 에이전트 작업 지침 |
 | 구성·데이터·검증 상태 이해하기 | [아키텍처](docs/ARCHITECTURE.md) |
@@ -39,9 +40,10 @@ LLM은 제공된 이미지나 사용 가능한 이미지 생성 도구로 참조
 | 부분 수정 | 정적 메시의 실제 부품 이름 기준 이름·크기·위치·재질·노멀·작은 간격 용접 |
 | 기본 로컬 리깅 | SkinTokens의 학습된 골격·스킨 가중치 추론, 원본 메시 전달 |
 | 기본 로컬 동작 | 실제 뼈에 Blender IK로 `idle`·`walk`·`run`, 다른 클립을 보존하며 누적 |
+| 학습된 로컬 사람 모션 | Kimodo `text-motion`, 관찰한 뼈 대응으로 기존 리그에 적용·클립 보존; 별도 모델/인코더 설치 필요 |
 | Blender 스크립트 편집 | object 동작·사용자 모션·리그·가중치·재질을 새 revision에서 작성 |
 | 클립 병합 | 같은 모델/리그의 revision·외부 GLB 클립을 하나의 GLB로 전달 |
-| 용도별 품질 검토 | 선택적 `assess`: 범용 기능 명세, 클립 정책, 루프·활동량 검사, 이벤트·극값 렌더와 미검토 범위 |
+| 용도별 품질 검토 | 선택적 `assess`: 기능·재생 명세, 루프·활동량 검사, 같은 핵심 시점의 다각도 렌더와 미검토 범위 |
 | 기본 로컬 부품 분리 | LLM이 렌더에서 부품별 점 지정 → GeoSAM2 마스크 → 개별 결과 검토 |
 | Tripo 후처리 (명시적 선택) | 유료 이족 리깅·프리셋 동작·의미 분리 베타 |
 | 버전 보존 | 새 revision에 수정 결과 저장, 원본과 parent 연결 유지 |
@@ -50,7 +52,7 @@ LLM은 제공된 이미지나 사용 가능한 이미지 생성 도구로 참조
 | Three.js 웹 (선택) | 요청한 경우 회전·확대, 와이어프레임, 버전 전환, GLB 다운로드 |
 | 에이전트 연결 | CLI, 개인 스킬 연결, 선택적 stdio MCP 어댑터 |
 
-**현재 제한:** 기본 동작은 절차적 이족 프리셋입니다. 사용자 Blender 스크립트도 학습된 모션 생성이나 자연스러운 동작 품질을 보장하지 않습니다. 다른 리그의 클립은 명시적인 대응·bake 작업이 필요하며 자동 리타게팅 해법은 없습니다. TRELLIS 멀티뷰, 자동 리토폴로지·텍스처 재베이크는 제공하지 않습니다. 부품 이름·경계·재질은 실제 렌더로 확인하며 분류하지 못한 면은 보존합니다. 멀티뷰 생성은 Tripo 옵션에서만 지원합니다.
+**현재 제한:** `process` 동작은 절차적 이족 프리셋이고, Kimodo는 별도의 로컬 학습 모션 경로입니다. Kimodo의 대응 기반 적용은 체형에 따른 접지·그립·루프를 자동 해결하지 않으며 텍스트 인코더에 Hugging Face 모델 접근 권한이 필요합니다. 범용 자동 리타게팅 해법, TRELLIS 멀티뷰, 자동 리토폴로지·텍스처 재베이크는 제공하지 않습니다. 부품 이름·경계·재질과 동작 품질은 실제 렌더로 확인하며 분류하지 못한 면은 보존합니다. 멀티뷰 메시 생성은 Tripo 옵션에서만 지원합니다.
 
 수치 검사 통과와 시각 품질 통과는 별도입니다. Godot import나 Three.js 렌더 성공도 실제 게임의 동작·아트 품질까지 보증하지 않습니다.
 
@@ -97,6 +99,7 @@ uv run --no-sync python -m asset_auto.cli generate .work/asset.json --async
 - 로컬 GeoSAM2 실제 추론에서 원본 18,984삼각형을 보존하고 10개 관찰 이름과 미분류 영역을 저장했습니다. 전체·개별 렌더 검토에서 일부 누락·오분류가 남아 의미 부품 품질은 초안으로 기록했습니다. 원본은 기존 Tripo 모델이고 이번 후처리는 API 없이 실행했습니다.
 - SkinTokens는 좀비 모델(46뼈)과 Tripo와 무관한 Microsoft Rocketbox 성인 모델(80뼈)에서 실제 추론·전 정점 가중치·원본 보존·5방향 정지 외관 검토를 통과했습니다. 성인 모델의 동작은 아직 실행하지 않았습니다.
 - 좀비의 로컬 `idle`·`walk`·`run`은 최종 GLB의 조밀한 바닥 검사와 9개 동작 렌더에서 프로토타입 외관·변형 검토를 통과했습니다. 짧은 보폭의 기본 동작이며 발 미끄러짐 방지·발뒤꿈치부터 구르는 보행·연속 충돌 검사는 구현하지 않았습니다. [로컬 검증 상세](docs/CHARACTERS.md#검토와-현재-검증-범위)를 참고하세요.
+- Kimodo는 RTX 5090에서 공개 SOMA 가중치의 빈 조건 추론·MotionCorrection·NPZ/BVH 출력을 확인했습니다. 기존 46뼈 캐릭터에 적용해 5개 클립을 한 GLB로 유지했고, 주요 시점의 3방향 검토와 바닥 보정을 수행했습니다. 이는 텍스트 인코더를 제외한 진단입니다. 실제 문장 조건 생성은 Llama 모델 접근 권한 대기로 미검증이며 게임 동작 품질을 승인하지 않았습니다. [검증 범위](docs/KIMODO.md#유지보수-검사)를 참고하세요.
 - Tripo 단일 이미지 생성 1회(실제 30크레딧)와 의미 분리 1회(40크레딧)를 실행했습니다. 분리된 13개 영역을 전체·개별 렌더로 확인하고 새 revision에서 이름을 지정했습니다. 일부 영역은 서로 붙어 있거나 절단면이 열려 있습니다.
 - Tripo 리깅(25크레딧)과 걷기(10크레딧)는 실제 API부터 GLB 출력까지 확인했습니다. 41뼈·스킨·걷기 클립과 렌더는 정상 출력되었지만, 걷기의 바닥 관통은 원격 원본에도 남아 시각 품질 실패로 기록했습니다. `idle`·`run`, 멀티뷰, TRELLIS 대비 품질·속도 비교는 미검증입니다. [후처리 검증 상세](docs/CHARACTERS.md#검토와-현재-검증-범위)를 참고하세요.
 
@@ -108,13 +111,14 @@ uv run --no-sync python -m asset_auto.cli generate .work/asset.json --async
 
 `.runtime/`에는 포터블 도구와 모델, `.assets/`에는 에셋과 작업 기록, `.work/`에는 임시 작업·검증 결과·뷰어 로그가 저장됩니다. Tripo 키 파일은 `.secrets/`에 둘 수 있습니다. 모두 Git에서 제외됩니다. 생성 결과를 보존하려면 `.assets/`를 별도로 백업합니다.
 
-다운로드 버전과 모델 revision은 [scripts/bootstrap.py](scripts/bootstrap.py)에 고정되어 있고, 실제 SHA256·출처는 `.runtime/installed/`에 기록됩니다. 전체 설치는 약 16.5 GB의 모델 파일과 도구·압축파일·출력 공간이 추가로 필요합니다.
+코어 다운로드 버전과 모델 revision은 [scripts/bootstrap.py](scripts/bootstrap.py)에 고정되어 있고, 선택적 리깅·분리·Kimodo는 각 설치 가이드의 별도 pin과 의존성 lock을 사용합니다. 실제 SHA256·출처는 `.runtime/installed/`에 기록됩니다. 기본 TRELLIS 설치는 약 16.5 GB의 모델 파일과 도구·압축파일·출력 공간이 추가로 필요하며 선택 모델은 별도입니다.
 
 - [Blender](https://www.blender.org/): 모델링·검사·렌더·GLB 출력.
 - [trellis.cpp](https://github.com/pwilkin/trellis.cpp) / [TRELLIS.2](https://github.com/microsoft/TRELLIS.2): 이미지 기반 생성.
 - [GGUF 모델](https://huggingface.co/ilintar/trellis2-gguf): 고정 revision의 F16 가중치.
 - [Tripo API](https://developers.tripo3d.ai/en/docs): 명시적으로 선택하는 유료 클라우드 생성.
 - [SkinTokens](https://github.com/VAST-AI-Research/SkinTokens) / [GeoSAM2](https://github.com/VAST-AI-Research/GeoSAM2): 필요할 때 설치하는 로컬 리깅·부품 분리 모델.
+- [Kimodo](https://github.com/nv-tlabs/kimodo): 선택 설치하는 로컬 텍스트→사람 모션 모델과 기존 리그 적용.
 - [Godot](https://godotengine.org/) / [Three.js](https://threejs.org/): 엔진·웹 검증.
 
 도구·모델 가중치와 DINOv3/BiRefNet 같은 구성 요소의 라이선스는 각각 확인해야 합니다. 이 저장소는 실행 파일이나 모델 가중치를 재배포하지 않습니다.

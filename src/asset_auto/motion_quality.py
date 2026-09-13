@@ -201,3 +201,21 @@ def important_frames(samples, events, report, rules=None):
     ordered = sorted(selected.items(), key=lambda item: (item[1]["priority"],
                      -item[1]["score"] if item[1]["priority"] == 3 else item[1]["order"]))
     return [{"time_seconds": samples[i]["time_seconds"], "reasons": item["reasons"]} for i, item in ordered]
+
+
+def render_schedule(reports, views, budget):
+    """Allocate images by moment, then clip, with complementary views together."""
+    chosen = []
+    depth = 0
+    while len(chosen) < budget:
+        moments = [(name, report["frames"][depth]) for name, report in reports.items()
+                   if len(report["frames"]) > depth]
+        if not moments:
+            break
+        for name, frame in moments:
+            for view in views:
+                if len(chosen) == budget:
+                    return chosen
+                chosen.append((name, frame, view))
+        depth += 1
+    return chosen

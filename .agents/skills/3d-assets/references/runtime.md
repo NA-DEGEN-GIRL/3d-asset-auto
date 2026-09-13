@@ -9,6 +9,9 @@ process-plan <request.json>
 process <request.json> [--async]
 prepare-segment <asset_id> <revision> [--async]
 resume-process <asset_id> <revision> [--async]
+text-motion-plan <request.json>
+text-motion <request.json> [--async]
+resume-text-motion <asset_id> <revision> [--async]
 tripo-plan <spec.json>
 tripo-balance
 resume-tripo <asset_id> <revision> [--async]
@@ -38,6 +41,8 @@ For `rig`/`animate`/`segment`, read the [character guide](../../../../docs/CHARA
 
 For local custom edits and clip assembly, read the [Blender guide](../../../../docs/BLENDER.md). `blender-edit` snapshots an exact parent's GLB/Blend and trusted Python script, preserves existing clips by default, and exports/reviews a new revision. `merge-animations` retains the base model and transfers compatible selected clips. Their resume commands use the incomplete child and saved inputs; an `authored.blend` execution checkpoint avoids rerunning the script after a render failure. MCP names are `edit_in_blender`, `merge_asset_animations`, `resume_blender_edit`, and `resume_animation_merge`. Generation provider does not choose the editing method.
 
+For learned humanoid motion on an existing rig, read [Kimodo](../../../../docs/KIMODO.md). `text-motion-plan` checks the source, observed SOMA-to-target map, clip conflicts and local capability without inference. `text-motion` creates a child with local learned motion, mapped Blender retargeting and retained clips. `resume-text-motion` reuses hash-bound inference and authoring checkpoints. MCP names are `text_motion_plan`, `generate_text_motion` and `resume_text_motion`. Install this separate backend only when needed.
+
 The `tripo-process` family and its MCP tools retain explicit Tripo selection; they never silently replace local work. Known remote stages are resumed without duplicate submission; a resumed free rig-check can lead to the first paid rig stage in the original request. Read the [paid processing guide](../../../../docs/TRIPO.md#리깅애니메이션부품-분리) when that provider is requested.
 
 `godot` and `serve` are optional. Use the target project's relevant importer when integration warrants it. Start/open the viewer only for a requested interactive preview or browser check. `serve` binds only to 127.0.0.1; the viewer is http://127.0.0.1:8765/. On Windows use `start-viewer.cmd` for a retained background server. On Linux use `sh start-viewer.sh` and retain its terminal. Opening a browser does not start the server. Selecting a revision in the viewer records its Three.js load/draw result; that is not visual approval.
@@ -65,7 +70,8 @@ Each completed revision lives in `<runtime-root>/.assets/<asset_id>/<revision>/`
 - `authoring-request.json`: bound request/input hashes for `blender-edit` or `merge-animations`; `input.glb`, `input.blend`, `script.py` or `animation-N.glb` are immutable snapshots as applicable.
 - `authored.blend`, `authoring-executed.json`: script execution checkpoint; `authoring.json` or `animation-merge.json` records the result, retained as manifest `local_processing`.
 - Tripo processing checkpoints retain free/paid stage task IDs for remote recovery.
-- `animation-previews.json`: up to 8 clips × 3 sampled frame paths for output review. Compare `sampled_clips` and `total_clips`; exported clips beyond the previews are preserved, not visually reviewed.
+- `animation-previews.json`: up to 8 clips × 3 sampled frame paths from one perspective camera, marked `single_view_overview`. Compare `sampled_clips` and `total_clips`; these overviews do not establish multi-angle motion quality. `assess` defaults to front/right/back of selected moments, within its total image budget, and records missing views.
+- `motion-request.json`, `kimodo-inference.json`, `motion.npz`, `motion.bvh`, `motion-data.json`, `retarget-map.json`: Kimodo request/input pins, verified learned output and target mapping; kept separately from original mesh-generation provenance.
 - `part-previews.json`: up to 32 individual part PNGs for segmentation and subsequent static part review; `truncated: true` marks incomplete preview coverage.
 
 An incomplete revision has no manifest and is excluded from the library. Jobs retain success/failure and results under `.assets/jobs/`. Inspect failure logs before retrying; a failure never replaces the previous completed revision. For Tripo, preserve the task record and use known-task resume to avoid another charge.

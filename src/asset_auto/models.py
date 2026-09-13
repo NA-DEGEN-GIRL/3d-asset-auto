@@ -303,9 +303,39 @@ class AssessmentRequest(StrictModel):
     max_samples_per_clip: int = Field(1201, ge=5, le=10001)
     render: bool = True
     max_render_frames: int = Field(24, ge=0, le=128)
+    views: list[Literal["front", "back", "left", "right", "perspective"]] = Field(
+        default_factory=lambda: ["front", "right", "back"], min_length=1, max_length=5)
 
     @model_validator(mode="after")
     def unique_clips(self):
         if self.clips and len(self.clips) != len(set(self.clips)):
             raise ValueError("Assessment clip names must be unique")
+        if len(self.views) != len(set(self.views)):
+            raise ValueError("Assessment views must be unique")
+        return self
+
+
+class KimodoMotionRequest(StrictModel):
+    asset_id: AssetId
+    revision: RevisionId
+    prompt: str = Field(min_length=1, max_length=2000)
+    clip_name: ClipName
+    duration_seconds: float = Field(4, ge=2, le=10)
+    seed: int = Field(42, ge=0, le=2147483647)
+    diffusion_steps: int = Field(100, ge=10, le=500)
+    bone_map: dict[str, str] = Field(min_length=1, max_length=77)
+    forward_axis: Literal["+x", "-x", "+y", "-y"] = "-y"
+    in_place: bool = False
+    description: str = ""
+
+    @model_validator(mode="after")
+    def valid_mapping(self):
+        if not self.prompt.strip() or not self.clip_name.strip():
+            raise ValueError("Motion prompt and clip_name must not be blank")
+        if any(not key.strip() or not value.strip() for key, value in self.bone_map.items()):
+            raise ValueError("Map SOMA joint names to observed target bone names")
+        if len(set(self.bone_map.values())) != len(self.bone_map):
+            raise ValueError("Target bones must be unique in the motion mapping")
+        if "Hips" not in self.bone_map:
+            raise ValueError("Motion mapping requires SOMA Hips as the translation root")
         return self

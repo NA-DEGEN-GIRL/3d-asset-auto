@@ -13,6 +13,7 @@
 - [Tripo option](docs/TRIPO.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, automatic standard generation with optional credit limit, and known-task recovery.
 - [Character and part processing](docs/CHARACTERS.md): Default local rigging, motion, agent-prompted semantic parts, character imports and provider-aware recovery.
 - [Blender editing and clips](docs/BLENDER.md): Trusted local scripts for object/custom motion, rig/weight/material changes, compatible clip merging, animation preservation and checkpoint recovery.
+- [Kimodo text motion](docs/KIMODO.md): On-demand local learned humanoid motion, observed rig mapping, clip accumulation, pinned setup and inference recovery.
 - [Usage and quality](docs/QUALITY.md): Purpose-based functional criteria, representation limits, playback contracts, optional final-GLB motion assessment, critical frames and scoped evidence.
 
 ## Understand and troubleshoot
@@ -21,4 +22,4 @@
 - [Architecture](docs/ARCHITECTURE.md): Components, coordinate conventions, revisions and separate quality gates.
 - [Troubleshooting](docs/TROUBLESHOOTING.md): Offline viewer, downloads, environment locks and interrupted jobs.
 
-This file is a navigation aid, not an installer or a guarantee that every client automatically reads it. Install the shared checkout before linking its skill; add learned postprocessing models only when needed. Local presets accumulate clips, while authoring and compatible merging use Blender without extra inference models. Import rigs as `character`, or unrigged object/morph clips as `animated`; static import/edit reject animation. Learned motion, automatic retarget solvers, retopology, texture rebaking and TRELLIS multiview are not implemented. Inspect actual geometry, animation samples and part previews; ready files, inferred outputs and visually approved results are separate states.
+This file is a navigation aid, not an installer or a guarantee that every client automatically reads it. Install the shared checkout before linking its skill; add learned postprocessing models only when needed. Kimodo provides a separate learned humanoid-motion path with mapped retargeting; local presets and custom authoring remain available without that model. Import rigs as `character`, or unrigged object/morph clips as `animated`; static import/edit reject animation. General automatic retarget solvers, retopology, texture rebaking and TRELLIS multiview are not implemented. Inspect actual geometry, complementary views of moving states and part previews; ready files, inferred outputs and visually approved results are separate states.

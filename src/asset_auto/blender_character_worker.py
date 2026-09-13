@@ -315,7 +315,7 @@ def animation_previews(out, summary, preferred=None, *, grounded=False, selected
             frame = frame_at(seconds)
             low, high = evaluated_bounds()
             all_points.extend((low, high))
-            samples.append({"time_seconds": seconds, "frame": frame,
+            samples.append({"time_seconds": seconds, "frame": frame, "view": "perspective",
                             "file": f"animation-{clip['index']:02d}-{index:02d}.png",
                             "floor_penetration_m": max(0, floor - low.z),
                             "bounds": {"min": list(low), "max": list(high)}})
@@ -357,6 +357,7 @@ def animation_previews(out, summary, preferred=None, *, grounded=False, selected
     result = {"clips": sampled, "sampled_clips": len(sampled), "total_clips": len(clips),
               "max_preview_clips": MAX_PREVIEW_CLIPS,
               "camera": "shared orthographic perspective across all sampled clips",
+              "view_coverage": "single_view_overview", "additional_views_required_for_motion_review": True,
               "quality_checks": quality,
               "visual_review": "pending"}
     (out / "animation-previews.json").write_text(json.dumps(result, indent=2), encoding="utf-8")

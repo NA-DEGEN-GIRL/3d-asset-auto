@@ -19,6 +19,24 @@ def build_server(root):
         return capabilities(root)
 
     @server.tool()
+    def text_motion_plan(request: dict) -> dict:
+        """Check a mapped humanoid rig and local Kimodo readiness without running inference."""
+        from .models import KimodoMotionRequest
+        from .text_motion import plan
+
+        return plan(root, KimodoMotionRequest.model_validate(request))
+
+    @server.tool()
+    def generate_text_motion(request: dict) -> dict:
+        """Generate one local Kimodo motion on an existing rig, preserving other clips in a new revision."""
+        return jobs.submit(root, "text-motion", request)
+
+    @server.tool()
+    def resume_text_motion(asset_id: str, revision: str) -> dict:
+        """Resume a saved local motion revision; completed inference and authoring checkpoints are reused."""
+        return jobs.submit(root, "resume-text-motion", {"asset_id": asset_id, "revision": revision})
+
+    @server.tool()
     def generate_asset(spec: dict) -> dict:
         """Submit a validated spec. Default TRELLIS; explicit Tripo uses a 100-credit estimate guard by default."""
         return jobs.submit(root, "generate", spec)

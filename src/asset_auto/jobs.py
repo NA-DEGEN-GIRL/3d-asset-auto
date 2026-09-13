@@ -14,6 +14,7 @@ from .models import (
     AssetSpec,
     BlenderEditRequest,
     EditRequest,
+    KimodoMotionRequest,
     MergeAnimationsRequest,
     PostprocessRequest,
 )
@@ -49,6 +50,12 @@ def submit(root, operation, payload):
     elif operation == "assess":
         payload = AssessmentRequest.model_validate(payload).model_dump()
         Store(root).revision(payload["asset_id"], payload["revision"])
+    elif operation == "text-motion":
+        payload = KimodoMotionRequest.model_validate(payload).model_dump()
+    elif operation == "resume-text-motion":
+        from .text_motion import validate_resume
+
+        validate_resume(root, **payload)
     elif operation in AUTHORING_MODELS:
         payload = AUTHORING_MODELS[operation].model_validate(payload).model_dump()
     elif operation in AUTHORING_RESUMES:
@@ -142,6 +149,14 @@ def run(root: Path, job_id):
             from .assessment import assess
 
             result = assess(root, AssessmentRequest.model_validate(record["payload"]))
+        elif record["operation"] == "text-motion":
+            from .text_motion import generate as generate_motion
+
+            result = generate_motion(root, KimodoMotionRequest.model_validate(record["payload"]), on_revision=save_recovery)
+        elif record["operation"] == "resume-text-motion":
+            from .text_motion import resume as resume_motion
+
+            result = resume_motion(root, **record["payload"])
         elif record["operation"] in AUTHORING_MODELS:
             from .authoring import edit_in_blender, merge_animations
 

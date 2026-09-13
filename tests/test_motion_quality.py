@@ -116,3 +116,15 @@ def test_float_noise_does_not_consume_critical_extrema_budget():
 def test_assessment_rejects_invalid_limits(change):
     with pytest.raises(ValidationError):
         AssessmentRequest.model_validate({"asset_id": "asset", "revision": "r1"} | change)
+def test_multiview_budget_keeps_same_moment_angles_together():
+    from asset_auto.motion_quality import render_schedule
+
+    a, b = {"time_seconds": 0}, {"time_seconds": 1}
+    reports = {"walk": {"frames": [a, b]}, "wave": {"frames": [b]}}
+    schedule = render_schedule(reports, ["front", "right", "back"], 7)
+    assert schedule[:3] == [("walk", a, view) for view in ("front", "right", "back")]
+    assert schedule[3:6] == [("wave", b, view) for view in ("front", "right", "back")]
+    assert schedule[6] == ("walk", b, "front")
+    assert len(render_schedule(reports, ["front", "right"], 100)) == 6
+    assert render_schedule(reports, ["front"], 0) == []
+    assert render_schedule({}, ["front"], 20) == []

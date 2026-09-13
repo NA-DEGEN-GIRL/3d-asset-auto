@@ -92,6 +92,7 @@ def capabilities(root):
         "trellis": {"multiview": False, "local": True},
         "tripo": {"multiview": True, "local": False},
     }
+    from .kimodo_runtime import capability as motion_available
     from .local_parts import available as parts_available
     from .local_rig import capability as rig_available
 
@@ -110,6 +111,8 @@ def capabilities(root):
         "preset_clips_per_request": 1,
         "preset_behavior": "add or replace one named clip while preserving other clips",
         "preset_method": "procedural inverse kinematics",
+        "text_to_motion": motion_available(root) | {"command": "text-motion", "plan_command": "text-motion-plan",
+                                                    "requires": "existing humanoid rig and observed SOMA bone map"},
         "custom_authoring": {"available": blender_available, "command": "blender-edit",
                              "supports": ["skeletal animation", "rigid object animation", "multiple clips"]},
         "clip_merge": {"available": blender_available, "command": "merge-animations",
@@ -133,5 +136,6 @@ def capabilities(root):
                             "requires": "declared usage and exact completed revision",
                             "checks": ["local transform loop closure", "boundary velocity differences",
                                        "declared low-activity limit", "declared root drift"],
-                            "critical_frame_selection": True, "automatic_visual_approval": False}
+                            "critical_frame_selection": True, "default_views": ["front", "right", "back"],
+                            "automatic_visual_approval": False}
     return result

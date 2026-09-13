@@ -131,6 +131,7 @@ def test_motion_worker_uses_snapshot_and_explicit_budget(tmp_path, monkeypatch):
         directory = Path(request["output"])
         assert Path(request["source"]) == directory / "input.glb"
         assert request["max_render_frames"] == 3 and request["sample_rate"] == 24
+        assert request["views"] == ["front", "right", "back"]
         write_json(directory / "report.json", {"clips": {"move": {"numeric_status": "failed"}}, "rendered_frames": 3})
 
     monkeypatch.setattr(assessment.pipeline, "run_logged", worker)

@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from . import jobs
-from .models import AssessmentRequest, AssetSpec, EditRequest
+from .models import AssessmentRequest, AssetSpec, EditRequest, KimodoMotionRequest
 from .pipeline import (
     edit_asset,
     generate,
@@ -28,6 +28,8 @@ def main():
     commands.add_parser("tripo-balance")
     command = commands.add_parser("tripo-plan")
     command.add_argument("spec", type=Path)
+    command = commands.add_parser("text-motion-plan")
+    command.add_argument("spec", type=Path)
     for operation in ("process-plan", "tripo-process-plan"):
         command = commands.add_parser(operation)
         command.add_argument("spec", type=Path)
@@ -35,12 +37,12 @@ def main():
     command.add_argument("asset_id")
     command.add_argument("revision")
     command.add_argument("--async", dest="background", action="store_true")
-    for operation in ("resume-process", "resume-tripo-process", "prepare-segment", *jobs.AUTHORING_RESUMES):
+    for operation in ("resume-process", "resume-tripo-process", "prepare-segment", "resume-text-motion", *jobs.AUTHORING_RESUMES):
         command = commands.add_parser(operation)
         command.add_argument("asset_id")
         command.add_argument("revision")
         command.add_argument("--async", dest="background", action="store_true")
-    for operation in ("generate", "edit", "process", "tripo-process", "assess", *jobs.AUTHORING_MODELS):
+    for operation in ("generate", "edit", "process", "tripo-process", "assess", "text-motion", *jobs.AUTHORING_MODELS):
         command = commands.add_parser(operation)
         command.add_argument("spec", type=Path)
         command.add_argument("--async", dest="background", action="store_true")
@@ -64,6 +66,21 @@ def main():
             result = capabilities(root)
         elif args.command == "list":
             result = Store(root).list()
+        elif args.command in ("text-motion-plan", "text-motion"):
+            from . import text_motion
+
+            request = KimodoMotionRequest.model_validate(read_json(args.spec))
+            if args.command == "text-motion-plan":
+                result = text_motion.plan(root, request)
+            elif args.background:
+                result = jobs.submit(root, "text-motion", request.model_dump())
+            else:
+                result = text_motion.generate(root, request)
+        elif args.command == "resume-text-motion":
+            from . import text_motion
+
+            payload = {"asset_id": args.asset_id, "revision": args.revision}
+            result = jobs.submit(root, args.command, payload) if args.background else text_motion.resume(root, **payload)
         elif args.command == "assess":
             from .assessment import assess
 

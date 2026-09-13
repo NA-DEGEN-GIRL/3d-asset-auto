@@ -87,10 +87,16 @@ def main():
     assert not any(check["name"].startswith("loop_") for check in report["clips"]["hold"]["checks"])
     assert report["clips"]["translate"]["root_motion"]["mean_displacement_speed_mps"] > 1.99
     assert report["rendered_frames"] == 12
+    assert report["requested_views"] == ["front", "right", "back"]
+    assert report["clips"]["hold"]["view_counts"] == {"front": 1, "right": 1, "back": 1}
+    assert report["clips"]["compress"]["unrendered_view_images"] > 0
     assert sum(clip["unrendered_frames"] for clip in report["clips"].values()) > 0
     assert any("event:extension" in frame["reasons"] and "file" in frame for frame in report["clips"]["hold"]["frames"])
     assert any("morph:" in target for target in report["targets"])
     evidence = Path(report["evidence_directory"])
+    assert len(list(evidence.glob("*.png"))) == 12, "Rendering must respect the total image budget"
+    assert all((evidence / filename).is_file() for clip in report["clips"].values()
+               for frame in clip["frames"] for filename in frame.get("views", {}).values())
     assert all((evidence / frame["file"]).is_file() for clip in report["clips"].values() for frame in clip["frames"] if "file" in frame)
     assert all(hashlib.sha256((folder / name).read_bytes()).hexdigest() == digest for name, digest in hashes.items())
     merged = merge_animations(out, MergeAnimationsRequest(asset_id="device", revision=source["revision"],

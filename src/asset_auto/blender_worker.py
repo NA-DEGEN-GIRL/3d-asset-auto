@@ -259,7 +259,7 @@ def inspect(budget):
     }
 
 
-def render_views(out):
+def render_views(out, *, render=True):
     scene = bpy.context.scene
     objects = meshes()
     low, high = bounds(objects)
@@ -308,6 +308,8 @@ def render_views(out):
         "right": (4, 0, 0.4),
         "perspective": (3, -4, 2.5),
     }
+    if not render:
+        return
     for name, direction in views.items():
         camera.location = center + Vector(direction) * extent
         camera.rotation_euler = (center - camera.location).to_track_quat("-Z", "Y").to_euler()

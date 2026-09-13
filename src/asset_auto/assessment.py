@@ -40,7 +40,8 @@ def assess(root, request: AssessmentRequest):
         worker_request = {"source": str(source), "output": str(out), "usage": usage,
                           "clips": {name: inventory[name] for name in selected},
                           "sample_rate": request.sample_rate, "max_samples_per_clip": request.max_samples_per_clip,
-                          "render": request.render, "max_render_frames": request.max_render_frames}
+                          "render": request.render, "max_render_frames": request.max_render_frames,
+                          "views": request.views}
         write_json(out / "request.json", request.model_dump())
         report = {"clips": {}, "targets": [], "rendered_frames": 0}
         if selected:
@@ -64,6 +65,7 @@ def assess(root, request: AssessmentRequest):
                                        "evidence": "../../inspection.json", "scope": "Existing geometry inspection only"},
                       visual_review="pending", feature_review="pending" if usage["features"] else "not_applicable",
                       integration_review="untested",
+                      requested_views=request.views,
                       limitations=["Sampling can miss changes between samples; increase rate for fast motion.",
                                    "No automatic contact/sliding, collision, center-of-mass or artistic quality verdict.",
                                    "Playback policies and target speed are intent, not engine configuration.",
