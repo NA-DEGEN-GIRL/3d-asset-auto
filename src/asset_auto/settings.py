@@ -53,7 +53,7 @@ def capabilities(root):
         "tools": {},
         "providers": {},
         "multiview_generation": False,
-        "rigging": {"available": False, "reason": "Not installed; static-asset milestone"},
+        "default_processing_provider": "local",
     }
     for kind in ("blender", "trellis", "godot"):
         try:
@@ -92,17 +92,28 @@ def capabilities(root):
         "trellis": {"multiview": False, "local": True},
         "tripo": {"multiview": True, "local": False},
     }
+    from .local_parts import available as parts_available
+    from .local_rig import capability as rig_available
+
+    local_rig = rig_available(root)
+    local_parts = parts_available(root)
+    blender_available = result["tools"]["blender"]["available"]
     result["rigging"] = {
-        "available": result["providers"]["tripo"], "provider": "tripo", "explicit_selection_required": True,
-        "rig_types": ["biped"], "local_character_import": result["tools"]["blender"]["available"],
+        "available": blender_available and local_rig["available"], "provider": "local", "backend": "skintokens",
+        "installation": local_rig, "local_character_import": blender_available,
+        "tripo_option": {"available": result["providers"]["tripo"], "explicit_selection_required": True},
     }
     result["animation"] = {
-        "available": result["providers"]["tripo"], "presets": ["idle", "walk", "run"],
-        "requires": "completed Tripo rig revision", "clips_per_request": 1,
+        "available": blender_available, "provider": "local", "presets": ["idle", "walk", "run"],
+        "requires": "biped rig and observed bone map or recognized bone names", "clips_per_request": 1,
+        "method": "procedural inverse kinematics",
+        "tripo_option": {"available": result["providers"]["tripo"], "explicit_selection_required": True},
     }
     result["segmentation"] = {
-        "available": result["providers"]["tripo"], "provider": "tripo", "model": "v2.0-20260430",
-        "semantic_review_required": True,
+        "available": blender_available and local_parts["available"], "provider": "local", "backend": "geosam2",
+        "installation": local_parts, "semantic_review_required": True,
+        "requires": "prepare-segment context and named points on inspected render",
+        "tripo_option": {"available": result["providers"]["tripo"], "explicit_selection_required": True},
     }
     result["models"] = {"directory": str(model_dir(root)), "missing": missing}
     return result

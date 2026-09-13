@@ -1,6 +1,6 @@
 # 3D Asset Auto
 
-> 3D asset runtime: reference image → default local TRELLIS.2 or explicitly user-selected paid Tripo API → Blender processing → agent inspection of local PNGs → GLB delivery. Credentials never select Tripo automatically; procedural reconstruction of references is not a substitute. Godot checks are project-dependent and interactive viewers require a user request.
+> Local-first 3D asset runtime: reference image → TRELLIS.2 → Blender → agent inspection → GLB. Rigging/parts default to learned local SkinTokens/GeoSAM2, and animation to procedural Blender bone motion. Tripo is explicitly selected only. Godot checks are project-dependent and interactive viewers require a user request.
 
 ## Install and operate
 
@@ -11,7 +11,7 @@
 - [Request fields](.agents/skills/3d-assets/references/specs.md): Generation and edit specifications.
 - [Runtime reference](.agents/skills/3d-assets/references/runtime.md): CLI commands and artifact layout.
 - [Tripo option](docs/TRIPO.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, automatic standard generation with optional credit limit, and known-task recovery.
-- [Character and part processing](docs/CHARACTERS.md): Optional Tripo biped rigging, three animation presets, semantic segmentation beta, character imports and stage recovery.
+- [Character and part processing](docs/CHARACTERS.md): Default local rigging, motion, agent-prompted semantic parts, character imports and provider-aware recovery.
 
 ## Understand and troubleshoot
 
@@ -19,4 +19,4 @@
 - [Architecture](docs/ARCHITECTURE.md): Components, coordinate conventions, revisions and separate quality gates.
 - [Troubleshooting](docs/TROUBLESHOOTING.md): Offline viewer, downloads, environment locks and interrupted jobs.
 
-This file is a navigation aid, not an installer or a guarantee that every client automatically reads it. Install the shared checkout before linking its skill. TRELLIS multi-image conditioning, general creature rigs, custom motion, multi-clip merging, local rig edits and texture rebaking are not implemented. Optional Tripo supports multiview, biped rigs, idle/walk/run and semantic segmentation beta; quality must be checked with actual renders, animation samples and part previews.
+This file is a navigation aid, not an installer or a guarantee that every client automatically reads it. Install the shared checkout before linking its skill; add local learned postprocessing models only when needed. TRELLIS multiview, general creature motion, custom clips, multi-clip merging, arbitrary rig/weight edits and texture rebaking are not implemented. Inspect actual geometry, animation samples and part previews; ready files, inferred outputs and visually approved results are separate states.

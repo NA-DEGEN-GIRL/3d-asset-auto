@@ -92,7 +92,7 @@ def make_fixture(sandbox):
             motion.animation_data_create()
             motion.animation_data.action = action
             motion.animation_data.action_slot = action.slots.new("OBJECT", motion.name)
-            for frame, offset in ((0, 0), (12, 1.5), (24, 0)):
+            for frame, offset in ((0, .45), (12, 1.5), (24, .45)):
                 motion.location.x = offset
                 motion.location.z = -offset / 6
                 motion.keyframe_insert(data_path="location", frame=frame)
@@ -114,6 +114,9 @@ def make_fixture(sandbox):
             strip.action_slot = keys.animation_data.action_slot
             keys.animation_data.action = None
     rig.animation_data.action = None
+    # The clip begins away from the default node transform. Reimport must not
+    # accidentally save that first animated pose as the asset's rest default.
+    motion.location = (0, 0, 0)
     bpy.context.scene.frame_set(0)
     bpy.context.view_layer.update()
     bpy.ops.wm.save_as_mainfile(filepath=str(sandbox / "fixture.blend"))
@@ -274,6 +277,8 @@ def main():
         assert report["rigging"]["exported_skins"] == 1
         assert report["normalization"]["input_yaw_degrees"] == (90 if label == "glb-roundtrip" else 0)
         exported = document(out / "asset.glb")
+        motion_node = next(node for node in exported["nodes"] if node.get("name") == "motion")
+        assert all(abs(value) < 1e-6 for value in motion_node.get("translation", (0, 0, 0)))
         assert len(exported["skins"]) == 1 and len(exported["skins"][0]["joints"]) == 2
         assert exported["skins"][0].get("inverseBindMatrices") is not None
         assert {clip["name"] for clip in exported["animations"]} == set(names)
@@ -343,6 +348,7 @@ def main():
                          "five static views and three samples per clip",
                          "preview lights preserve assets named key and fill",
                          "clip switching restores root transforms and nonzero morph defaults",
+                         "first animated root pose does not replace GLB rest node defaults",
                          "sampled below-floor motion is reported without shifting animation",
                          "input source hash unchanged"]}
     write_json(sandbox / "result.json", report)

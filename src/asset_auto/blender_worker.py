@@ -381,7 +381,7 @@ def main():
         raise ValueError("Rigged meshes require a rig-aware workflow; static processing refused")
     if request.get("changes"):
         edit(request["changes"])
-    else:
+    elif not request.get("preserve_geometry"):
         normalize(request.get("target_height"))
     rename_only = bool(request.get("changes")) and all(
         change.get("rename") is not None and not any(
@@ -390,13 +390,15 @@ def main():
         )
         for change in request["changes"]
     )
-    if not rename_only:
+    if not rename_only and not request.get("preserve_geometry"):
         optimize(request["triangle_budget"])
     bpy.context.view_layer.update()
-    if not request.get("changes"):
+    if not request.get("changes") and not request.get("preserve_geometry"):
         # Simplification can move the extreme vertices. Reapply the requested final size and ground pivot.
         normalize(request.get("target_height"))
     report = inspect(request["triangle_budget"])
+    if request.get("preserve_geometry"):
+        report["geometry_processing"] = "preserved; no decimation or placement normalization"
     (out / "inspection.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     bpy.ops.file.pack_all()
     # Save editable source before adding preview cameras/lights.

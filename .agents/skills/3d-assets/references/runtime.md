@@ -5,6 +5,10 @@ The wrapper accepts all `assetctl` arguments. In the runtime repository itself, 
 ```text
 doctor
 generate <spec.json> [--async]
+process-plan <request.json>
+process <request.json> [--async]
+prepare-segment <asset_id> <revision> [--async]
+resume-process <asset_id> <revision> [--async]
 tripo-plan <spec.json>
 tripo-balance
 resume-tripo <asset_id> <revision> [--async]
@@ -25,7 +29,9 @@ mcp
 
 `tripo-plan` is local and makes no API calls. `tripo-balance` queries the account without submitting generation. `resume-tripo` continues an incomplete revision with a known remote task; it does not create another paid task. A completed revision remains immutable, and an unknown submission outcome must be reconciled rather than blindly resubmitted.
 
-For optional Tripo `rig`/`animate`/`segment`, read the [character guide](../../../../docs/CHARACTERS.md). `tripo-process-plan` reads a completed source revision and estimates the selected operation locally. `tripo-process` creates a child revision; `resume-tripo-process` continues that child's stored stages without duplicating known tasks. A resumed rig-check can lead to the first paid rig submission in the original request. MCP equivalents are `tripo_process_plan`, `process_tripo_asset`, and `resume_tripo_processing`.
+For `rig`/`animate`/`segment`, read the [character guide](../../../../docs/CHARACTERS.md). General `process` defaults to local SkinTokens rigging, procedural Blender motion or GeoSAM2 masks. `process-plan` checks the exact source/backend without inference. `prepare-segment` renders a hash-bound twelve-view context under `.work/`; the agent inspects it and authors named pixel prompts. `resume-process` uses the child's saved provider/request and reuses verified outputs where available. MCP equivalents are `process_plan`, `process_asset`, `prepare_local_segmentation`, and `resume_asset_processing`.
+
+The `tripo-process` family and its MCP tools retain explicit Tripo selection; they never silently replace local work. Known remote stages are resumed without duplicate submission; a resumed free rig-check can lead to the first paid rig stage in the original request. Read the [paid processing guide](../../../../docs/TRIPO.md#리깅애니메이션부품-분리) when that provider is requested.
 
 `godot` and `serve` are optional. Use the target project's relevant importer when integration warrants it. Start/open the viewer only for a requested interactive preview or browser check. `serve` binds only to 127.0.0.1; the viewer is http://127.0.0.1:8765/. On Windows use `start-viewer.cmd` for a retained background server. On Linux use `sh start-viewer.sh` and retain its terminal. Opening a browser does not start the server. Selecting a revision in the viewer records its Three.js load/draw result; that is not visual approval.
 
@@ -45,7 +51,9 @@ Each completed revision lives in `<runtime-root>/.assets/<asset_id>/<revision>/`
 - `three.json`: browser-reported GLTFLoader + WebGL draw check, when viewed.
 - Worker requests/logs, copied input references and raw generated GLB for inference providers.
 - `tripo.json`: Tripo task ID, status and provenance for paid cloud generation, including an interrupted/incomplete revision.
-- `processing.json` and processing checkpoints: parent request, source hash and stage task IDs for Tripo postprocessing; completed metadata is in manifest `remote_processing`.
+- `processing.json`: exact parent request and source hash. Completed manifest retains original generation provenance and adds `local_processing` or `remote_processing`.
+- `local-process.json`, `local-rig.json`, `local-parts.json`, `local-motion.json`: applicable local backend/checkpoint and quality records. Local motion includes dense grounding checks; GeoSAM2 keeps source/context bindings and unclassified faces.
+- Tripo processing checkpoints retain free/paid stage task IDs for remote recovery.
 - `animation-previews.json`: up to 8 clips × 3 sampled frame paths for output review. Compare `sampled_clips` and `total_clips`; exported clips beyond the previews are preserved, not visually reviewed.
 - `part-previews.json`: up to 32 individual part PNGs for segmentation and subsequent static part review; `truncated: true` marks incomplete preview coverage.
 

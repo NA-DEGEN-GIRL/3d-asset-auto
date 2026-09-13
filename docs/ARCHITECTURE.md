@@ -2,6 +2,8 @@
 
 이 시스템은 자연어 판단과 반복 실행을 분리합니다. LLM은 참조 이미지를 준비하고 결과를 눈으로 검토하며, 런타임은 JSON에 따라 기본 TRELLIS.2 생성 또는 명시적으로 선택한 Tripo API 생성과 Blender 후처리를 실행합니다. 기본 결과는 검토한 GLB·편집 원본입니다. 대상 프로젝트의 엔진 검사와 사용자용 웹 뷰어는 선택 기능입니다.
 
+리깅·동작·부품 분리의 `process` 기본 provider는 로컬입니다. SkinTokens·GeoSAM2는 필요한 작업에서만 별도 환경으로 실행하고, 로컬 기본 동작은 기존 Blender에서 실제 뼈를 움직입니다. 이미지 생성 provider와 후처리 provider는 별개로 기록합니다.
+
 ```mermaid
 flowchart TD
     A[게임 개발 요청] --> B[3d-assets 스킬 / LLM]
@@ -13,8 +15,10 @@ flowchart TD
     T --> F
     D -. 기존 모델 수정 / 명시적 절차적 요청 .-> F
     F --> G[버전 저장: blend / GLB / 5방향 렌더 / 검사]
-    G -. 요청한 Tripo 후처리 .-> P[리깅 / 프리셋 동작 / 의미 분리]
+    G -. 필요한 로컬 후처리 .-> P[SkinTokens 리깅 / Blender 동작 / GeoSAM2 분리]
     P --> F
+    G -. 명시적 Tripo 후처리 .-> R[유료 리깅 / 프리셋 / 분리]
+    R --> F
     G --> J[LLM의 로컬 PNG 시각 검토]
     J --> K[GLB 전달 / 대상 프로젝트 통합]
     K -. 프로젝트에 필요할 때 .-> H[대상 엔진 검사: Godot 등]
@@ -33,6 +37,9 @@ flowchart TD
 | [blender_worker.py](../src/asset_auto/blender_worker.py) | headless 모델링·수정·정규화·단순화·렌더·출력 |
 | [blender_character_worker.py](../src/asset_auto/blender_character_worker.py) | 뼈·가중치·동작 보존, 공통 부모 변환, 애니메이션 샘플 렌더 |
 | [tripo_process.py](../src/asset_auto/tripo_process.py) | 리깅 검사·유료 후처리·단계별 원격 기록과 복구 |
+| [local_process.py](../src/asset_auto/local_process.py), [local_rig.py](../src/asset_auto/local_rig.py) | 기본 로컬 후처리·원본 해시·SkinTokens 추론 |
+| [local_parts.py](../src/asset_auto/local_parts.py) | 준비된 뷰·점 프롬프트·GeoSAM2 면 마스크와 원본 바인딩 |
+| [blender_motion_worker.py](../src/asset_auto/blender_motion_worker.py) | 실제 뼈 매핑·절차적 IK·조밀한 바닥 검사 |
 | [store.py](../src/asset_auto/store.py) | revision 생성·완료 목록·원자적 JSON 기록 |
 | [godot_validate.gd](../src/asset_auto/godot_validate.gd) | GLB import 이후 장면·메시·충돌체 검사 |
 | [web.py](../src/asset_auto/web.py), [web/src](../web/src/main.js) | localhost API·파일 제공 및 Three.js 렌더 |
@@ -50,7 +57,11 @@ Tripo의 비용 계획은 로컬 읽기 전용이며 선택 필드 `max_credits`
 
 색·거칠기 수정은 선택된 부품의 재질을 분리해 다른 부품으로 변경이 번지는 것을 막습니다. `part: "*"`의 scale도 각 오브젝트 원점 기준이므로 조립체 전체 스케일과는 다릅니다. 감면은 텍스처 재베이크가 아니며, 용접·smooth shading만으로 구멍이나 형상 결함이 해결된다고 가정하지 않습니다.
 
-선택적 `tripo-process`는 완료된 부모의 현재 GLB 해시를 확인하고 새 revision에 `rig`·`animate`·`segment` 결과를 저장합니다. 분리는 현재 GLB를 그대로 업로드합니다. 리깅은 실제 입력 정면(`rig_forward_axis`, 기본 +Z)을 Tripo용 +X로 회전한 사본을 업로드하되 형상·재질·로컬 수정은 보존하고 원본·사본 해시를 기록합니다. 출력은 리그와 메시의 공통 부모 변환으로 회전을 되돌립니다. 애니메이션은 이전 Tripo 리그의 원격 ID와 방향 기록을 이어받습니다. manifest의 `remote_processing`은 그 출처를 기록합니다. 의미 분리 결과는 개별 부품 렌더로 확인하고 정확한 오브젝트를 `rename`합니다. 단순 연결 성분 분리를 의미 분리의 근거로 대신하지 않습니다. 자세한 흐름과 제약은 [캐릭터 후처리](CHARACTERS.md)에 있습니다.
+`process`는 완료된 부모의 현재 GLB 해시를 확인하고 새 revision에 `rig`·`animate`·`segment` 결과를 저장합니다. 기본 로컬 리깅은 SkinTokens 추론과 원본 메시로의 가중치 전달입니다. 로컬 애니메이션은 기존 리그의 관찰된 뼈를 IK로 움직여 한 클립을 만듭니다. 같은 캐릭터 worker가 최종 `asset.glb`를 재가져와 조밀한 시간 샘플로 바닥 침범을 검사하고, 중간·최종 검사 결과를 파일 SHA256과 함께 구분해 기록합니다. 원격 리그 ID는 필요하지 않습니다.
+
+로컬 분리는 먼저 `prepare-segment`로 12개 1024px 뷰와 기하 context를 만들고 원본·context 파일 해시를 묶습니다. LLM이 해당 이미지를 보고 부품 이름과 포함·제외할 픽셀을 정하면 GeoSAM2가 학습된 마스크를 메시 면으로 전파합니다. 최종 사용자에게 annotation을 넘기지 않으며, 분류하지 못한 면도 `unclassified`로 보존합니다. 이 경로는 원본 삼각형·UV·재질·노멀·위치를 유지하고 예산 초과 시에도 감면하지 않습니다. 개별 부품 렌더를 검사하기 전까지 이름은 제안된 의미입니다. 단순 연결 성분 분리를 의미 분리의 근거로 대신하지 않습니다.
+
+로컬 처리 출처는 `local_processing`에 기록하며 원래 생성 provider는 그대로 둡니다. 명시적 Tripo는 별도의 `remote_processing`을 사용하고, 입력 방향 변환·리그 ID·유료 단계 체크포인트를 보존합니다. 상세 필드와 provider별 제한은 [캐릭터 후처리](CHARACTERS.md)와 [Tripo 옵션](TRIPO.md#리깅애니메이션부품-분리)에 있습니다.
 
 ## 작업 상태와 품질 상태
 
@@ -64,6 +75,7 @@ Tripo의 비용 계획은 로컬 읽기 전용이며 선택 필드 `max_credits`
 | `review.json` | 실제 렌더 관찰 후 기록한 시각 판단 |
 | `tripo.json` | Tripo 원격 task와 출처·진행 상태, 미완료 revision에도 남음 |
 | `processing.json` / 단계 체크포인트 | 후처리의 부모 요청·입력 해시와 무료 검사·유료 작업 ID |
+| `local-process.json` / 로컬 backend 기록 | 요청·source/context 바인딩, 검증된 모델 출력, 로컬 추론·동작 검사 |
 | `animation-previews.json` / `part-previews.json` | 실제 동작 샘플 프레임 / 개별 부품 PNG 경로 |
 | `godot.json` | Godot 검사 시점의 결과 |
 | `three.json` | 브라우저가 보고한 GLTFLoader·WebGL draw 결과 |
@@ -74,7 +86,7 @@ manifest의 `visual_review`, `engine_validation` 초기값은 완료 시점의 �
 
 작업 상태 파일은 재시작 후에도 남습니다. 이는 실행 중 계산을 자동으로 이어서 재개한다는 뜻이 아닙니다. 프로세스가 사라진 running 작업은 상태 조회에서 `interrupted`로 바뀝니다. 재시도 전 로그를 확인합니다. Tripo 원격 계산은 로컬 worker 종료 후에도 계속될 수 있으므로 알려진 task는 `resume-tripo`로 조회·다운로드·후처리를 이어갑니다. 완료된 revision에는 resume으로 덮어쓰지 않습니다.
 
-리깅·애니메이션·분리는 `resume-tripo-process`로 미완료 자식 revision의 저장된 단계부터 이어갑니다. 무료 검사 ID와 유료 작업 ID를 구분하며, 이미 제출된 유료 단계를 중복 실행하지 않습니다. 제출 성공 여부를 알 수 없는 단계는 자동 재시도하지 않습니다.
+후처리는 `resume-process`로 미완료 자식 revision의 저장된 provider·요청부터 이어갑니다. 로컬의 검증된 모델 출력은 재사용할 수 있지만 추론 중간에서 중단되면 계산을 다시 실행할 수 있습니다. Tripo에서는 무료·유료 task를 구분하고 알려진 작업을 중복 제출하지 않습니다. 원격 제출 성공 여부를 알 수 없는 단계는 자동 재시도하지 않습니다.
 
 ## 디스크 구조
 
@@ -89,6 +101,7 @@ manifest의 `visual_review`, `engine_validation` 초기값은 완료 시점의 �
     inspection.json       수치·부품·경고
     tripo.json            Tripo 사용 시 원격 task·출처·상태
     processing.json       후처리 요청과 부모 GLB 해시
+    local-process.json    로컬 backend와 출력 해시·검사 기록
     animation-previews.json / part-previews.json
                           동작 샘플 / 개별 부품 PNG 목록
     front.png ...         5방향 렌더
@@ -97,6 +110,7 @@ manifest의 `visual_review`, `engine_validation` 초기값은 완료 시점의 �
     three.json            웹에서 로드·렌더 후 생성
     godot/                검증용 실제 Godot 프로젝트
 .work/                    smoke 산출물, 임시 spec, 뷰어 로그
+  segment-contexts/       해시로 원본과 묶인 12뷰·기하 context
 .secrets/                 선택적 Tripo 키 파일, Git 제외
 web/dist/                 로컬 빌드 결과
 ```
@@ -107,6 +121,8 @@ web/dist/                 로컬 빌드 결과
 
 기본 bootstrap은 TRELLIS·가중치·Blender만 설치하며 Godot와 웹 빌드를 포함하지 않습니다. TRELLIS 추론은 CUDA, Blender 렌더는 CPU Cycles를 사용합니다. 런타임 루트별 file lock이 GPU 생성 작업을 직렬화합니다. 루트가 다르면 lock도 다릅니다. 선택한 뷰어를 실행할 때는 127.0.0.1에 바인딩하며 지정된 파일만 제공합니다. 모델 생성은 CLI/MCP 경로에서 실행됩니다.
 
+로컬 리깅·부품 모델은 요청 시 별도 bootstrap으로 설치합니다. `.runtime/local-rig`와 `.runtime/local-parts`의 Linux/WSL Python 환경은 앱 환경과 분리되며 API 키 없이 추론합니다. 두 learned backend는 TRELLIS와 같은 GPU lock을 사용합니다. 로컬 동작은 일반 Blender를 사용하므로 추가 AI 모델이 필요하지 않습니다.
+
 명시적 Tripo 전용 설치는 Python·Blender·키만 필요하며 로컬 CUDA와 TRELLIS 가중치를 다운로드할 필요가 없습니다. 원격 이미지 업로드와 유료 생성이 추가되지만 로컬 저장·렌더 검토·수정 규칙은 같습니다.
 
-일반 생물 리깅·사용자 모션·다중 클립 병합·로컬 리그 편집·애니메이션용 리토폴로지·텍스처 재베이크·TRELLIS 다중 이미지 입력은 아직 구현되어 있지 않습니다. 이족 리깅과 세 프리셋, 베타 의미 분리의 실제 품질은 원격 작업 성공과 별도로 검사합니다.
+일반 생물 동작·사용자 모션·다중 클립 병합·임의의 리그/가중치 편집·애니메이션용 리토폴로지·텍스처 재베이크·TRELLIS 다중 이미지 입력은 아직 구현되어 있지 않습니다. 실제 추론·작업 성공과 변형·부품 품질은 provider에 관계없이 별도로 검사합니다.

@@ -46,10 +46,9 @@ def build_server(root):
     @server.tool()
     def tripo_process_plan(spec: dict) -> dict:
         """Read-only plan for explicit Tripo rig, animation or semantic segmentation of an exact revision."""
-        from .models import PostprocessRequest
         from .pipeline import postprocess_plan
 
-        return postprocess_plan(root, PostprocessRequest.model_validate(spec))
+        return postprocess_plan(root, jobs.processing_request(spec, tripo_only=True))
 
     @server.tool()
     def process_tripo_asset(request: dict) -> dict:
@@ -62,6 +61,28 @@ def build_server(root):
         return jobs.submit(root, "resume-tripo-process", {"asset_id": asset_id, "revision": revision})
 
     @server.tool()
+    def process_plan(spec: dict) -> dict:
+        """Read-only rig/animate/segment plan. Defaults to local Blender; Tripo requires explicit provider selection."""
+        from .pipeline import postprocess_plan
+
+        return postprocess_plan(root, jobs.processing_request(spec))
+
+    @server.tool()
+    def process_asset(request: dict) -> dict:
+        """Submit rig/animate/segment processing of an exact revision. Defaults to local processing without an API."""
+        return jobs.submit(root, "process", request)
+
+    @server.tool()
+    def prepare_local_segmentation(asset_id: str, revision: str) -> dict:
+        """Prepare local segmentation context and views for visual labeling; returns a job, not a completed asset."""
+        return jobs.submit(root, "prepare-segment", {"asset_id": asset_id, "revision": revision})
+
+    @server.tool()
+    def resume_asset_processing(asset_id: str, revision: str) -> dict:
+        """Resume an existing processing revision using its saved provider and request."""
+        return jobs.submit(root, "resume-process", {"asset_id": asset_id, "revision": revision})
+
+    @server.tool()
     def edit_asset(request: dict) -> dict:
         """Submit named-part edits against an exact existing revision; creates a new revision."""
         return jobs.submit(root, "edit", request)
@@ -71,12 +92,13 @@ def build_server(root):
         """Read a submitted job's actual state and result. Poll this instead of resubmitting."""
         result = jobs.status(root, job_id)
         result.pop("payload", None)
-        if "result" in result and "asset_id" in result["result"]:
-            asset = result["result"]
+        asset = result.get("result")
+        if isinstance(asset, dict) and "asset_id" in asset and ("files" in asset or "inspection" in asset):
             result["result"] = {
                 key: asset[key] for key in (
                     "asset_id", "revision", "parent", "state", "asset_type", "inspection",
-                    "remote_generation", "remote_processing", "animation_previews", "part_previews",
+                    "remote_generation", "remote_processing", "local_processing", "provenance",
+                    "animation_previews", "part_previews",
                 ) if key in asset
             }
         return result

@@ -100,7 +100,21 @@ class AssetSpec(StrictModel):
         if self.provider == "import" and not self.source:
             raise ValueError("import requires a GLB or .blend source")
         if self.asset_kind == "character" and self.provider != "import":
-            raise ValueError("character import requires provider: import; use Tripo processing to rig an existing asset")
+            raise ValueError("character import requires provider: import; use processing to rig an existing asset")
+        return self
+
+
+class SegmentationPart(StrictModel):
+    name: str = Field(pattern=r"^[A-Za-z][A-Za-z0-9_.-]{0,63}$")
+    positive_points: list[tuple[int, int]] = Field(min_length=1, max_length=64)
+    negative_points: list[tuple[int, int]] = Field(default_factory=list, max_length=64)
+
+    @model_validator(mode="after")
+    def valid_points(self):
+        if any(min(point) < 0 for point in self.positive_points + self.negative_points):
+            raise ValueError("Segmentation points are nonnegative image pixel coordinates")
+        if any(max(point) >= 1024 for point in self.positive_points + self.negative_points):
+            raise ValueError("Segmentation points must be inside the 1024 by 1024 context image")
         return self
 
 
@@ -108,7 +122,7 @@ class PostprocessRequest(StrictModel):
     asset_id: AssetId
     revision: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     operation: Literal["rig", "animate", "segment"]
-    provider: Literal["tripo"] = "tripo"
+    provider: Literal["local", "tripo"] = "local"
     max_credits: int = Field(100, gt=0, le=100000)
     rig_type: Literal["biped"] = "biped"
     rig_model: Literal["v1.0-20240301"] = "v1.0-20240301"
@@ -116,7 +130,37 @@ class PostprocessRequest(StrictModel):
     animation: Literal["idle", "walk", "run"] = "walk"
     animate_in_place: bool = True
     segmentation_granularity: Literal["simple", "balanced", "detailed"] = "balanced"
+    segmentation_context: str | None = None
+    segmentation_view: int = Field(0, ge=0, le=11)
+    segmentation_parts: list[SegmentationPart] | None = Field(None, min_length=1, max_length=32)
+    bone_map: dict[str, str] | None = None
     triangle_budget: int | None = Field(None, ge=12, le=1000000)
+
+    @classmethod
+    def for_tripo(cls, payload):
+        if not isinstance(payload, dict):
+            raise ValueError("Tripo processing requires a request object")  # noqa: TRY004 -- structured CLI validation
+        if payload.get("provider", "tripo") != "tripo":
+            raise ValueError("A Tripo-specific command requires provider: tripo; use process for local work")
+        return cls.model_validate(payload | {"provider": "tripo"})
+
+    @model_validator(mode="after")
+    def processing_inputs(self):
+        if self.provider == "tripo" and (
+            self.segmentation_context is not None or self.segmentation_parts is not None or self.bone_map is not None
+        ):
+            raise ValueError("Local segmentation prompts and bone maps cannot be sent through Tripo processing")
+        if self.provider == "local" and self.operation == "segment":
+            if not self.segmentation_context or not self.segmentation_parts:
+                raise ValueError("Local segmentation requires a prepared context and observed part prompts; use prepare-segment first")
+            if len({part.name for part in self.segmentation_parts}) != len(self.segmentation_parts):
+                raise ValueError("Segmentation part names must be unique")
+        if self.bone_map is not None:
+            if self.operation != "animate" or not self.bone_map or any(not k.strip() or not v.strip() for k, v in self.bone_map.items()):
+                raise ValueError("bone_map must map motion roles to actual bone names for local animation")
+            if len(set(self.bone_map.values())) != len(self.bone_map):
+                raise ValueError("Each motion role must address a different bone")
+        return self
 
 
 class Edit(StrictModel):

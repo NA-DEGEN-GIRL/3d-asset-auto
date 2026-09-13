@@ -5,6 +5,7 @@ import os
 import shutil
 import struct
 import subprocess
+import uuid
 from pathlib import Path
 
 from filelock import FileLock
@@ -133,11 +134,12 @@ def finalize(root, spec, revision, out, parent=None, edits=None, processing=None
                 if key in remote
             }
     if processing is not None:
-        manifest["remote_processing"] = processing
+        manifest["local_processing" if processing.get("provider") == "local" else "remote_processing"] = processing
     elif parent:
         original = read_json(Store(root).revision(spec.asset_id, parent) / "manifest.json")
-        if original.get("remote_processing"):
-            manifest["remote_processing"] = original["remote_processing"]
+        for key in ("remote_processing", "local_processing"):
+            if original.get(key):
+                manifest[key] = original[key]
     for name in ("animation-previews.json", "part-previews.json"):
         if (out / name).is_file():
             manifest[name.removesuffix(".json").replace("-", "_")] = read_json(out / name)
@@ -233,18 +235,27 @@ def resume_tripo(root, asset_id, revision):
     return finish_tripo(root, spec, revision, out, resume=True)
 
 
-def processing_source(root, request):
-    source = Store(root).revision(request.asset_id, request.revision)
+def completed_source(root, asset_id, revision):
+    source = Store(root).revision(asset_id, revision)
     manifest = read_json(source / "manifest.json")
     raw = source / "asset.glb"
     validate_glb(raw)
     digest = hashlib.sha256(raw.read_bytes()).hexdigest()
     if manifest["files"]["asset.glb"]["sha256"] != digest:
         raise ValueError("Source GLB changed after completion; import changes as a new revision first")
+    return raw, manifest, digest
+
+
+def processing_source(root, request):
+    raw, manifest, digest = completed_source(root, request.asset_id, request.revision)
     rigged = bool(manifest.get("inspection", {}).get("rigging", {}).get("armatures"))
     remote = manifest.get("remote_processing", {})
     if request.operation == "animate":
-        if not rigged or remote.get("operation") not in ("rig", "animate") or not remote.get("rig_task_id"):
+        if not rigged:
+            raise ValueError("Animation requires a completed rigged revision; run rig first")
+        if request.provider == "tripo" and (
+            remote.get("operation") not in ("rig", "animate") or not remote.get("rig_task_id")
+        ):
             raise ValueError("Animation requires a completed Tripo rig revision; run rig first")
     elif rigged:
         raise ValueError("Rigging and segmentation require a static source; use the preserved pre-rig revision")
@@ -252,14 +263,33 @@ def processing_source(root, request):
 
 
 def postprocess_plan(root, request):
-    from .tripo_process import plan
-
     raw, manifest, digest = processing_source(root, request)
-    return plan(request, manifest) | {
+    if request.provider == "local":
+        from .local_process import plan
+
+        proposed = plan(root, request, manifest)
+    else:
+        from .tripo_process import plan
+
+        proposed = plan(request, manifest)
+    return proposed | {
         "asset_id": request.asset_id, "source_revision": request.revision,
         "source_file": str(raw), "source_sha256": digest,
         "triangle_budget": request.triangle_budget or manifest["inspection"]["triangle_budget"],
     }
+
+
+def prepare_segmentation(root, asset_id, revision):
+    from .local_parts import prepare
+
+    source, parent, digest = completed_source(root, asset_id, revision)
+    if parent.get("inspection", {}).get("rigging", {}).get("armatures"):
+        raise ValueError("Prepare segmentation from the preserved static revision, before rigging")
+    executable(root, "blender")
+    out = root / ".work" / "segment-contexts" / uuid.uuid4().hex
+    out.mkdir(parents=True)
+    result = prepare(root, source, out)
+    return result | {"source_asset_id": asset_id, "source_revision": revision, "source_sha256": digest}
 
 
 def postprocess(root, request: PostprocessRequest, *, on_revision=None):
@@ -268,7 +298,8 @@ def postprocess(root, request: PostprocessRequest, *, on_revision=None):
     revision, out = Store(root).new_revision(request.asset_id)
     write_json(out / "processing.json", {"request": request.model_dump(), "source_sha256": digest})
     if on_revision:
-        on_revision({"asset_id": request.asset_id, "revision": revision, "operation": "resume-tripo-process"})
+        on_revision({"asset_id": request.asset_id, "revision": revision,
+                     "operation": "resume-process" if request.provider == "local" else "resume-tripo-process"})
     try:
         return finish_postprocess(root, request, revision, out)
     except Exception as error:
@@ -276,8 +307,6 @@ def postprocess(root, request: PostprocessRequest, *, on_revision=None):
 
 
 def finish_postprocess(root, request, revision, out, *, resume=False):
-    from .tripo_process import process
-
     with FileLock(out / "postprocess.lock", timeout=0):
         if (out / "manifest.json").exists():
             return read_json(out / "manifest.json")
@@ -285,38 +314,82 @@ def finish_postprocess(root, request, revision, out, *, resume=False):
         if read_json(out / "processing.json")["source_sha256"] != digest:
             raise ValueError("Processing source changed; cannot resume against different geometry")
         executable(root, "blender")
-        remote = process(root, request, out, source, parent, resume=resume)
+        if request.provider == "local":
+            from .local_process import process
+
+            processing = process(root, request, out, source, parent, resume=resume)
+        else:
+            from .tripo_process import process
+
+            processing = process(root, request, out, source, parent, resume=resume)
         spec = AssetSpec.model_validate(parent["spec"])
         budget = request.triangle_budget or parent["inspection"]["triangle_budget"]
         spec.triangle_budget = budget
         character = request.operation in ("rig", "animate")
         worker_request = {
-            "operation": "import", "source": str(out / "generated.glb"), "output": str(out),
+            "operation": "import", "source": str(out / processing.get("generated_file", "generated.glb")), "output": str(out),
             "triangle_budget": budget, "target_height": parent["inspection"]["dimensions"][2],
             "character": character, "require_rig": character,
             "require_animation": request.operation == "animate", "part_previews": not character,
         }
         if character:
-            worker_request["input_yaw_degrees"] = remote.get("output_yaw_degrees", 0)
+            worker_request["input_yaw_degrees"] = processing.get("output_yaw_degrees", 0)
+        if request.provider == "local":
+            # Local processing preserves the existing scale and world placement.
+            worker_request["target_height"] = None
+            if not character:
+                worker_request["preserve_geometry"] = True
         if request.operation == "animate":
             worker_request["animation_name"] = request.animation
+            if request.provider == "local":
+                worker_request["dense_motion_check"] = {
+                    "bone_map": processing["bone_map"], "authored_frames": processing["authored_frames"],
+                }
         blender(root, worker_request, out)
         report = read_json(out / "inspection.json")
+        if request.provider == "local":
+            if request.operation == "animate":
+                # Retain generation-stage evidence and identify the actual
+                # delivery bytes checked after the character export roundtrip.
+                generated_checks = processing.get("generated_ground_checks", processing["ground_checks"])
+                generated_checks.setdefault("artifact", {"file": "generated.glb", "stage": "generation",
+                                                         "sha256": processing["generated_sha256"]})
+                processing["generated_ground_checks"] = generated_checks
+                processing["ground_checks"] = report["animation_quality"]["dense_ground_checks"]
+                expected_artifact = {"file": "asset.glb", "stage": "final_delivery",
+                                     "sha256": hashlib.sha256((out / "asset.glb").read_bytes()).hexdigest()}
+                if processing["ground_checks"].get("artifact") != expected_artifact:
+                    raise ValueError("Final motion checks do not match the delivery GLB")
+                motion_report = read_json(out / "local-motion.json")
+                motion_report.update(generated_ground_checks=generated_checks,
+                                     ground_checks=processing["ground_checks"])
+                write_json(out / "local-motion.json", motion_report)
+                write_json(out / "local-process.json", processing)
+            report["processing"] = {"provider": "local", "backend": processing.get("backend", processing.get("model"))}
+            for warning in processing.get("warnings", []):
+                if warning not in report["warnings"]:
+                    report["warnings"].append(warning)
+            if processing.get("ground_checks"):
+                report.setdefault("animation_quality", {})["dense_ground_checks"] = processing["ground_checks"]
+            write_json(out / "inspection.json", report)
         if request.operation == "segment":
             report["segmentation"] = {
-                "model": "v2.0-20260430", "parts": len(report["parts"]),
+                "provider": request.provider, "model": processing.get("model", processing.get("backend")),
+                "parts": len(report["parts"]),
                 "semantic_review": "pending", "source_revision": request.revision,
             }
             if len(report["parts"]) < 2:
                 report["errors"].append("Segmentation returned fewer than two mesh parts")
                 report["passed"] = False
             write_json(out / "inspection.json", report)
-        return finalize(root, spec, revision, out, parent=request.revision, processing=remote)
+        return finalize(root, spec, revision, out, parent=request.revision, processing=processing)
 
 
 def resume_postprocess(root, asset_id, revision):
     out = child(root / ".assets", asset_id, revision)
-    request = PostprocessRequest.model_validate(read_json(out / "processing.json")["request"])
+    stored = read_json(out / "processing.json")["request"]
+    # Before local processing existed, provider-less saved requests could only mean Tripo.
+    request = PostprocessRequest.model_validate({"provider": "tripo"} | stored)
     if request.asset_id != asset_id:
         raise ValueError("Stored processing request does not match asset")
     return finish_postprocess(root, request, revision, out, resume=True)

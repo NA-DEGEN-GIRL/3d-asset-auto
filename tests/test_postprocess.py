@@ -76,13 +76,14 @@ def source_asset(tmp_path):
 
 def request_for(source_asset, operation="rig", **changes):
     _, manifest = source_asset
-    values = {"asset_id": manifest["asset_id"], "revision": manifest["revision"], "operation": operation}
+    values = {"asset_id": manifest["asset_id"], "revision": manifest["revision"], "operation": operation,
+              "provider": "tripo"}
     return PostprocessRequest.model_validate(values | changes)
 
 
 @pytest.mark.parametrize("operation", ["rig", "animate", "segment"])
 def test_explicit_processing_defaults_to_100_credit_budget(operation):
-    request = PostprocessRequest(asset_id="test-character", revision="r1", operation=operation)
+    request = PostprocessRequest(asset_id="test-character", revision="r1", operation=operation, provider="tripo")
     assert request.max_credits == 100
     assert request.provider == "tripo"
     assert request.rig_type == "biped"
@@ -104,7 +105,7 @@ def test_explicit_processing_defaults_to_100_credit_budget(operation):
 def test_processing_schema_rejects_unsupported_or_unsafe_requests(changes):
     with pytest.raises(ValidationError):
         PostprocessRequest.model_validate(
-            {"asset_id": "test-character", "revision": "r1", "operation": "rig"} | changes
+            {"asset_id": "test-character", "revision": "r1", "operation": "rig", "provider": "tripo"} | changes
         )
 
 
@@ -128,7 +129,7 @@ def test_modified_completed_source_is_rejected_before_paid_work(tmp_path, source
 def test_animate_requires_verified_tripo_rig_parent(tmp_path, source_asset):
     directory, manifest = source_asset
     request = request_for(source_asset, "animate")
-    with pytest.raises(ValueError, match="completed Tripo rig"):
+    with pytest.raises(ValueError, match="completed rigged revision"):
         pipeline.processing_source(tmp_path, request)
     manifest["inspection"]["rigging"] = {"armatures": [{"bones": 32}]}
     write_json(directory / "manifest.json", manifest)
@@ -592,6 +593,7 @@ def test_cli_routes_processing_and_resume_without_losing_revision(tmp_path, sour
         return {"revision": revision}
 
     monkeypatch.setattr(cli, "resume_postprocess", resume)
+    write_json(tmp_path / ".assets/test-character/r-new/processing.json", {"request": request.model_dump()})
     argv = ["assetctl", "--root", str(tmp_path), "resume-tripo-process", "test-character", "r-new"]
     monkeypatch.setattr(sys, "argv", argv + (["--async"] if background else []))
     assert cli.main() == 0
@@ -627,6 +629,9 @@ def test_resume_job_runs_recovery_route_instead_of_new_paid_process(tmp_path, so
     write_json(directory / "job.json", {
         "job_id": "test-resume-job", "operation": "resume-tripo-process", "state": "queued",
         "payload": {"asset_id": "test-character", "revision": "r-pending"},
+    })
+    write_json(tmp_path / ".assets/test-character/r-pending/processing.json", {
+        "request": request_for(source_asset, "segment").model_dump(),
     })
     calls = []
 
@@ -857,3 +862,50 @@ def test_pipeline_restores_source_orientation_for_rig_and_animated_export(
     result = pipeline.postprocess(tmp_path, request_for(source_asset, operation))
     assert result["remote_processing"]["output_yaw_degrees"] == -90
     assert result["asset_type"] == "character"
+
+
+@pytest.mark.parametrize("operation", ["rig", "animate", "segment"])
+def test_pre_local_defaults_tripo_checkpoint_resumes_without_resubmission(tmp_path, source_asset, operation):
+    """New local-only schema defaults must not invalidate a known, already charged task."""
+    if operation == "animate":
+        source_asset[1]["remote_processing"] = {"operation": "rig", "rig_task_id": "original-rig-task"}
+    request = request_for(source_asset, operation)
+    client = FakeProcessingProvider(tmp_path / "processing", states={operation: ["running", "success"]})
+    with pytest.raises(tripo.TripoError, match="still processing"):
+        process_source(tmp_path, source_asset, request, client, poll_timeout=0)
+    checkpoint = read_json(client.out / "postprocess-remote.json")
+    legacy_fields = {
+        "asset_id", "revision", "operation", "provider", "max_credits", "rig_type", "rig_model",
+        "rig_forward_axis", "animation", "animate_in_place", "segmentation_granularity", "triangle_budget",
+    }
+    old_request = {key: value for key, value in request.model_dump().items() if key in legacy_fields}
+    if operation != "rig":
+        old_request.pop("rig_forward_axis")
+    old_binding = {"request": old_request, "source_rig_task_id": "original-rig-task" if operation == "animate" else None}
+    checkpoint["request_sha256"] = hashlib.sha256(
+        json.dumps(old_binding, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+    write_json(client.out / "postprocess-remote.json", checkpoint)
+    created = list(creates(client))
+    result = process_source(tmp_path, source_asset, request, client, resume=True)
+    assert result["state"] == "success"
+    assert creates(client) == created
+    assert result["provider"] == "tripo"
+
+
+def test_old_stored_tripo_request_remains_explicit_on_pipeline_recovery(tmp_path, source_asset, monkeypatch):
+    request = request_for(source_asset, "segment")
+    old_request = request.model_dump(exclude={"segmentation_context", "segmentation_view", "segmentation_parts", "bone_map"})
+    revision, out = Store(tmp_path).new_revision(request.asset_id)
+    write_json(out / "processing.json", {"request": old_request, "source_sha256": "unused"})
+    seen = []
+
+    def finish(root, recovered, new_revision, folder, *, resume=False):
+        seen.append((recovered.provider, recovered.segmentation_context, recovered.bone_map, resume))
+        assert new_revision == revision and folder == out
+        return {"provider": recovered.provider, "revision": new_revision}
+
+    monkeypatch.setattr(pipeline, "finish_postprocess", finish)
+    result = pipeline.resume_postprocess(tmp_path, request.asset_id, revision)
+    assert result["provider"] == "tripo"
+    assert seen == [("tripo", None, None, True)]

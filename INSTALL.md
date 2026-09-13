@@ -7,6 +7,9 @@ Install one shared runtime checkout, then point the agent skill or an optional M
 | Profile | Install | Enables |
 | --- | --- | --- |
 | Default core | Python environment, trellis.cpp CUDA bundle, F16 models, Blender | Reference image → TRELLIS.2 → Blender processing → local render review → GLB |
+| Local rigging, on demand | Isolated SkinTokens environment and checkpoints | Learned skeleton/weight prediction on the current mesh; no API key |
+| Local parts, on demand | Isolated GeoSAM2 environment and checkpoint | Agent-observed point prompts → learned mesh part masks; no API key |
+| Local animation | Existing Blender and a completed rig | Procedural idle/walk/run with actual bone mapping; no extra model download |
 | Explicit Tripo-only | Python environment, Blender, Tripo API credentials and credits | Paid cloud image/multiview generation → local Blender processing; no local CUDA or TRELLIS weights |
 | Godot adapter | Godot binary | Import checks when relevant to the destination project |
 | Interactive viewer | Node.js/npm and web bundle | A user-requested interactive preview or browser check |
@@ -64,9 +67,33 @@ uv run --no-sync python scripts/bootstrap.py --only models
 uv run --no-sync python -m asset_auto.cli doctor
 ```
 
-`uv run --no-sync python scripts/bootstrap.py --only all` also installs Godot. It does not build the viewer. The installer does not load a resident model server, configure image-generation credentials, or download a local rigging model. Optional rigging/animation/segmentation run through Tripo with Blender processing. Different runtime roots have separate GPU locks, so use one shared root for clients targeting the same GPU.
+`uv run --no-sync python scripts/bootstrap.py --only all` also installs Godot. It does not build the viewer or install the separate local rigging/parts backends. The installer does not load a resident model server or configure cloud credentials. Different runtime roots have separate GPU locks, so use one shared root for clients targeting the same GPU.
 
 For an explicitly requested procedural-only workflow or processing development, `--only blender` remains available. This is an alternative profile, not a silent downgrade when default TRELLIS generation is blocked. Existing named-part edits and supplied mesh imports use Blender without repeating inference.
+
+## Local postprocessing on demand
+
+`process` defaults to `provider: "local"` for rigging, animation and semantic segmentation. Install only the learned backend needed for the requested operation; core setup stays unchanged. A missing local backend does not select Tripo automatically.
+
+The rigging and parts installers support native Linux and Windows through an existing WSL distribution (default `Ubuntu-24.04`). They require Linux `python3`, Git/uv and a working NVIDIA CUDA device in that environment. Inspect WSL/GPU availability first; these scripts do not install WSL, system packages or GPU drivers. SkinTokens advertises at least 14 GB VRAM; this is an upstream workload requirement, not a verified minimum for every input here.
+
+From the runtime root, install the needed component:
+
+```sh
+uv run --no-sync python scripts/bootstrap_local_rig.py
+uv run --no-sync python scripts/bootstrap_local_parts.py
+uv run --no-sync python -m asset_auto.cli doctor
+```
+
+On Windows, either installer accepts `--wsl-distribution NAME` for the chosen existing distro. Both accept `--root ABSOLUTE_CHECKOUT`; the parts installer also accepts `--uv-cache PATH` for a wheel cache, not a shared environment. Use `--help` to inspect the current flags. Keep both environments under the same runtime root so local learned inference and TRELLIS share the GPU lock.
+
+These are isolated managed Python 3.11.13 environments with PyTorch CUDA 12.8 wheels under `.runtime/local-rig/` and `.runtime/local-parts/`; they do not add Torch to the app's `.venv`. SkinTokens checkpoints are about 1.62 GB, and GeoSAM2's checkpoint is about 615 MB. Source trees, Python/Torch wheels and caches require additional space.
+
+The [SkinTokens dependency lock](scripts/local_rig/requirements-linux.lock) pins the complete runtime's package versions. The [GeoSAM2 dependency lock](scripts/local_parts/requirements-linux.lock) pins versions and artifact SHA256 hashes, enforced with `uv pip sync --require-hashes`. Both installers' dependency dry runs passed. Model/source pins and file checks are owned by [bootstrap_local_rig.py](scripts/bootstrap_local_rig.py), [bootstrap_local_parts.py](scripts/bootstrap_local_parts.py) and [local_parts.py](src/asset_auto/local_parts.py). Readiness/provenance is recorded in `.runtime/installed/local-rig.json` or `local-parts.json`.
+
+Upstream sources: [SkinTokens](https://github.com/VAST-AI-Research/SkinTokens) and [weights](https://huggingface.co/VAST-AI/SkinTokens), [GeoSAM2](https://github.com/VAST-AI-Research/GeoSAM2) and [weights](https://huggingface.co/VAST-AI/GeoSAM2). The adapters record MIT for SkinTokens and Apache-2.0 for GeoSAM2; dependencies have their own licenses. Review those sources for distribution requirements.
+
+Local inference uses installed models without API credentials. Readiness checks do not prove successful rigging or segmentation: run the relevant [character workflow](docs/CHARACTERS.md) and inspect its actual output. Local animation uses the normal Blender installation and needs no separate model environment. The agent, not the end user, chooses segmentation prompts from the prepared renders and maps unknown bone names from observed joints.
 
 ## Optional Tripo cloud provider
 
@@ -83,7 +110,7 @@ Read [docs/TRIPO.md](docs/TRIPO.md) for supported PNG/JPEG inputs, single-image/
 
 An explicit request to generate with Tripo covers one standard generation per requested asset. The optional `tripo.max_credits` defaults to 100; standard generation is estimated at 30 credits. Do not pause for a separate credit confirmation within that scope. Honor a smaller user limit and keep unrequested paid retries, upgrades and variants outside the default scope.
 
-The same installation supports optional Tripo rigging, preset animation and semantic segmentation of completed revisions, including TRELLIS/import assets. Read [docs/CHARACTERS.md](docs/CHARACTERS.md) for processing requests, per-operation prices and character-preserving imports. No extra GPU weights or animation viewer are required. Processing a character preserves its rig rather than applying static mesh edits.
+The same Tripo-only installation supports explicitly selected Tripo rigging, preset animation and semantic segmentation of completed revisions, including TRELLIS/import assets. Read [docs/TRIPO.md](docs/TRIPO.md#리깅애니메이션부품-분리) for paid processing and [docs/CHARACTERS.md](docs/CHARACTERS.md) for shared review/import rules. This cloud option needs no local postprocessing weights; the default local backends are installed separately above.
 
 ## Optional project checks and viewer
 
@@ -174,7 +201,7 @@ Core tool names: `asset_capabilities`, `generate_asset`, `edit_asset`, `asset_jo
 
 Tripo additions are `tripo_plan`, `tripo_balance` and `resume_tripo_asset`; the last returns a job ID to query with `asset_job_status`.
 
-Character/part processing adds `tripo_process_plan`, `process_tripo_asset` and `resume_tripo_processing`. Processing and recovery return jobs; plan is local read-only. Their request contract is [PostprocessRequest](src/asset_auto/models.py), with examples in the [character guide](docs/CHARACTERS.md).
+Default local processing uses `process_plan`, `process_asset`, `prepare_local_segmentation` and `resume_asset_processing`. Preparation, processing and recovery return jobs; plan is read-only. `tripo_process_plan`, `process_tripo_asset` and `resume_tripo_processing` retain the explicitly paid path. Read [PostprocessRequest](src/asset_auto/models.py) and the [character guide](docs/CHARACTERS.md) for exact inputs.
 
 ## 6. Existing tools and configuration
 

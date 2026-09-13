@@ -1,5 +1,6 @@
 """Rig-aware import/export and preview worker, executed by portable Blender."""
 
+import hashlib
 import json
 import math
 import struct
@@ -131,10 +132,13 @@ def rigging_summary():
         "armatures": [{
             "name": obj.name,
             "bone_count": len(obj.data.bones),
+            "coordinate_system": "Blender Z-up world, meters",
             "bones": [{
                 "name": bone.name,
                 "parent": bone.parent.name if bone.parent else None,
                 "deform": bone.use_deform,
+                "head_world": list(obj.matrix_world @ bone.head_local),
+                "tail_world": list(obj.matrix_world @ bone.tail_local),
             } for bone in obj.data.bones],
         } for obj in armatures],
         "bones": sum(len(obj.data.bones) for obj in armatures),
@@ -378,6 +382,10 @@ def main():
     load_character(request["source"])
     validate_armature_modifiers()
     name_single_clip(request.get("animation_name"))
+    # glTF import activates its first clip. Export from the stored node/morph
+    # rest defaults so that clip's first root pose cannot replace GLB defaults.
+    # The actions and their NLA slots stay available for the ACTIONS exporter.
+    select_preview_clip(None)
     rotation = rotate_input_hierarchy(request.get("input_yaw_degrees", 0))
     normalization = normalize_hierarchy(request.get("target_height"))
     normalization.update(rotation)
@@ -425,6 +433,25 @@ def main():
                                   grounded=request.get("target_height") is not None)
     report["animation_quality"] = previews["quality_checks"]
     report["warnings"].extend(previews["quality_checks"]["warnings"])
+    if dense := request.get("dense_motion_check"):
+        # Keep this in the existing Blender process. The delivery exporter can
+        # resample clips, so generated.glb checks are not final asset.glb checks.
+        from blender_motion_worker import dense_check
+
+        clip = next(item for item in report["animations"]["clips"]
+                    if item["name"] == request["animation_name"])
+        frames = int(dense["authored_frames"]) - 1
+        if frames < 1:
+            raise ValueError("Dense motion validation requires at least two authored frames")
+        quality = dense_check(out / "asset.glb", clip["name"], clip["duration_seconds"],
+                              frames, dense["bone_map"])
+        quality["artifact"] = {"file": "asset.glb", "stage": "final_delivery",
+                               "sha256": hashlib.sha256((out / "asset.glb").read_bytes()).hexdigest()}
+        report["animation_quality"]["dense_ground_checks"] = quality
+        if quality["below_floor_samples"]:
+            report["warnings"].append("Final delivery animation penetrates the floor beyond dense-check "
+                                      "tolerance; inspect the motion before approving it.")
+        (out / "local-motion-delivery.json").write_text(json.dumps(quality, indent=2), encoding="utf-8")
     (out / "inspection.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
 
 

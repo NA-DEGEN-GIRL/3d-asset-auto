@@ -41,3 +41,5 @@ jobs:
       - run: uv run --no-sync python scripts/smoke.py
       - run: uv run --no-sync python scripts/smoke_character.py
       - run: uv run --no-sync python scripts/smoke_parts.py
+      - run: uv run --no-sync python scripts/smoke_local_motion.py
+      - run: uv run --no-sync python scripts/smoke_local_parts.py

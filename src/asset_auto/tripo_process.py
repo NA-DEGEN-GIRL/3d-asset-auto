@@ -294,7 +294,10 @@ def process(
             raise TripoError("Animation requires a compatible biped rig revision")
         if provenance.get("rig_model", request.rig_model) != request.rig_model:
             raise TripoError("Animation requires a compatible Tripo rig model version")
-    request_values = request.model_dump()
+    # Local adapter defaults must not change the fingerprint of existing paid tasks.
+    request_values = request.model_dump(exclude={
+        "segmentation_context", "segmentation_view", "segmentation_parts", "bone_map",
+    })
     if request.operation != "rig":
         request_values.pop("rig_forward_axis", None)
     binding = {"request": request_values, "source_rig_task_id": source_rig_id}
