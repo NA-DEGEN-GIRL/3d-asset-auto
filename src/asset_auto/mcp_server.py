@@ -28,7 +28,10 @@ def build_server(root):
 
     @server.tool()
     def generate_text_motion(request: dict) -> dict:
-        """Generate one local Kimodo motion on an existing rig, preserving other clips in a new revision."""
+        """Generate one local motion only when the user explicitly selects Kimodo.
+
+        Uses an existing rig and preserves other clips in a new revision; not the default animation tool.
+        """
         return jobs.submit(root, "text-motion", request)
 
     @server.tool()
