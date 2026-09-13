@@ -145,6 +145,9 @@ def finalize(root, spec, revision, out, parent=None, edits=None, processing=None
     for name in ("animation-previews.json", "part-previews.json"):
         if (out / name).is_file():
             manifest[name.removesuffix(".json").replace("-", "_")] = read_json(out / name)
+    from .usage import inherit
+
+    inherit(root, out, manifest, parent, processing)
     write_json(out / "manifest.json", manifest)
     return manifest
 

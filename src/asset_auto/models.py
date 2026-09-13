@@ -239,3 +239,73 @@ class MergeAnimationsRequest(StrictModel):
     on_conflict: Literal["error", "replace"] = "error"
     description: str = ""
     preview_clips: list[ClipName] | None = Field(None, min_length=1, max_length=8)
+
+
+class UsageFeature(StrictModel):
+    name: str = Field(min_length=1)
+    representation: str = Field(min_length=1)
+    intended_behavior: str = Field(min_length=1)
+    acceptance: list[str] = Field(default_factory=list)
+    limitations: list[str] = Field(default_factory=list)
+
+
+class MotionEvent(StrictModel):
+    name: str = Field(min_length=1)
+    time_seconds: float = Field(ge=0)
+
+
+class MotionRules(StrictModel):
+    position_tolerance_m: float = Field(0.001, gt=0)
+    rotation_tolerance_degrees: float = Field(1, gt=0, le=180)
+    scale_tolerance: float = Field(0.001, gt=0)
+    morph_tolerance: float = Field(0.001, gt=0)
+    max_linear_velocity_jump_mps: float | None = Field(None, ge=0)
+    max_angular_velocity_jump_dps: float | None = Field(None, ge=0)
+    max_still_seconds: float | None = Field(None, gt=0)
+    still_position_speed_mps: float = Field(0.001, ge=0)
+    still_rotation_speed_dps: float = Field(0.1, ge=0)
+    still_value_speed: float = Field(0.001, ge=0)
+    max_root_drift_m: float | None = Field(None, ge=0)
+
+
+class ClipUsage(StrictModel):
+    purpose: str = ""
+    playback: Literal["unspecified", "loop", "once", "hold"] = "unspecified"
+    motion: Literal["unspecified", "in_place", "root_motion", "none"] = "unspecified"
+    root_target: str | None = None
+    target_speed_mps: float | None = Field(None, ge=0)
+    events: list[MotionEvent] = Field(default_factory=list, max_length=32)
+    acceptance: list[str] = Field(default_factory=list)
+    rules: MotionRules = Field(default_factory=MotionRules)
+
+    @model_validator(mode="after")
+    def valid_motion(self):
+        if self.motion == "root_motion" and not self.root_target:
+            raise ValueError("Root motion assessment requires an observed root_target")
+        if self.rules.max_root_drift_m is not None and not self.root_target:
+            raise ValueError("Root drift checks require an observed root_target")
+        return self
+
+
+class AssetUsage(StrictModel):
+    purpose: str = ""
+    assumptions: list[str] = Field(default_factory=list)
+    features: list[UsageFeature] = Field(default_factory=list, max_length=64)
+    clips: dict[ClipName, ClipUsage] = Field(default_factory=dict)
+
+
+class AssessmentRequest(StrictModel):
+    asset_id: AssetId
+    revision: RevisionId
+    usage: AssetUsage | None = None
+    clips: list[ClipName] | None = Field(None, min_length=1, max_length=16)
+    sample_rate: int = Field(30, ge=2, le=120)
+    max_samples_per_clip: int = Field(1201, ge=5, le=10001)
+    render: bool = True
+    max_render_frames: int = Field(24, ge=0, le=128)
+
+    @model_validator(mode="after")
+    def unique_clips(self):
+        if self.clips and len(self.clips) != len(set(self.clips)):
+            raise ValueError("Assessment clip names must be unique")
+        return self

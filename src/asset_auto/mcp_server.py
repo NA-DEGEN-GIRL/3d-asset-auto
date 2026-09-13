@@ -124,6 +124,24 @@ def build_server(root):
         return result
 
     @server.tool()
+    def assess_asset(request: dict) -> dict:
+        """Assess declared usage on final GLB; bounded motion samples/critical frames, no automatic visual approval."""
+        return jobs.submit(root, "assess", request)
+
+    @server.tool()
+    def asset_usage(asset_id: str, revision: str) -> dict:
+        """Read a GLB-bound usage contract and latest assessment. Absent contracts are not inferred."""
+        from .pipeline import completed_source
+        from .usage import load_usage
+
+        source, _, digest = completed_source(root, asset_id, revision)
+        report = source.parent / "assessment.json"
+        assessment = read_json(report) if report.exists() else None
+        if assessment is not None and assessment.get("source_sha256") != digest:
+            raise ValueError("Assessment belongs to different GLB bytes")
+        return {"usage": load_usage(source.parent, digest), "assessment": assessment}
+
+    @server.tool()
     def list_assets() -> list[dict]:
         """List completed revisions with IDs, triangle counts and numeric gate status."""
         return [

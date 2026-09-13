@@ -4,7 +4,7 @@ import sys
 from pathlib import Path
 
 from . import jobs
-from .models import AssetSpec, EditRequest
+from .models import AssessmentRequest, AssetSpec, EditRequest
 from .pipeline import (
     edit_asset,
     generate,
@@ -40,7 +40,7 @@ def main():
         command.add_argument("asset_id")
         command.add_argument("revision")
         command.add_argument("--async", dest="background", action="store_true")
-    for operation in ("generate", "edit", "process", "tripo-process", *jobs.AUTHORING_MODELS):
+    for operation in ("generate", "edit", "process", "tripo-process", "assess", *jobs.AUTHORING_MODELS):
         command = commands.add_parser(operation)
         command.add_argument("spec", type=Path)
         command.add_argument("--async", dest="background", action="store_true")
@@ -64,6 +64,11 @@ def main():
             result = capabilities(root)
         elif args.command == "list":
             result = Store(root).list()
+        elif args.command == "assess":
+            from .assessment import assess
+
+            request = AssessmentRequest.model_validate(read_json(args.spec))
+            result = jobs.submit(root, "assess", request.model_dump()) if args.background else assess(root, request)
         elif args.command == "tripo-balance":
             from .tripo import TripoClient
 

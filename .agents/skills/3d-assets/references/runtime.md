@@ -23,6 +23,7 @@ resume-merge-animations <asset_id> <revision> [--async]
 job <job_id>
 list
 inspect <asset_id> <revision>
+assess <request.json> [--async]
 review <asset_id> <revision> --result pass|fail --notes "Specific observations"
 godot <asset_id> <revision>
 serve --port 8765
@@ -42,6 +43,8 @@ The `tripo-process` family and its MCP tools retain explicit Tripo selection; th
 `godot` and `serve` are optional. Use the target project's relevant importer when integration warrants it. Start/open the viewer only for a requested interactive preview or browser check. `serve` binds only to 127.0.0.1; the viewer is http://127.0.0.1:8765/. On Windows use `start-viewer.cmd` for a retained background server. On Linux use `sh start-viewer.sh` and retain its terminal. Opening a browser does not start the server. Selecting a revision in the viewer records its Three.js load/draw result; that is not visual approval.
 
 Use actual sampled frame PNGs for agent animation review; a static browser draw does not validate motion.
+
+`assess` optionally records a purpose/representation/playback contract and evaluates selected final GLB clips with critical-frame selection. Read [QUALITY.md](../../../../docs/QUALITY.md) for budgets, actual measurement scope and evidence coverage. Static contracts do not start Blender; motion assessment needs Blender only. MCP equivalents are `assess_asset` and `asset_usage`. `usage.json`, `assessment.json` and `assessments/q.../` are sidecars; the GLB/source/manifest are unchanged. Usage metadata follows clip renames/selection on completed-revision merges without inheriting quality approval.
 
 For first installation, personal-skill links or MCP client setup, read the repository's [INSTALL.md](../../../../INSTALL.md). This wrapper requires the shared checkout and its `.venv`; copying only the skill folder is insufficient.
 

@@ -127,6 +127,8 @@ class MergeWorker:
         assert all(Path(source["path"]).parent == target.parent for source in sources)
         target.write_bytes(glb_bytes("merged clips"))
         return {"backend": "mock-clip-merger", "output_sha256": digest(target.read_bytes()),
+                "sources": [{"clips": [{"source": name, "name": source["rename"].get(name, name)}
+                                        for name in source["clips"] or ["Walk"]]} for source in sources],
                 "clips": [{"name": "walk"}], "preservation": {"model_copies_added": 0}}
 
 

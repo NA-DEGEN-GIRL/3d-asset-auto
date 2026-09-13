@@ -9,7 +9,14 @@ from pathlib import Path
 
 import psutil
 
-from .models import AssetSpec, BlenderEditRequest, EditRequest, MergeAnimationsRequest, PostprocessRequest
+from .models import (
+    AssessmentRequest,
+    AssetSpec,
+    BlenderEditRequest,
+    EditRequest,
+    MergeAnimationsRequest,
+    PostprocessRequest,
+)
 from .pipeline import edit_asset, generate, postprocess, resume_postprocess, resume_tripo, validate_godot
 from .store import Store, child, now, read_json, write_json
 
@@ -39,6 +46,9 @@ def submit(root, operation, payload):
         payload = AssetSpec.model_validate(payload).model_dump()
     elif operation == "edit":
         payload = EditRequest.model_validate(payload).model_dump()
+    elif operation == "assess":
+        payload = AssessmentRequest.model_validate(payload).model_dump()
+        Store(root).revision(payload["asset_id"], payload["revision"])
     elif operation in AUTHORING_MODELS:
         payload = AUTHORING_MODELS[operation].model_validate(payload).model_dump()
     elif operation in AUTHORING_RESUMES:
@@ -128,6 +138,10 @@ def run(root: Path, job_id):
             result = generate(root, AssetSpec.model_validate(record["payload"]), on_revision=save_recovery)
         elif record["operation"] == "edit":
             result = edit_asset(root, EditRequest.model_validate(record["payload"]))
+        elif record["operation"] == "assess":
+            from .assessment import assess
+
+            result = assess(root, AssessmentRequest.model_validate(record["payload"]))
         elif record["operation"] in AUTHORING_MODELS:
             from .authoring import edit_in_blender, merge_animations
 

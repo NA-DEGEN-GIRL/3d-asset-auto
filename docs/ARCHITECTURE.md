@@ -41,6 +41,8 @@ flowchart TD
 | [authoring.py](../src/asset_auto/authoring.py) | 편집·병합 요청과 입력 사본의 해시, 완료 부모 검증과 복구 |
 | [blender_authoring_worker.py](../src/asset_auto/blender_authoring_worker.py), [blender_authoring_tools.py](../src/asset_auto/blender_authoring_tools.py) | 신뢰한 로컬 스크립트 실행·authoring context·실행 완료 체크포인트 |
 | [animation_merge.py](../src/asset_auto/animation_merge.py) | 기준 GLB를 보존하며 호환되는 이름 있는 클립 전송 |
+| [assessment.py](../src/asset_auto/assessment.py), [motion_quality.py](../src/asset_auto/motion_quality.py), [blender_assessment_worker.py](../src/asset_auto/blender_assessment_worker.py) | 선택적 사용 조건 검사, 최종 GLB 샘플 분석·핵심 시점 렌더 |
+| [usage.py](../src/asset_auto/usage.py) | GLB 해시로 묶인 명세와 편집·병합 시 이름에 맞춘 의도 상속 |
 | [tripo_process.py](../src/asset_auto/tripo_process.py) | 리깅 검사·유료 후처리·단계별 원격 기록과 복구 |
 | [local_process.py](../src/asset_auto/local_process.py), [local_rig.py](../src/asset_auto/local_rig.py) | 기본 로컬 후처리·원본 해시·SkinTokens 추론 |
 | [local_parts.py](../src/asset_auto/local_parts.py) | 준비된 뷰·점 프롬프트·GeoSAM2 면 마스크와 원본 바인딩 |
@@ -73,6 +75,8 @@ Tripo의 비용 계획은 로컬 읽기 전용이며 선택 필드 `max_credits`
 로컬 처리 출처는 `local_processing`에 기록하며 원래 생성 provider는 그대로 둡니다. 명시적 Tripo는 별도의 `remote_processing`을 사용하고, 입력 방향 변환·리그 ID·유료 단계 체크포인트를 보존합니다. 상세 필드와 provider별 제한은 [캐릭터 후처리](CHARACTERS.md)와 [Tripo 옵션](TRIPO.md#리깅애니메이션부품-분리)에 있습니다.
 
 ## 작업 상태와 품질 상태
+
+선택적 `assess`는 최종 GLB의 사용 목적·표현 방식·동작 정책을 `usage.json`으로 기록하고, `assessment.json` 및 실행별 `assessments/q.../`에 조건부 숫자 검사·핵심 시점·누락된 검토 범위를 남깁니다. 정적 명세는 Blender를 실행하지 않습니다. 편집·병합 시 사용 조건은 선택된 클립과 이름을 따라가지만 검사·승인은 상속하지 않습니다. 한 항목의 수치 통과를 기능·시각·프로젝트 통과로 승격하지 않습니다. [품질 가이드](QUALITY.md)를 참고합니다.
 
 | 상태/기록 | 의미 |
 | --- | --- |

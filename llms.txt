@@ -13,6 +13,7 @@
 - [Tripo option](docs/TRIPO.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, automatic standard generation with optional credit limit, and known-task recovery.
 - [Character and part processing](docs/CHARACTERS.md): Default local rigging, motion, agent-prompted semantic parts, character imports and provider-aware recovery.
 - [Blender editing and clips](docs/BLENDER.md): Trusted local scripts for object/custom motion, rig/weight/material changes, compatible clip merging, animation preservation and checkpoint recovery.
+- [Usage and quality](docs/QUALITY.md): Purpose-based functional criteria, representation limits, playback contracts, optional final-GLB motion assessment, critical frames and scoped evidence.
 
 ## Understand and troubleshoot
 

@@ -1,5 +1,7 @@
 # Request specifications
 
+For optional usage/quality contracts, `AssessmentRequest` accepts exact `asset_id`/`revision`, `usage` (purpose, assumptions, generic feature representations and named clip policies/rules/events), selected `clips`, sample/render budgets and `render`. See [QUALITY.md](../../../../docs/QUALITY.md) for tested examples and units. These are assessment fields, not generation or paid processing flags. Omitted usage loads existing GLB-bound intent; omitted clip selection assesses declared clips only. No schema implies automatic contact, semantic or visual approval.
+
 New generation defaults to `provider: "trellis"`. A reference image is required, even when provider is omitted. Image-to-3D uses TRELLIS or explicitly user-selected `tripo`, not a Blender primitive reconstruction of the image. An `image` field with `procedural` or `import` is rejected. Procedural generation is an explicitly user-authorized alternative; supplied existing meshes can be imported without new inference.
 
 Generation example (image path must exist; prompt is provenance, not a text-to-image command):

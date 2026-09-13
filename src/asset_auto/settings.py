@@ -129,4 +129,9 @@ def capabilities(root):
         "tripo_option": {"available": result["providers"]["tripo"], "explicit_selection_required": True},
     }
     result["models"] = {"directory": str(model_dir(root)), "missing": missing}
+    result["assessment"] = {"available": True, "motion_available": blender_available, "command": "assess",
+                            "requires": "declared usage and exact completed revision",
+                            "checks": ["local transform loop closure", "boundary velocity differences",
+                                       "declared low-activity limit", "declared root drift"],
+                            "critical_frame_selection": True, "automatic_visual_approval": False}
     return result
