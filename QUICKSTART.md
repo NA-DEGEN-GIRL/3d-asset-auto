@@ -60,7 +60,7 @@ Blender 렌더가 있다는 사실만으로 TRELLIS를 실행했다고 판단하
 uv run --no-sync python -m asset_auto.cli inspect my-chest-ai REVISION
 ```
 
-`REVISION`을 반환된 실제 값으로 바꿉니다. 수치 검사 결과를 읽고, LLM의 이미지 열기 도구로 `front.png`, `back.png`, `left.png`, `right.png`, `perspective.png`를 확인합니다. 구멍·실루엣·재질·참조 반영을 살핍니다. 좁은 범위의 수정에서는 변경 부위를 확인할 수 있는 뷰부터 검사하고 필요하면 확대합니다.
+`REVISION`을 반환된 실제 값으로 바꿉니다. 수치 검사 결과를 읽고, LLM의 이미지 열기 도구로 `front.png`, `back.png`, `left.png`, `right.png`, `perspective.png`를 확인합니다. [품질 가이드](docs/QUALITY.md)에 따라 제작 전에 정한 기준으로 전체 모습과 필요한 확대·동작을 검토하고, 결함은 새 출력에서 같은 조건으로 재검사합니다. 좁은 수정은 변경 부위와 영향받는 범위부터 확인합니다.
 
 실제 관찰 내용을 기록합니다. `OBSERVATIONS`는 확인한 뷰와 발견 내용으로 바꾸고, 결함이 남으면 `--result fail`을 씁니다:
 
