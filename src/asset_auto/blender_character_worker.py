@@ -3,6 +3,7 @@
 import hashlib
 import json
 import math
+import shutil
 import struct
 import sys
 from pathlib import Path
@@ -45,13 +46,13 @@ def load_character(source):
     capture_preview_defaults(from_gltf=Path(source).suffix.lower() != ".blend")
 
 
-def capture_preview_defaults(*, from_gltf=False):
+def capture_preview_defaults(*, from_gltf=False, use_imported_rest=True):
     """Keep local rest transforms/morph defaults before any clip changes them."""
     global _preview_defaults
     _preview_defaults = {}
     for obj in bpy.context.scene.objects:
         matrix = obj.matrix_basis.copy()
-        imported_rest = obj.is_property_set("gltf2_animation_rest")
+        imported_rest = use_imported_rest and obj.is_property_set("gltf2_animation_rest")
         if imported_rest:
             # The importer stores the node's local transform before applying its first clip.
             matrix = Matrix(obj.gltf2_animation_rest)
@@ -280,7 +281,7 @@ def frame_at(seconds):
     return frame
 
 
-def animation_previews(out, summary, preferred=None, *, grounded=False):
+def animation_previews(out, summary, preferred=None, *, grounded=False, selected_names=None):
     select_preview_clip(None)
     frame_at(0)
     rest_low, rest_high = evaluated_bounds()
@@ -291,7 +292,15 @@ def animation_previews(out, summary, preferred=None, *, grounded=False):
                "floor_reference_m": floor, "rest_min_z_m": rest_low.z,
                "tolerance_m": tolerance, "warnings": []}
     clips = list(summary["clips"])
-    if preferred and any(clip["name"] == preferred for clip in clips):
+    if selected_names:
+        missing = set(selected_names) - {clip["name"] for clip in clips}
+        if missing:
+            raise ValueError(f"Requested preview clips do not exist: {sorted(missing)}")
+        if len(selected_names) > MAX_PREVIEW_CLIPS:
+            raise ValueError(f"At most {MAX_PREVIEW_CLIPS} preview clips can be selected")
+        chosen = [clip for name in selected_names for clip in clips if clip["name"] == name]
+        clips = chosen + [clip for clip in clips if clip not in chosen]
+    elif preferred and any(clip["name"] == preferred for clip in clips):
         matching = [clip for clip in clips if clip["name"] == preferred]
         clips = matching + [clip for clip in clips if clip not in matching]
     selected = clips[:MAX_PREVIEW_CLIPS]
@@ -375,13 +384,23 @@ def export_character(path):
     )
 
 
-def main():
-    request = json.loads(Path(sys.argv[sys.argv.index("--") + 1]).read_text(encoding="utf-8"))
+def finish(request, *, validate_export=None):
+    """Inspect/save/export an already loaded scene, then preview its actual GLB.
+
+    Callers that author a scene must capture its intended rest defaults first.
+    The optional validator runs after export, before inspection or previews.
+    """
     out = Path(request["output"])
     out.mkdir(parents=True, exist_ok=True)
-    load_character(request["source"])
+    preserve_glb = request.get("preserve_input_glb", False)
+    if preserve_glb and (Path(request["source"]).suffix.lower() != ".glb"
+                         or request.get("target_height") is not None
+                         or request.get("input_yaw_degrees", 0)
+                         or (request.get("animation_name") and request.get("rename_animation", True))):
+        raise ValueError("preserve_input_glb requires a GLB source without normalization, yaw or clip renaming")
     validate_armature_modifiers()
-    name_single_clip(request.get("animation_name"))
+    if request.get("rename_animation", True):
+        name_single_clip(request.get("animation_name"))
     # glTF import activates its first clip. Export from the stored node/morph
     # rest defaults so that clip's first root pose cannot replace GLB defaults.
     # The actions and their NLA slots stay available for the ACTIONS exporter.
@@ -413,7 +432,10 @@ def main():
     bpy.ops.file.pack_all()
     # Save before temporary previews, preserving all original actions and their slots.
     bpy.ops.wm.save_as_mainfile(filepath=str(out / "source.blend"))
-    export_character(out / "asset.glb")
+    if preserve_glb:
+        shutil.copyfile(request["source"], out / "asset.glb")
+    else:
+        export_character(out / "asset.glb")
     document = glb_document(out / "asset.glb")
     report["rigging"]["exported_skins"] = len(document.get("skins", []))
     report["animations"] = animation_summary(document)
@@ -421,6 +443,8 @@ def main():
         raise ValueError("Export lost the character skin")
     if request.get("require_animation", False) and not report["animations"]["count"]:
         raise ValueError("Character input/export has no animation clips")
+    if validate_export is not None:
+        validate_export(document)
     report["passed"] = not report["errors"]
     (out / "inspection.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
     # Inspect the actual delivery GLB. Preview activation cannot alter saved source/actions.
@@ -430,7 +454,8 @@ def main():
     bpy.context.view_layer.update()
     render_views(out)
     previews = animation_previews(out, report["animations"], request.get("animation_name"),
-                                  grounded=request.get("target_height") is not None)
+                                  grounded=request.get("target_height") is not None,
+                                  selected_names=request.get("preview_clips"))
     report["animation_quality"] = previews["quality_checks"]
     report["warnings"].extend(previews["quality_checks"]["warnings"])
     if dense := request.get("dense_motion_check"):
@@ -453,6 +478,13 @@ def main():
                                       "tolerance; inspect the motion before approving it.")
         (out / "local-motion-delivery.json").write_text(json.dumps(quality, indent=2), encoding="utf-8")
     (out / "inspection.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+    return report
+
+
+def main():
+    request = json.loads(Path(sys.argv[sys.argv.index("--") + 1]).read_text(encoding="utf-8"))
+    load_character(request["source"])
+    finish(request)
 
 
 if __name__ == "__main__":

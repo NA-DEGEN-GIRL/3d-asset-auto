@@ -9,9 +9,12 @@ from pathlib import Path
 
 import psutil
 
-from .models import AssetSpec, EditRequest, PostprocessRequest
+from .models import AssetSpec, BlenderEditRequest, EditRequest, MergeAnimationsRequest, PostprocessRequest
 from .pipeline import edit_asset, generate, postprocess, resume_postprocess, resume_tripo, validate_godot
 from .store import Store, child, now, read_json, write_json
+
+AUTHORING_MODELS = {"blender-edit": BlenderEditRequest, "merge-animations": MergeAnimationsRequest}
+AUTHORING_RESUMES = {"resume-blender-edit": "blender-edit", "resume-merge-animations": "merge-animations"}
 
 
 def job_dir(root, job_id):
@@ -36,6 +39,12 @@ def submit(root, operation, payload):
         payload = AssetSpec.model_validate(payload).model_dump()
     elif operation == "edit":
         payload = EditRequest.model_validate(payload).model_dump()
+    elif operation in AUTHORING_MODELS:
+        payload = AUTHORING_MODELS[operation].model_validate(payload).model_dump()
+    elif operation in AUTHORING_RESUMES:
+        from .authoring import validate_resume
+
+        validate_resume(root, **payload, operation=AUTHORING_RESUMES[operation])
     elif operation in ("process", "tripo-process"):
         payload = processing_request(payload, tripo_only=operation == "tripo-process").model_dump()
     elif operation in ("resume-process", "resume-tripo-process"):
@@ -119,6 +128,19 @@ def run(root: Path, job_id):
             result = generate(root, AssetSpec.model_validate(record["payload"]), on_revision=save_recovery)
         elif record["operation"] == "edit":
             result = edit_asset(root, EditRequest.model_validate(record["payload"]))
+        elif record["operation"] in AUTHORING_MODELS:
+            from .authoring import edit_in_blender, merge_animations
+
+            operation = record["operation"]
+            request = AUTHORING_MODELS[operation].model_validate(record["payload"])
+            author = edit_in_blender if operation == "blender-edit" else merge_animations
+            result = author(root, request, on_revision=save_recovery)
+        elif record["operation"] in AUTHORING_RESUMES:
+            from .authoring import resume_authoring, validate_resume
+
+            operation = AUTHORING_RESUMES[record["operation"]]
+            validate_resume(root, **record["payload"], operation=operation)
+            result = resume_authoring(root, **record["payload"], operation=operation)
         elif record["operation"] in ("process", "tripo-process"):
             request = processing_request(record["payload"], tripo_only=record["operation"] == "tripo-process")
             result = postprocess(root, request, on_revision=save_recovery)

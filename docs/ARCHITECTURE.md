@@ -2,7 +2,7 @@
 
 이 시스템은 자연어 판단과 반복 실행을 분리합니다. LLM은 참조 이미지를 준비하고 결과를 눈으로 검토하며, 런타임은 JSON에 따라 기본 TRELLIS.2 생성 또는 명시적으로 선택한 Tripo API 생성과 Blender 후처리를 실행합니다. 기본 결과는 검토한 GLB·편집 원본입니다. 대상 프로젝트의 엔진 검사와 사용자용 웹 뷰어는 선택 기능입니다.
 
-리깅·동작·부품 분리의 `process` 기본 provider는 로컬입니다. SkinTokens·GeoSAM2는 필요한 작업에서만 별도 환경으로 실행하고, 로컬 기본 동작은 기존 Blender에서 실제 뼈를 움직입니다. 이미지 생성 provider와 후처리 provider는 별개로 기록합니다.
+생성 provider는 편집 방식을 결정하지 않습니다. LLM이 리그 없는 object 동작·기존 리그·SkinTokens 초안·사용자 스크립트·클립 병합을 선택하며 기본 작업은 로컬입니다. `process`는 학습된 리깅/분리와 기본 동작을 제공하고, `blender-edit`·`merge-animations`는 기존 Blender를 사용합니다. 원래 생성 출처와 이후 처리 출처는 별개로 기록합니다.
 
 ```mermaid
 flowchart TD
@@ -17,6 +17,8 @@ flowchart TD
     F --> G[버전 저장: blend / GLB / 5방향 렌더 / 검사]
     G -. 필요한 로컬 후처리 .-> P[SkinTokens 리깅 / Blender 동작 / GeoSAM2 분리]
     P --> F
+    G -. 로컬 편집 / 동작 조립 .-> U[Blender 스크립트 / 호환 클립 병합]
+    U --> F
     G -. 명시적 Tripo 후처리 .-> R[유료 리깅 / 프리셋 / 분리]
     R --> F
     G --> J[LLM의 로컬 PNG 시각 검토]
@@ -36,6 +38,9 @@ flowchart TD
 | [pipeline.py](../src/asset_auto/pipeline.py) | 도구 호출, GPU lock, 입력 복사, 완료 기록 |
 | [blender_worker.py](../src/asset_auto/blender_worker.py) | headless 모델링·수정·정규화·단순화·렌더·출력 |
 | [blender_character_worker.py](../src/asset_auto/blender_character_worker.py) | 뼈·가중치·동작 보존, 공통 부모 변환, 애니메이션 샘플 렌더 |
+| [authoring.py](../src/asset_auto/authoring.py) | 편집·병합 요청과 입력 사본의 해시, 완료 부모 검증과 복구 |
+| [blender_authoring_worker.py](../src/asset_auto/blender_authoring_worker.py), [blender_authoring_tools.py](../src/asset_auto/blender_authoring_tools.py) | 신뢰한 로컬 스크립트 실행·authoring context·실행 완료 체크포인트 |
+| [animation_merge.py](../src/asset_auto/animation_merge.py) | 기준 GLB를 보존하며 호환되는 이름 있는 클립 전송 |
 | [tripo_process.py](../src/asset_auto/tripo_process.py) | 리깅 검사·유료 후처리·단계별 원격 기록과 복구 |
 | [local_process.py](../src/asset_auto/local_process.py), [local_rig.py](../src/asset_auto/local_rig.py) | 기본 로컬 후처리·원본 해시·SkinTokens 추론 |
 | [local_parts.py](../src/asset_auto/local_parts.py) | 준비된 뷰·점 프롬프트·GeoSAM2 면 마스크와 원본 바인딩 |
@@ -51,13 +56,17 @@ flowchart TD
 
 Tripo의 비용 계획은 로컬 읽기 전용이며 선택 필드 `max_credits`는 기본값 100으로 예상치만 제한합니다. 표준 생성 예상 비용은 30이며, 명시적으로 요청한 표준 생성은 추가 크레딧 확인 없이 진행합니다. 유료 제출·상태 조회·결과 다운로드를 구분하고, 원격 task ID를 revision에 저장해 알려진 작업을 다시 과금하지 않고 이어받습니다. 제출 성공 여부가 불확실하면 자동 재전송하지 않습니다. 키·입력·비용·복구 계약은 [Tripo 가이드](TRIPO.md)에 있습니다.
 
-`procedural`은 사용자가 명시적으로 요청한 경우 이름 있는 기본 도형을 조립하는 대안입니다. `import`는 제공된 기존 GLB/Blend를 가져옵니다. 기본 정적 경로는 정규화를 위해 계층을 평탄화하며 armature를 거절합니다. 명시적 `asset_kind: "character"` 가져오기는 별도 worker로 뼈·가중치·애니메이션을 보존합니다. 정적 모델 수정은 추론이나 유료 API를 다시 실행하지 않으며, 리그가 있는 부모는 정적 `edit`로 변경할 수 없습니다.
+`procedural`은 사용자가 명시적으로 요청한 경우 이름 있는 기본 도형을 조립하는 대안입니다. `import`는 제공된 기존 GLB/Blend를 가져옵니다. 기본 정적 경로는 정규화를 위해 계층을 평탄화하며 리그·동작을 거절합니다. `asset_kind: "character"`는 리그를 요구하고, `asset_kind: "animated"`는 리그 없이도 실제 object/morph 클립을 보존합니다. 둘 다 별도 worker로 계층·동작을 유지합니다. 정적 모델 수정은 추론이나 유료 API를 다시 실행하지 않으며, 리그·동작이 있는 부모는 `blender-edit`로 변경합니다.
 
 정적 생성·가져오기에서는 바닥 원점과 선택한 높이를 최종 단순화 이후 맞춥니다. 수정에서는 부모 revision의 `source.blend`를 읽어 새 revision을 만듭니다. 부분 변경의 배치를 유지하도록 전체 높이·원점 정규화를 다시 적용하지 않습니다. 캐릭터는 자동 감면·계층 평탄화를 하지 않습니다. 필요한 높이·바닥 정렬은 전체 메시와 armature의 공통 Empty 부모 변환으로 처리하며, 개별 메시·뼈의 상대 바인드와 동작 변환을 유지합니다.
 
 색·거칠기 수정은 선택된 부품의 재질을 분리해 다른 부품으로 변경이 번지는 것을 막습니다. `part: "*"`의 scale도 각 오브젝트 원점 기준이므로 조립체 전체 스케일과는 다릅니다. 감면은 텍스처 재베이크가 아니며, 용접·smooth shading만으로 구멍이나 형상 결함이 해결된다고 가정하지 않습니다.
 
-`process`는 완료된 부모의 현재 GLB 해시를 확인하고 새 revision에 `rig`·`animate`·`segment` 결과를 저장합니다. 기본 로컬 리깅은 SkinTokens 추론과 원본 메시로의 가중치 전달입니다. 로컬 애니메이션은 기존 리그의 관찰된 뼈를 IK로 움직여 한 클립을 만듭니다. 같은 캐릭터 worker가 최종 `asset.glb`를 재가져와 조밀한 시간 샘플로 바닥 침범을 검사하고, 중간·최종 검사 결과를 파일 SHA256과 함께 구분해 기록합니다. 원격 리그 ID는 필요하지 않습니다.
+`process`는 완료된 부모의 현재 GLB 해시를 확인하고 새 revision에 `rig`·`animate`·`segment` 결과를 저장합니다. 기본 로컬 리깅은 SkinTokens 추론과 원본 메시로의 가중치 전달입니다. 로컬 애니메이션은 관찰된 뼈를 IK로 움직여 요청한 프리셋을 만들고 정확한 클립 병합으로 부모의 다른 동작을 유지합니다. 같은 캐릭터 worker가 최종 `asset.glb`를 재가져와 조밀한 시간 샘플로 바닥 침범을 검사하고, 중간·최종 검사 결과를 파일 SHA256과 함께 구분해 기록합니다. 원격 리그 ID는 필요하지 않습니다.
+
+`blender-edit`는 완료 부모의 GLB/Blend·스크립트 사본을 `authoring-request.json`에 해시로 묶습니다. 주입한 `context`와 전체 `bpy` API를 사용하는 로컬 코드이며 샌드박스가 아닙니다. 기본값으로 기존 action을 보존하고 `authored.blend`와 실행 체크포인트를 저장한 뒤 렌더·출력합니다. 렌더 재개가 완료된 스크립트를 다시 실행하지 않도록 분리했습니다. 의도적인 object/morph 기본값 수정은 `capture_rest()`로 기록합니다.
+
+`merge-animations`는 완료된 기준 모델과 revision/외부 GLB 사본을 검증하고 호환되는 클립만 전달합니다. 기준 기하·스킨·정지 상태를 유지하며 기본 중복 정책은 거절입니다. 다른 리그는 사용자 스크립트의 명시적인 constraint·bake 리타게팅이 필요합니다. authoring 결과는 원래 생성 출처와 구분한 `local_processing`으로 기록합니다. 사용법은 [Blender 편집](BLENDER.md)에 있습니다.
 
 로컬 분리는 먼저 `prepare-segment`로 12개 1024px 뷰와 기하 context를 만들고 원본·context 파일 해시를 묶습니다. LLM이 해당 이미지를 보고 부품 이름과 포함·제외할 픽셀을 정하면 GeoSAM2가 학습된 마스크를 메시 면으로 전파합니다. 최종 사용자에게 annotation을 넘기지 않으며, 분류하지 못한 면도 `unclassified`로 보존합니다. 이 경로는 원본 삼각형·UV·재질·노멀·위치를 유지하고 예산 초과 시에도 감면하지 않습니다. 개별 부품 렌더를 검사하기 전까지 이름은 제안된 의미입니다. 단순 연결 성분 분리를 의미 분리의 근거로 대신하지 않습니다.
 
@@ -125,4 +134,4 @@ web/dist/                 로컬 빌드 결과
 
 명시적 Tripo 전용 설치는 Python·Blender·키만 필요하며 로컬 CUDA와 TRELLIS 가중치를 다운로드할 필요가 없습니다. 원격 이미지 업로드와 유료 생성이 추가되지만 로컬 저장·렌더 검토·수정 규칙은 같습니다.
 
-일반 생물 동작·사용자 모션·다중 클립 병합·임의의 리그/가중치 편집·애니메이션용 리토폴로지·텍스처 재베이크·TRELLIS 다중 이미지 입력은 아직 구현되어 있지 않습니다. 실제 추론·작업 성공과 변형·부품 품질은 provider에 관계없이 별도로 검사합니다.
+사용자 모션·리그/가중치 편집은 로컬 스크립트로 작성하고 호환 클립은 병합할 수 있습니다. 학습된 모션 생성, 자동 리타게팅 해법, 자동 리토폴로지·텍스처 재베이크·TRELLIS 다중 이미지 입력은 구현되어 있지 않습니다. 실제 추론·작업 성공과 변형·부품 품질은 provider에 관계없이 별도로 검사합니다.

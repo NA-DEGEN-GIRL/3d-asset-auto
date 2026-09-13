@@ -88,6 +88,26 @@ def build_server(root):
         return jobs.submit(root, "edit", request)
 
     @server.tool()
+    def edit_in_blender(request: dict) -> dict:
+        """Run an agent-authored local Blender Python script on an exact revision, including rig edits and custom animation."""
+        return jobs.submit(root, "blender-edit", request)
+
+    @server.tool()
+    def merge_asset_animations(request: dict) -> dict:
+        """Merge selected clips from compatible GLBs or exact revisions into a new local revision; no retargeting."""
+        return jobs.submit(root, "merge-animations", request)
+
+    @server.tool()
+    def resume_blender_edit(asset_id: str, revision: str) -> dict:
+        """Resume a recorded local Blender edit with its saved script, parameters and input revision."""
+        return jobs.submit(root, "resume-blender-edit", {"asset_id": asset_id, "revision": revision})
+
+    @server.tool()
+    def resume_animation_merge(asset_id: str, revision: str) -> dict:
+        """Resume a recorded animation merge using the same source clips and pending revision."""
+        return jobs.submit(root, "resume-merge-animations", {"asset_id": asset_id, "revision": revision})
+
+    @server.tool()
     def asset_job_status(job_id: str) -> dict:
         """Read a submitted job's actual state and result. Poll this instead of resubmitting."""
         result = jobs.status(root, job_id)

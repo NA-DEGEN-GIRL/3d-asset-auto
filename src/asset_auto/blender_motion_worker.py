@@ -1,8 +1,8 @@
 """Author one local biped clip on an existing skin, executed by Blender.
 
 This is deliberately an inspectable procedural baseline, not learned motion or
-motion capture. Existing clips remain in the parent revision; this child exports
-the requested clip. Skin geometry, materials, joints and weights are retained.
+motion capture. Author the requested preset separately, then merge it onto the
+original GLB, preserving every other clip and the original skin/geometry bytes.
 """
 
 import json
@@ -17,6 +17,7 @@ from mathutils import Matrix, Quaternion, Vector
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import blender_character_worker as character
+from animation_merge import merge
 
 ALIASES = {
     "root": ("Root", "ArmatureRoot"),
@@ -303,15 +304,26 @@ def main():
     # Saving/exporting in actual rest is essential: otherwise the last pose leaks
     # into GLB node defaults and shifts the rest height on the next import.
     bpy.ops.file.pack_all()
-    bpy.ops.wm.save_as_mainfile(filepath=str(out / "generated.blend"))
-    character.export_character(out / "generated.glb")
-    exported = character.animation_summary(character.glb_document(out / "generated.glb"))
+    preset = out / "preset"
+    preset.mkdir(exist_ok=True)
+    character.export_character(preset / "requested.glb")
+    exported = character.animation_summary(character.glb_document(preset / "requested.glb"))
     if exported["count"] != 1 or exported["clips"][0]["duration_seconds"] <= 0:
         raise ValueError("Local animation export must contain exactly one nonempty clip")
+    merged = merge(request["source"], [{"path": str(preset / "requested.glb"), "clips": [animation]}],
+                   out / "generated.glb", on_conflict="replace")
+    # Keep the editable source consistent with the merged delivery, rather than
+    # leaving a .blend that contains only the temporary requested preset.
+    character.load_character(str(out / "generated.glb"))
+    character.select_preview_clip(None)
+    bpy.context.view_layer.update()
+    bpy.ops.file.pack_all()
+    bpy.ops.wm.save_as_mainfile(filepath=str(out / "generated.blend"))
+    merged_clips = character.animation_summary(character.glb_document(out / "generated.glb"))
     quality = dense_check(out / "generated.glb", animation, frames / fps, frames, mapping)
     warnings = ["Procedural baseline motion, not motion capture; inspect deformation and foot sliding.",
                 "Grounding translates the whole rig; foot contact and joint limits are not a physics simulation.",
-                "Only the requested clip is exported; existing clips remain in the unchanged parent revision."]
+                "Dense motion checks cover the requested preset; retained clips keep their previous review scope."]
     if motion.clamped:
         warnings.append(f"IK reach was clamped {motion.clamped} times; inspect leg proportions and bone_map.")
     if quality["below_floor_samples"]:
@@ -320,6 +332,8 @@ def main():
         "provider": "local", "operation": "animate", "model": "procedural-biped-ik-v1",
         "method": "analytic_two_bone_IK_and_procedural_rotation",
         "generated_file": "generated.glb", "animation": animation,
+        "clip_policy": "preserve_existing_replace_requested",
+        "clips": merged_clips["clips"], "clip_merge": merged,
         "rig_forward_axis": request.get("rig_forward_axis", "+z"),
         "animate_in_place": request.get("animate_in_place", True), "bone_map": mapping,
         "duration_seconds": frames / fps, "authored_fps": fps, "authored_frames": frames + 1,

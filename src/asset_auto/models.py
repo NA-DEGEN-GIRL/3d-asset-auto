@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict, Field, JsonValue, model_validator
 
 AssetId = Annotated[str, Field(pattern=r"^[a-z][a-z0-9-]{0,63}$")]
 Vec3 = tuple[float, float, float]
@@ -69,7 +69,7 @@ class AssetSpec(StrictModel):
     views: dict[Literal["front", "left", "back", "right"], str] | None = None
     tripo: TripoOptions | None = None
     source: str | None = None
-    asset_kind: Literal["static", "character"] = "static"
+    asset_kind: Literal["static", "character", "animated"] = "static"
     triangle_budget: int = Field(12000, ge=12, le=1000000)
     target_height: float | None = Field(None, gt=0, le=10000)
     seed: int = Field(42, ge=0, le=2147483647)
@@ -99,8 +99,8 @@ class AssetSpec(StrictModel):
             raise ValueError("trellis requires a reference image")
         if self.provider == "import" and not self.source:
             raise ValueError("import requires a GLB or .blend source")
-        if self.asset_kind == "character" and self.provider != "import":
-            raise ValueError("character import requires provider: import; use processing to rig an existing asset")
+        if self.asset_kind != "static" and self.provider != "import":
+            raise ValueError("character/animated import requires provider: import; use processing for an existing asset")
         return self
 
 
@@ -195,3 +195,47 @@ class EditRequest(StrictModel):
     revision: str = Field(pattern=r"^[a-zA-Z0-9_-]+$")
     changes: list[Edit] = Field(min_length=1)
     description: str = ""
+
+
+RevisionId = Annotated[str, Field(pattern=r"^[a-zA-Z0-9_-]+$")]
+ClipName = Annotated[str, Field(min_length=1, pattern=r"^[^\x00]+$")]
+
+
+class BlenderEditRequest(StrictModel):
+    asset_id: AssetId
+    revision: RevisionId
+    script: str = Field(min_length=1)
+    description: str = ""
+    parameters: dict[str, JsonValue] = Field(default_factory=dict)
+    preserve_animations: bool = True
+    require_animation: bool = False
+    preview_clips: list[ClipName] | None = Field(None, min_length=1, max_length=8)
+    triangle_budget: int | None = Field(None, ge=12, le=1000000)
+
+
+class AnimationSource(StrictModel):
+    asset_id: AssetId | None = None
+    revision: RevisionId | None = None
+    path: str | None = Field(None, min_length=1)
+    clips: list[ClipName] | None = Field(None, min_length=1)
+    rename: dict[ClipName, ClipName] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def valid_source(self):
+        if self.path is not None:
+            if self.asset_id is not None or self.revision is not None:
+                raise ValueError("Choose a GLB path or an exact asset revision, not both")
+        elif self.asset_id is None or self.revision is None:
+            raise ValueError("Animation source requires a GLB path or asset_id and revision")
+        if self.clips is not None and len(self.clips) != len(set(self.clips)):
+            raise ValueError("Selected clip names must be unique")
+        return self
+
+
+class MergeAnimationsRequest(StrictModel):
+    asset_id: AssetId
+    revision: RevisionId
+    sources: list[AnimationSource] = Field(min_length=1, max_length=32)
+    on_conflict: Literal["error", "replace"] = "error"
+    description: str = ""
+    preview_clips: list[ClipName] | None = Field(None, min_length=1, max_length=8)

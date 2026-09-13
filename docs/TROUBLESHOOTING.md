@@ -90,11 +90,11 @@ Tripo 작업은 로컬 중단 뒤에도 원격 서버에서 계속될 수 있습
 
 `inspect ASSET_ID REVISION`으로 실제 오브젝트 이름을 읽습니다. AI 생성물이 `Mesh_0` 하나라면 의미별 손잡이·뚜껑이 분리된 상태가 아닙니다. 필요한 경우 기본 로컬 `prepare-segment` → 관찰한 부품 점 지정 → `process`로 분리하고 개별 PNG로 확인한 부품에만 `rename`을 적용합니다. 자동 라벨이나 떨어진 기하 자체를 의미 부품의 증거로 삼지 않습니다.
 
-armature가 있는 파일은 기본 정적 import에서 거절됩니다. 보존해서 가져오려면 `provider: "import", asset_kind: "character"`를 사용합니다. 리그가 있는 부모에 `edit`를 적용할 수는 없습니다. 정적 부모를 수정해 새 revision을 리깅합니다. [캐릭터 파일 보존과 수정 제약](CHARACTERS.md#캐릭터-파일-보존과-수정-제약)을 참고합니다.
+리그·동작이 있는 파일은 기본 정적 import에서 거절됩니다. 리그는 `provider: "import", asset_kind: "character"`, 리그 없는 object/morph 동작은 `asset_kind: "animated"`로 가져옵니다. 리그·동작이 있는 부모의 수정에는 정적 `edit` 대신 [blender-edit](BLENDER.md)를 사용합니다. [파일 보존 규칙](CHARACTERS.md#캐릭터-파일-보존과-수정-제약)을 참고합니다.
 
 ## 리깅·애니메이션·분리 실패
 
-부모 `revision`이 완료되었는지와 요청이 정확한 모델을 가리키는지 확인합니다. 기본 `process`는 로컬이며 리깅·분리는 정적 부모, 동작은 리그가 있는 부모를 사용합니다. 로컬 animate는 외부 import 리그도 사용할 수 있습니다. Tripo를 명시한 animate에만 그 provider의 `rig_task_id`가 필요합니다.
+부모 `revision`이 완료되었는지와 요청이 정확한 모델을 가리키는지 확인합니다. 기본 `process`는 로컬이며 리깅·분리는 정적 부모, 이족 프리셋은 리그가 있는 부모를 사용합니다. 로컬 animate는 외부 import 리그도 사용할 수 있습니다. 리그 없는 object 동작이나 사용자 모션은 `blender-edit`를 사용합니다. Tripo를 명시한 animate에만 그 provider의 `rig_task_id`가 필요합니다.
 
 로컬 모델이 없다면 [필요한 backend 설치](../INSTALL.md#local-postprocessing-on-demand)를 진행합니다. `doctor`의 준비 상태와 Linux/WSL의 CUDA·배포판을 확인하며, 설치 실패를 API 키 요청이나 Tripo 자동 전환으로 처리하지 않습니다. 설치 marker는 실제 모델 품질을 증명하지 않습니다.
 

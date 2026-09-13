@@ -35,12 +35,12 @@ def main():
     command.add_argument("asset_id")
     command.add_argument("revision")
     command.add_argument("--async", dest="background", action="store_true")
-    for operation in ("resume-process", "resume-tripo-process", "prepare-segment"):
+    for operation in ("resume-process", "resume-tripo-process", "prepare-segment", *jobs.AUTHORING_RESUMES):
         command = commands.add_parser(operation)
         command.add_argument("asset_id")
         command.add_argument("revision")
         command.add_argument("--async", dest="background", action="store_true")
-    for operation in ("generate", "edit", "process", "tripo-process"):
+    for operation in ("generate", "edit", "process", "tripo-process", *jobs.AUTHORING_MODELS):
         command = commands.add_parser(operation)
         command.add_argument("spec", type=Path)
         command.add_argument("--async", dest="background", action="store_true")
@@ -78,6 +78,25 @@ def main():
         elif args.command in ("process", "tripo-process"):
             request = jobs.processing_request(read_json(args.spec), tripo_only=args.command == "tripo-process")
             result = jobs.submit(root, args.command, request.model_dump()) if args.background else postprocess(root, request)
+        elif args.command in jobs.AUTHORING_MODELS:
+            request = jobs.AUTHORING_MODELS[args.command].model_validate(read_json(args.spec))
+            if args.background:
+                result = jobs.submit(root, args.command, request.model_dump())
+            else:
+                from .authoring import edit_in_blender, merge_animations
+
+                author = edit_in_blender if args.command == "blender-edit" else merge_animations
+                result = author(root, request)
+        elif args.command in jobs.AUTHORING_RESUMES:
+            payload = {"asset_id": args.asset_id, "revision": args.revision}
+            if args.background:
+                result = jobs.submit(root, args.command, payload)
+            else:
+                from .authoring import resume_authoring, validate_resume
+
+                operation = jobs.AUTHORING_RESUMES[args.command]
+                validate_resume(root, **payload, operation=operation)
+                result = resume_authoring(root, **payload, operation=operation)
         elif args.command in ("resume-process", "resume-tripo-process"):
             payload = {"asset_id": args.asset_id, "revision": args.revision}
             if args.command == "resume-tripo-process":

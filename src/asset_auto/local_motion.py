@@ -1,4 +1,4 @@
-"""Local procedural animation adapter; no model server or API credentials."""
+"""Add or replace one local preset while retaining the source GLB's other clips."""
 
 import hashlib
 from pathlib import Path

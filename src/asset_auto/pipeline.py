@@ -53,6 +53,7 @@ def input_path(root, value, suffixes):
 def blender(root, request, out):
     write_json(out / "worker-request.json", request)
     worker = Path(__file__).with_name(
+        "blender_authoring_worker.py" if request.get("authoring") else
         "blender_character_worker.py" if request.get("character") else "blender_worker.py"
     )
     run_logged(
@@ -116,7 +117,8 @@ def finalize(root, spec, revision, out, parent=None, edits=None, processing=None
         "toolchain": installed,
         "coordinate_system": "glTF Y-up, meters",
         "renders": [f"{v}.png" for v in ("front", "back", "left", "right", "perspective")],
-        "asset_type": "character" if report.get("rigging", {}).get("armatures") else "static",
+        "asset_type": "character" if report.get("rigging", {}).get("armatures") else
+                      "animated" if report.get("animations", {}).get("count") else "static",
     }
     if spec.provider == "tripo":
         checkpoint = out / "tripo.json"
@@ -169,8 +171,9 @@ def generate(root: Path, spec: AssetSpec, *, on_revision=None):
         source = input_path(root, spec.source, {".glb", ".blend"})
         shutil.copy2(source, out / ("input" + source.suffix.lower()))
         request.update(operation="import", source=str(out / ("input" + source.suffix.lower())))
-        if spec.asset_kind == "character":
-            request.update(character=True, require_rig=True)
+        if spec.asset_kind in ("character", "animated"):
+            request.update(character=True, require_rig=spec.asset_kind == "character",
+                           require_animation=spec.asset_kind == "animated")
     else:
         source = input_path(root, spec.image, {".png", ".jpg", ".jpeg", ".webp"})
         reference = out / ("reference" + source.suffix.lower())
@@ -257,7 +260,7 @@ def processing_source(root, request):
             remote.get("operation") not in ("rig", "animate") or not remote.get("rig_task_id")
         ):
             raise ValueError("Animation requires a completed Tripo rig revision; run rig first")
-    elif rigged:
+    elif rigged or manifest.get("inspection", {}).get("animations", {}).get("count"):
         raise ValueError("Rigging and segmentation require a static source; use the preserved pre-rig revision")
     return raw, manifest, digest
 
@@ -283,8 +286,8 @@ def prepare_segmentation(root, asset_id, revision):
     from .local_parts import prepare
 
     source, parent, digest = completed_source(root, asset_id, revision)
-    if parent.get("inspection", {}).get("rigging", {}).get("armatures"):
-        raise ValueError("Prepare segmentation from the preserved static revision, before rigging")
+    if parent.get("inspection", {}).get("rigging", {}).get("armatures") or parent.get("inspection", {}).get("animations", {}).get("count"):
+        raise ValueError("Prepare segmentation from the preserved static revision, before rigging or animation")
     executable(root, "blender")
     out = root / ".work" / "segment-contexts" / uuid.uuid4().hex
     out.mkdir(parents=True)
@@ -342,6 +345,8 @@ def finish_postprocess(root, request, revision, out, *, resume=False):
         if request.operation == "animate":
             worker_request["animation_name"] = request.animation
             if request.provider == "local":
+                worker_request["rename_animation"] = False
+                worker_request["preserve_input_glb"] = True
                 worker_request["dense_motion_check"] = {
                     "bone_map": processing["bone_map"], "authored_frames": processing["authored_frames"],
                 }
@@ -399,8 +404,8 @@ def edit_asset(root: Path, change: EditRequest):
     store = Store(root)
     source = store.revision(change.asset_id, change.revision)
     parent = read_json(source / "manifest.json")
-    if parent.get("inspection", {}).get("rigging", {}).get("armatures"):
-        raise ValueError("Static part edits cannot modify a rigged asset; edit its static parent and rig a new revision")
+    if parent.get("inspection", {}).get("rigging", {}).get("armatures") or parent.get("inspection", {}).get("animations", {}).get("count"):
+        raise ValueError("Static part edits cannot modify a rigged or animated asset; use blender-edit")
     spec = AssetSpec.model_validate(parent["spec"])
     revision, out = store.new_revision(change.asset_id)
     request = {

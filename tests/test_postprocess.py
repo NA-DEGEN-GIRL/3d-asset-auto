@@ -149,7 +149,7 @@ def test_static_processing_does_not_destroy_existing_rig(tmp_path, source_asset,
     write_json(directory / "manifest.json", manifest)
     with pytest.raises(ValueError, match="static source"):
         pipeline.processing_source(tmp_path, request_for(source_asset, operation))
-    with pytest.raises(ValueError, match="Static part edits cannot modify a rigged asset"):
+    with pytest.raises(ValueError, match="Static part edits cannot modify a rigged or animated asset"):
         pipeline.edit_asset(tmp_path, EditRequest(
             asset_id=manifest["asset_id"], revision=manifest["revision"], changes=[{"part": "body", "scale": [2, 2, 2]}]
         ))

@@ -101,13 +101,26 @@ def capabilities(root):
     result["rigging"] = {
         "available": blender_available and local_rig["available"], "provider": "local", "backend": "skintokens",
         "installation": local_rig, "local_character_import": blender_available,
+        "local_rig_editing": {"available": blender_available, "command": "blender-edit"},
         "tripo_option": {"available": result["providers"]["tripo"], "explicit_selection_required": True},
     }
     result["animation"] = {
         "available": blender_available, "provider": "local", "presets": ["idle", "walk", "run"],
-        "requires": "biped rig and observed bone map or recognized bone names", "clips_per_request": 1,
-        "method": "procedural inverse kinematics",
+        "preset_requires": "biped rig and observed bone map or recognized bone names",
+        "preset_clips_per_request": 1,
+        "preset_behavior": "add or replace one named clip while preserving other clips",
+        "preset_method": "procedural inverse kinematics",
+        "custom_authoring": {"available": blender_available, "command": "blender-edit",
+                             "supports": ["skeletal animation", "rigid object animation", "multiple clips"]},
+        "clip_merge": {"available": blender_available, "command": "merge-animations",
+                       "requires": "compatible GLB node hierarchy and skin bind pose", "retargeting": False},
         "tripo_option": {"available": result["providers"]["tripo"], "explicit_selection_required": True},
+    }
+    result["blender_authoring"] = {
+        "available": blender_available, "provider": "local", "command": "blender-edit",
+        "requires": "completed source revision and agent-authored Blender Python script",
+        "supports": ["mesh edits", "rig edits", "skin weights", "custom animation"],
+        "preserves_source_revision": True, "preserves_animations_by_default": True,
     }
     result["segmentation"] = {
         "available": blender_available and local_parts["available"], "provider": "local", "backend": "geosam2",

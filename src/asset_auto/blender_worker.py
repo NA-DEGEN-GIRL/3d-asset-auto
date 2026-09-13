@@ -379,6 +379,11 @@ def main():
     # This worker is deliberately limited to static meshes.
     if any(o.type == "ARMATURE" for o in bpy.context.scene.objects):
         raise ValueError("Rigged meshes require a rig-aware workflow; static processing refused")
+    for obj in bpy.context.scene.objects:
+        for owner in (obj, obj.data, getattr(obj.data, "shape_keys", None)):
+            animation = getattr(owner, "animation_data", None)
+            if animation and (animation.action or any(track.strips for track in animation.nla_tracks)):
+                raise ValueError("Animated inputs require asset_kind: animated or character; static processing refused")
     if request.get("changes"):
         edit(request["changes"])
     elif not request.get("preserve_geometry"):

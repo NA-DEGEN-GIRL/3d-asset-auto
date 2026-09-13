@@ -108,6 +108,51 @@ def glb_document(path):
         return json.loads(stream.read(length))
 
 
+def clip_signatures(path):
+    """Capture actual sampler bytes and targets, independent of accessor indexes."""
+    import struct
+
+    raw = path.read_bytes()
+    length = struct.unpack_from("<I", raw, 12)[0]
+    document = json.loads(raw[20:20 + length])
+    binary = raw[28 + length:]
+
+    def accessor(index):
+        item = document["accessors"][index]
+        view = document["bufferViews"][item["bufferView"]]
+        start = view.get("byteOffset", 0)
+        return {"accessor": {key: value for key, value in item.items() if key != "bufferView"},
+                "buffer_view": {key: value for key, value in view.items() if key not in ("byteOffset", "buffer")},
+                "sha256": hashlib.sha256(binary[start:start + view["byteLength"]]).hexdigest()}
+
+    return {animation["name"]: {
+        "samplers": [{"interpolation": sampler.get("interpolation", "LINEAR"),
+                      "input": accessor(sampler["input"]), "output": accessor(sampler["output"])}
+                     for sampler in animation["samplers"]],
+        "channels": [{"sampler": channel["sampler"], "path": channel["target"]["path"],
+                      "node": document["nodes"][channel["target"]["node"]]["name"]}
+                     for channel in animation["channels"]],
+    } for animation in document.get("animations", [])}
+
+
+def verify_bundle(glb_path, blend_path, names):
+    import bpy
+
+    repository = Path(__file__).resolve().parents[1]
+    sys.path.insert(0, str(repository / "src" / "asset_auto"))
+    import blender_character_worker as character
+
+    for path in (glb_path, blend_path):
+        character.load_character(str(path))
+        assert len([obj for obj in bpy.context.scene.objects if obj.type == "ARMATURE"]) == 1
+        assert len(character.meshes()) == 1
+        for name in names:
+            assert character.select_preview_clip(name), f"{path}: cannot activate retained {name}"
+            bpy.context.scene.frame_set(12)
+            low, high = character.evaluated_bounds()
+            assert high.z > low.z
+
+
 def main():
     from asset_auto.glb_transform import rotate_scene_y
     from asset_auto.local_motion import generate
@@ -170,6 +215,41 @@ def main():
         assert foot["joint_head_extent_xyz_m"][0] > .4
         assert foot["joint_head_extent_xyz_m"][1] < .01
     outputs.append(str(sandbox / "walk-x-forward"))
+    accumulated = source
+    names = set()
+    signatures = {}
+    for animation in ("idle", "walk", "run", "walk"):
+        replacing = animation in names
+        label = f"accumulate-{animation}" if not replacing else "replace-walk"
+        out = sandbox / label
+        previous = accumulated
+        previous_hash = hashlib.sha256(previous.read_bytes()).hexdigest()
+        previous_document = glb_document(previous)
+        request = SimpleNamespace(animation=animation, bone_map=mapping,
+                                  rig_forward_axis="+z", animate_in_place=not replacing)
+        result = generate(repository, request, out, previous)
+        accumulated = out / "generated.glb"
+        current = glb_document(accumulated)
+        names.add(animation)
+        assert {clip["name"] for clip in current["animations"]} == names
+        assert len(current["animations"]) == len(names)
+        for field in ("nodes", "meshes", "materials", "skins"):
+            assert current[field] == previous_document[field], f"Merge changed base {field}"
+        actual = clip_signatures(accumulated)
+        for name, signature in signatures.items():
+            if name != animation:
+                assert actual[name] == signature, f"Existing clip {name} was modified"
+        if replacing:
+            assert actual[animation] != signatures[animation], "Requested replacement kept the old motion"
+        signatures = actual
+        assert result["clip_policy"] == "preserve_existing_replace_requested"
+        assert result["ground_checks"]["below_floor_samples"] == 0
+        assert hashlib.sha256(previous.read_bytes()).hexdigest() == previous_hash
+        outputs.append(str(out))
+    run_logged([executable(repository, "blender"), "--background", "--factory-startup",
+                "--disable-autoexec", "--python-exit-code", "1", "--python", str(Path(__file__)),
+                "--", "verify-bundle", str(accumulated), str(accumulated.with_suffix(".blend")),
+                json.dumps(sorted(names))], sandbox / "verify-bundle.log", cwd=repository)
     report = {"passed": True, "sandbox": str(sandbox), "outputs": outputs,
               "checks": ["generic bone names require observed mapping",
                          "duplicate/incorrect hierarchy maps rejected",
@@ -177,6 +257,9 @@ def main():
                          "all frames and half frames reimported with bounded floor penetration",
                          "rotated input hierarchy uses the requested forward axis for actual joint travel",
                          "skewed display bone axes preserve rest orientation using actual child joints",
+                         "sequential idle/walk/run accumulate in one GLB without duplicated geometry or rigs",
+                         "requested name replacement retains every other clip's original sampler bytes",
+                         "merged GLB and editable blend both activate all retained clips",
                          "walk/run move real ankle joints", "source file remains unchanged"],
               "scope": "synthetic maintenance fixture; visual quality of real assets is separate"}
     write_json(sandbox / "result.json", report)
@@ -185,6 +268,10 @@ def main():
 
 if __name__ == "__main__":
     if "--" in sys.argv:
-        fixture(Path(sys.argv[sys.argv.index("--") + 1]))
+        args = sys.argv[sys.argv.index("--") + 1:]
+        if args[0] == "verify-bundle":
+            verify_bundle(Path(args[1]), Path(args[2]), json.loads(args[3]))
+        else:
+            fixture(Path(args[0]))
     else:
         main()

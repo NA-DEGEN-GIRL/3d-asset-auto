@@ -2,7 +2,7 @@
 
 기본 생성기는 로컬 TRELLIS.2입니다. **사용자가 Tripo/Tripo3D 사용을 명시한 작업에만** `provider: "tripo"`를 선택합니다. 키가 있거나 GPU가 부족하거나 멀티뷰 이미지가 있다는 이유로 자동 전환하지 않습니다. Tripo는 입력 이미지를 외부 서비스로 업로드하고 유료 크레딧을 사용합니다.
 
-이미지 생성 어댑터는 단일 이미지 또는 정면 포함 2–4방향 이미지로 정적 메시를 생성한 뒤, Blender 후처리·5방향 렌더·GLB 출력으로 연결합니다. 리깅·동작·부품 분리의 기본은 [로컬 후처리](CHARACTERS.md)이며, 아래 Tripo 후처리는 명시적으로 선택하는 대안입니다. Godot나 웹 뷰어는 자동 실행하지 않습니다. 텍스트 직접 생성과 고급 생성 품질 옵션은 아직 제공하지 않습니다.
+이미지 생성 어댑터는 단일 이미지 또는 정면 포함 2–4방향 이미지로 정적 메시를 생성한 뒤, Blender 후처리·5방향 렌더·GLB 출력으로 연결합니다. **Tripo 생성 선택이 Tripo 편집 선택을 뜻하지는 않습니다.** 이후에는 [로컬 Blender 편집·클립 병합](BLENDER.md)이나 [리깅 초안·부품 분리](CHARACTERS.md)를 사용하고, 아래 유료 후처리는 별도로 명시한 경우에만 선택합니다. Godot나 웹 뷰어는 자동 실행하지 않습니다. 텍스트 직접 생성과 고급 생성 품질 옵션은 아직 제공하지 않습니다.
 
 “Tripo로 만들어 줘”라는 요청이면 **요청한 에셋마다 표준 생성 1회**를 별도 크레딧 확인 없이 진행합니다. `tripo` 설정과 `max_credits`는 생략할 수 있으며 기본 예상 비용 한도는 작업당 100크레딧입니다. 표준 생성의 예상 비용은 30크레딧이며, 한도 100이 재시도 예산을 뜻하지는 않습니다. 단일 이미지와 멀티뷰 테스트를 둘 다 요청했다면 각각 1회가 요청 범위입니다. 사용자가 지정한 더 작은 예산은 우선하며, 요청하지 않은 추가 변형·품질 업그레이드·유료 재생성까지 포함하지는 않습니다.
 
@@ -108,7 +108,7 @@ uv run --no-sync python -m asset_auto.cli resume-tripo ASSET_ID REVISION --async
 uv run --no-sync python -m asset_auto.cli job JOB_ID
 ```
 
-이 명령은 기존 원격 작업을 조회하고 결과 다운로드·Blender 처리를 이어갑니다. 새 유료 task를 만들지 않습니다. 이미 완료된 revision은 다시 덮어쓰지 않으며, 정적 수정은 기존 `edit`로 새 revision에 저장합니다. 정적 로컬 수정에는 Tripo 재호출이 필요하지 않습니다. 리그가 있는 부모의 수정 제약과 후처리 복구는 [캐릭터 가이드](CHARACTERS.md)를 따릅니다.
+이 명령은 기존 원격 작업을 조회하고 결과 다운로드·Blender 처리를 이어갑니다. 새 유료 task를 만들지 않습니다. 완료 revision은 덮어쓰지 않으며 정적 수정은 `edit`, 리그·동작·더 넓은 수정은 [blender-edit](BLENDER.md)로 새 revision에 저장합니다. 이 로컬 편집에는 Tripo 재호출이 필요하지 않습니다.
 
 제출 요청의 응답을 받지 못해 **서버가 작업을 만들었는지 모르는 상태**라면 자동 POST 재시도를 하지 않습니다. Tripo 대시보드에서 생성 여부·청구 기록을 확인합니다. 알려진 task ID가 없는 상태에서 `generate`를 반복하면 중복 결제가 생길 수 있습니다. 원격 task 자체가 실패했거나 취소되었다면 resume이 성공 상태로 바꾸지는 못합니다. 새 생성은 별도 지출 판단입니다. [공식 작업 조회](https://developers.tripo3d.ai/en/docs/task-query), [계정 조회](https://developers.tripo3d.ai/en/docs/account).
 
@@ -141,6 +141,8 @@ uv run --no-sync python -m asset_auto.cli process .work/tripo-rig.json --async
 리깅·분리는 정확한 완료 정적 부모를 사용합니다. 분리는 현재 GLB를 그대로 보내며, 리깅은 현재 형상·재질을 유지한 채 입력 정면을 Tripo +X로 회전한 사본을 업로드합니다. `rig_forward_axis`는 실제 입력 GLB의 정면(+x/-x/+z/-z, 기본 +z)이며, 렌더에서 확인합니다. 원본·준비 사본 해시를 기록하고 출력에서는 메시·스킨 공통 부모 변환으로 방향을 복원합니다. 같은 좀비 모델의 +Z 정면 거절이 Y축 +90°만으로 통과한 실측을 반영한 처리입니다.
 
 Tripo 애니메이션은 부모의 `rig_task_id`와 방향 기록을 이어받습니다. 외부 import 리그를 그대로 사용할 수 있는 로컬 동작과 달리, 이 원격 ID가 없으면 먼저 Tripo로 리깅해야 합니다. 애니메이션 요청에 필요한 리깅+동작 각 1회 예상 합계는 35크레딧입니다. 세 기능을 모두 요청하면 각 1회 합계 75이며, 한도가 남았다는 이유로 추가 유료 변형·재시도를 실행하지 않습니다.
+
+이 유료 어댑터는 요청한 한 클립을 반환합니다. 기존 동작과 함께 전달하려면 호환성을 확인하고 로컬 `merge-animations`로 합칩니다. 로컬 프리셋과 사용자 스크립트는 이 원격 task ID 없이도 사용할 수 있습니다.
 
 Tripo 분리는 로컬 GeoSAM2용 context·점 프롬프트를 받지 않습니다. 결과의 자동 이름을 믿지 말고 개별 렌더로 확인해 `edit`/`rename`합니다. 분리 경계·동작 샘플·파일 보존 규칙은 [공통 후처리 가이드](CHARACTERS.md)를 따릅니다. [공식 리깅 검사](https://developers.tripo3d.ai/en/docs/animations-rig-check), [리깅](https://developers.tripo3d.ai/en/docs/animations-rig), [동작 적용](https://developers.tripo3d.ai/en/docs/animations-retarget), [메시 분리](https://developers.tripo3d.ai/en/docs/mesh-segment).
 

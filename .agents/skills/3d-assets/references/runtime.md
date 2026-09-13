@@ -16,6 +16,10 @@ tripo-process-plan <request.json>
 tripo-process <request.json> [--async]
 resume-tripo-process <asset_id> <revision> [--async]
 edit <changes.json> [--async]
+blender-edit <request.json> [--async]
+merge-animations <request.json> [--async]
+resume-blender-edit <asset_id> <revision> [--async]
+resume-merge-animations <asset_id> <revision> [--async]
 job <job_id>
 list
 inspect <asset_id> <revision>
@@ -31,11 +35,13 @@ mcp
 
 For `rig`/`animate`/`segment`, read the [character guide](../../../../docs/CHARACTERS.md). General `process` defaults to local SkinTokens rigging, procedural Blender motion or GeoSAM2 masks. `process-plan` checks the exact source/backend without inference. `prepare-segment` renders a hash-bound twelve-view context under `.work/`; the agent inspects it and authors named pixel prompts. `resume-process` uses the child's saved provider/request and reuses verified outputs where available. MCP equivalents are `process_plan`, `process_asset`, `prepare_local_segmentation`, and `resume_asset_processing`.
 
+For local custom edits and clip assembly, read the [Blender guide](../../../../docs/BLENDER.md). `blender-edit` snapshots an exact parent's GLB/Blend and trusted Python script, preserves existing clips by default, and exports/reviews a new revision. `merge-animations` retains the base model and transfers compatible selected clips. Their resume commands use the incomplete child and saved inputs; an `authored.blend` execution checkpoint avoids rerunning the script after a render failure. MCP names are `edit_in_blender`, `merge_asset_animations`, `resume_blender_edit`, and `resume_animation_merge`. Generation provider does not choose the editing method.
+
 The `tripo-process` family and its MCP tools retain explicit Tripo selection; they never silently replace local work. Known remote stages are resumed without duplicate submission; a resumed free rig-check can lead to the first paid rig stage in the original request. Read the [paid processing guide](../../../../docs/TRIPO.md#리깅애니메이션부품-분리) when that provider is requested.
 
 `godot` and `serve` are optional. Use the target project's relevant importer when integration warrants it. Start/open the viewer only for a requested interactive preview or browser check. `serve` binds only to 127.0.0.1; the viewer is http://127.0.0.1:8765/. On Windows use `start-viewer.cmd` for a retained background server. On Linux use `sh start-viewer.sh` and retain its terminal. Opening a browser does not start the server. Selecting a revision in the viewer records its Three.js load/draw result; that is not visual approval.
 
-The current viewer has no animation playback controls. Use actual sampled frame PNGs for agent animation review; a static browser draw does not validate motion.
+Use actual sampled frame PNGs for agent animation review; a static browser draw does not validate motion.
 
 For first installation, personal-skill links or MCP client setup, read the repository's [INSTALL.md](../../../../INSTALL.md). This wrapper requires the shared checkout and its `.venv`; copying only the skill folder is insufficient.
 
@@ -53,6 +59,8 @@ Each completed revision lives in `<runtime-root>/.assets/<asset_id>/<revision>/`
 - `tripo.json`: Tripo task ID, status and provenance for paid cloud generation, including an interrupted/incomplete revision.
 - `processing.json`: exact parent request and source hash. Completed manifest retains original generation provenance and adds `local_processing` or `remote_processing`.
 - `local-process.json`, `local-rig.json`, `local-parts.json`, `local-motion.json`: applicable local backend/checkpoint and quality records. Local motion includes dense grounding checks; GeoSAM2 keeps source/context bindings and unclassified faces.
+- `authoring-request.json`: bound request/input hashes for `blender-edit` or `merge-animations`; `input.glb`, `input.blend`, `script.py` or `animation-N.glb` are immutable snapshots as applicable.
+- `authored.blend`, `authoring-executed.json`: script execution checkpoint; `authoring.json` or `animation-merge.json` records the result, retained as manifest `local_processing`.
 - Tripo processing checkpoints retain free/paid stage task IDs for remote recovery.
 - `animation-previews.json`: up to 8 clips × 3 sampled frame paths for output review. Compare `sampled_clips` and `total_clips`; exported clips beyond the previews are preserved, not visually reviewed.
 - `part-previews.json`: up to 32 individual part PNGs for segmentation and subsequent static part review; `truncated: true` marks incomplete preview coverage.
