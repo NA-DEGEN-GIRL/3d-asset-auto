@@ -1,5 +1,6 @@
 """Learned text motion on an existing rig, with resumable immutable revisions."""
 
+import shutil
 from itertools import pairwise
 from pathlib import Path
 
@@ -106,6 +107,17 @@ def inference_record(out, binding):
     return record
 
 
+def merge_generated_clip(out, clip_name):
+    """Keep original GLB samplers even when its editable Blend uses another FPS."""
+    from .animation_merge import merge
+
+    shutil.copyfile(out / "asset.glb", out / "retargeted.glb")
+    result = merge(out / "input.glb", [{"path": str(out / "retargeted.glb"), "clips": [clip_name]}],
+                   out / "generated.glb")
+    write_json(out / "animation-merge.json", result)
+    return result
+
+
 def resume(root, asset_id, revision):
     out = child(root / ".assets", asset_id, revision)
     with FileLock(out / "motion.lock", timeout=0):
@@ -132,11 +144,24 @@ def resume(root, asset_id, revision):
                   "preview_clips": [request.clip_name], "triangle_budget": parent["inspection"]["triangle_budget"],
                   "binding_sha256": record["binding_sha256"]}
         pipeline.blender(root, worker, out)
+        merged = merge_generated_clip(out, request.clip_name)
+        if (out / "blender.log").is_file():
+            shutil.copyfile(out / "blender.log", out / "retarget-blender.log")
+        # The authoring checkpoint remains available for export recovery. Inspect
+        # the merged bytes without baking the parent's clips a second time.
+        delivery = {"operation": "import", "source": str(out / "generated.glb"), "output": str(out),
+                    "character": True, "require_rig": True, "require_animation": True,
+                    "target_height": None, "rename_animation": False, "preserve_input_glb": True,
+                    "preview_clips": [request.clip_name], "triangle_budget": parent["inspection"]["triangle_budget"]}
+        pipeline.blender(root, delivery, out)
+        if authoring.sha256(out / "asset.glb") != merged["output_sha256"]:
+            raise ValueError("Final Kimodo GLB differs from the validated clip merge")
         authoring.verify_inputs(root, out, record)
         inference_record(out, record["binding_sha256"])
         processing = read_json(out / "authoring.json")
         processing.update(provider="local", backend="kimodo", operation="text-motion",
                           description=request.description, motion_request=request.model_dump(),
                           learned_inference=inference, retarget=read_json(out / "retarget-map.json"),
+                          animation_merge=merged,
                           inputs=record["inputs"], binding_sha256=record["binding_sha256"])
         return pipeline.finalize(root, spec, revision, out, parent=request.revision, processing=processing)

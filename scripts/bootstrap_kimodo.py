@@ -30,13 +30,33 @@ def normalized_freeze(value):
                      for line in value.splitlines()) + "\n"
 
 
+def access_issue(error, gated_error_type):
+    """Find HF permission errors even when a cache-miss exception wraps them."""
+    pending, seen, issue = [error], set(), None
+    while pending:
+        current = pending.pop()
+        if id(current) in seen:
+            continue
+        seen.add(id(current))
+        status = getattr(getattr(current, "response", None), "status_code", None)
+        message = str(current).lower()
+        if status == 403 and "fine-grained token settings" in message:
+            return "token_scope"
+        if isinstance(current, gated_error_type):
+            issue = "model_access"
+        elif status == 401 and issue is None:
+            issue = "token_auth"
+        pending.extend(cause for cause in (current.__cause__, current.__context__) if cause is not None)
+    return issue
+
+
 def download(root, runtime):
     from huggingface_hub import get_token, snapshot_download
     from huggingface_hub.errors import GatedRepoError
 
     token_file = root / ".secrets/hf_token"
     token = token_file.read_text(encoding="utf-8-sig").strip() if token_file.is_file() else get_token()
-    records, gated = [], []
+    records, blocked = [], {}
     for name, (repo, revision) in MODEL_PINS.items():
         folder = runtime / "models" / name
         print(f"Downloading pinned {repo}", flush=True)
@@ -44,18 +64,28 @@ def download(root, runtime):
             snapshot_download(repo, revision=revision, local_dir=folder, token=token or False,
                               allow_patterns=["*.json", "*.yaml", "*.safetensors", "stats/*", "LICENSE*", "USE_POLICY*"],
                               ignore_patterns=["original/*"], max_workers=4)
-        except GatedRepoError:
-            gated.append(repo)
-            print(f"Model access required: {repo}; continuing public downloads", flush=True)
+        except Exception as error:
+            issue = access_issue(error, GatedRepoError)
+            if issue is None:
+                raise
+            blocked[repo] = issue
+            print(f"HF access blocked ({issue}): {repo}; continuing other model downloads", flush=True)
             continue
         for path in sorted(folder.rglob("*")):
             if path.is_file() and ".cache" not in path.relative_to(folder).parts:
                 records.append({"path": path.relative_to(runtime).as_posix(), "size_bytes": path.stat().st_size,
                                 "sha256": sha256(path)})
-    if gated:
+    if blocked:
         (runtime / "model-files-partial.json").write_text(json.dumps(records, indent=2), encoding="utf-8")
-        raise RuntimeError("Hugging Face access is required for " + ", ".join(gated) +
-                           "; use an authorized read token in <runtime-root>/.secrets/hf_token and rerun setup")
+        advice = {
+            "token_scope": "In HF token settings, enable 'Read access to contents of all public gated repos "
+                           "you can access' for the saved fine-grained token; account approval alone is insufficient",
+            "model_access": "Accept the model's terms and obtain access for the account that owns the saved token",
+            "token_auth": "Use a valid authorized read token in <runtime-root>/.secrets/hf_token or HF login/HF_TOKEN",
+        }
+        raise RuntimeError("Hugging Face download access is required: " + "; ".join(
+            f"{repo}: {advice[issue]}" for repo, issue in blocked.items()) +
+            ". Rerun the same setup command after correcting access; completed downloads are reused.")
     return records
 
 

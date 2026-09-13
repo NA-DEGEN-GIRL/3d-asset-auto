@@ -116,6 +116,33 @@ def write_glb(path, document, binary):
     return path
 
 
+def test_text_motion_keeps_original_samplers_instead_of_rebaked_parent_clips(tmp_path):
+    from asset_auto.text_motion import merge_generated_clip
+
+    base_doc, base_binary = fixture(clip="idle")
+    base_path = write_glb(tmp_path / "input.glb", base_doc, base_binary)
+    source_doc, source_binary = fixture(clip="wave")
+    rebaked = copy.deepcopy(source_doc["animations"][0])
+    rebaked["name"] = "idle"
+    rebaked["samplers"][0]["input"] = append_accessor(source_doc, source_binary, [0, .5, 1], "SCALAR")
+    rebaked["samplers"][0]["output"] = append_accessor(source_doc, source_binary, [0, 0, 0, 1] * 3, "VEC4")
+    source_doc["animations"].append(rebaked)
+    draft_path = write_glb(tmp_path / "asset.glb", source_doc, source_binary)
+    base_bytes, draft_bytes = base_path.read_bytes(), draft_path.read_bytes()
+
+    result = merge_generated_clip(tmp_path, "wave")
+
+    merged_doc, merged_binary = read_glb(tmp_path / "generated.glb")
+    original_doc, original_binary = read_glb(base_path)
+    assert [clip["name"] for clip in merged_doc["animations"]] == ["idle", "wave"]
+    assert merged_doc["animations"][0] == original_doc["animations"][0]
+    assert merged_doc["accessors"][:len(original_doc["accessors"])] == original_doc["accessors"]
+    assert merged_binary[:len(original_binary)] == original_binary
+    assert base_path.read_bytes() == base_bytes
+    assert (tmp_path / "retargeted.glb").read_bytes() == draft_bytes
+    assert result["preservation"]["base_binary_prefix_unchanged"]
+
+
 def read_glb(path):
     raw = path.read_bytes()
     assert struct.unpack_from("<4sII", raw) == (b"glTF", 2, len(raw))

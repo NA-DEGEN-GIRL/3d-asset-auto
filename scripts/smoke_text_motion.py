@@ -15,7 +15,7 @@ def fixture(out, yaw):
     root = Path(__file__).resolve().parents[1]
     sys.path.insert(0, str(root / "src/asset_auto"))
     import blender_character_worker as character
-    from blender_authoring_tools import AuthoringContext
+    from blender_authoring_tools import AuthoringContext, action_curves
     from io_scene_gltf2.blender.com.gltf2_blender_ui import anim_ui_register
 
     anim_ui_register()
@@ -74,12 +74,21 @@ def fixture(out, yaw):
     context.new_action(rig, "existing_idle")
     bone = rig.pose.bones[mapping["Head"]]
     bone.rotation_mode = "QUATERNION"
-    for frame, angle in ((1, 0), (25, .2), (49, 0)):
+    for frame, angle in ((0, 0), (24, .2), (48, 0)):
         bone.rotation_quaternion = Matrix.Rotation(angle, 3, "X").to_quaternion()
         bone.keyframe_insert("rotation_quaternion", frame=frame)
     context.stash_action(rig)
     context.reset_pose()
     bpy.ops.wm.save_as_mainfile(filepath=str(out / "fixture.blend"))
+    # A saved Blend can use a different timebase from the parent delivery GLB.
+    # The new motion must not cause that GLB's existing samplers to be rebaked.
+    bpy.context.scene.render.fps = 30
+    for _, curve in action_curves(bpy.data.actions["existing_idle"]):
+        for point in curve.keyframe_points:
+            point.co.x *= 30 / 24
+            point.handle_left.x *= 30 / 24
+            point.handle_right.x *= 30 / 24
+        curve.update()
     character.export_character(out / "fixture.glb")
     rotations, positions = [], []
     for index in range(60):
@@ -130,7 +139,9 @@ def verify(out, source, options):
 
 
 def main():
-    from asset_auto import pipeline
+    from smoke_local_motion import clip_signatures
+
+    from asset_auto import pipeline, text_motion
     from asset_auto.settings import executable
     from asset_auto.store import read_json, write_json
 
@@ -156,6 +167,16 @@ def main():
         checkpoint = read_json(out / "authoring-executed.json")
         pipeline.blender(root, worker, out)
         assert read_json(out / "authoring-executed.json") == checkpoint, "Resume reran the authoring script"
+        shutil.copyfile(out / "fixture.glb", out / "input.glb")
+        before_clips = clip_signatures(out / "input.glb")
+        merged = text_motion.merge_generated_clip(out, options["clip_name"])
+        delivery = {"operation": "import", "source": str(out / "generated.glb"), "output": str(out),
+                    "character": True, "require_rig": True, "require_animation": True,
+                    "target_height": None, "rename_animation": False, "preserve_input_glb": True,
+                    "preview_clips": [options["clip_name"]], "triangle_budget": 1000}
+        pipeline.blender(root, delivery, out)
+        assert text_motion.authoring.sha256(out / "asset.glb") == merged["output_sha256"]
+        assert clip_signatures(out / "asset.glb")["existing_idle"] == before_clips["existing_idle"]
         pipeline.run_logged([*command, "verify", str(out), str(out / "fixture.blend"), json.dumps(options)], out / "verify.log")
         inspection = read_json(out / "inspection.json")
         assert {clip["name"] for clip in inspection["animations"]["clips"]} == {"existing_idle", "synthetic_transfer"}
@@ -166,6 +187,7 @@ def main():
               "checks": ["A-pose reference alignment with arbitrary bone rolls", "root height and uniform world scale",
                          "in-place and rotated world-axis travel", "existing action fingerprint preserved",
                          "both clips activate in the final GLB and editable Blend", "authoring checkpoint reused",
+                         "original GLB samplers remain byte-identical across different Blend/GLB frame rates",
                          "nonintegral frame-rate conversion retains both endpoint poses"],
               "scope": "Synthetic maintenance fixture; not evidence of learned inference or real character quality"}
     write_json(sandbox / "result.json", report)

@@ -17,6 +17,8 @@ Windows 기본 WSL 배포판은 `Ubuntu-24.04`이며 `--wsl-distribution`으로 
 
 텍스트 인코더는 [Meta-Llama-3-8B-Instruct](https://huggingface.co/meta-llama/Meta-Llama-3-8B-Instruct) 기반 LLM2Vec입니다. 해당 모델 접근이 허용된 Hugging Face 계정의 읽기 토큰을 **`<runtime-root>/.secrets/hf_token`**에 키만 저장하거나 기존 HF 로그인/`HF_TOKEN`을 사용합니다. 접근 신청·약관 동의가 필요한 계정은 Hugging Face에서 처리합니다. 키를 요청 JSON, 로그, Git이나 채팅에 넣지 않습니다. 이후 추론은 고정된 로컬 파일만 사용하며 외부 인코더 서비스를 탐색하지 않습니다.
 
+계정의 모델 승인과 토큰 권한은 별개입니다. Fine-grained 토큰으로 403 `public gated repositories` 오류가 나면 [HF 토큰 설정](https://huggingface.co/settings/tokens)의 `Read access to contents of all public gated repos you can access`를 켭니다. 기존 토큰 권한을 수정했다면 키를 다시 복사할 필요는 없습니다. 설치 도구는 이 오류를 연결 오류와 구분하고, 다른 모델 다운로드를 계속한 뒤 재실행 방법을 안내합니다.
+
 `--skip-models`는 환경만 준비합니다. `environment_ready`와 CUDA 확인은 전체 모델 준비나 추론 성공이 아닙니다. 다운로드가 완료되어야 `doctor.animation.text_to_motion.available`이 참이 됩니다. 401/403이면 모델 접근 권한을 해결한 뒤 같은 설치 명령을 실행하면 됩니다. 이미 받은 모델 파일은 재사용합니다.
 
 소스·4개 모델 revision은 [kimodo_runtime.py](../src/asset_auto/kimodo_runtime.py), Python/빌드 절차는 [bootstrap_kimodo.py](../scripts/bootstrap_kimodo.py), 전체 Python 의존성은 [requirements-linux.lock](../scripts/kimodo/requirements-linux.lock)에 고정합니다. `.runtime/installed/kimodo.json`은 모델 파일 해시·크기와 환경 정보를 기록합니다. 코드·가중치·Llama 기반 인코더에는 각 출처의 사용 조건이 적용되며 이 저장소는 가중치를 재배포하지 않습니다.
@@ -66,6 +68,8 @@ SOMA 전역 회전을 대상 기준 자세와 뼈 계층에 맞춰 전달하고,
 
 같은 에셋의 다음 동작은 직전 결과를 부모로 지정하고 새 `clip_name`으로 생성합니다. 기존 메시·리그·클립을 보존하며 **한 최종 GLB에 동작을 누적**합니다. 이름이 같으면 자동 덮어쓰기하지 않습니다. 기존 동작의 의도된 수정은 `blender-edit`, 호환되는 별도 결과의 조합은 `merge-animations`를 사용합니다.
 
+`text-motion`은 Blender 적용 결과를 `retargeted.glb`에 남기고 **새 클립만 원래 GLB에 병합**합니다. 편집용 Blend와 원본 GLB의 프레임레이트가 달라도 기존 클립의 sampler 데이터를 다시 샘플링하지 않습니다. `animation-merge.json`에 보존·입출력 해시를 기록하며, 최종 검사와 렌더는 병합된 파일을 사용합니다. 체형 보정을 위해 새 클립을 별도 편집했다면 필요한 클립만 원본에 병합해 같은 보존 방식을 적용할 수 있습니다.
+
 모션 핵심 시점과 전환을 같은 조건의 여러 각도로 검사합니다. 기본 3장 PNG는 한 카메라의 개요이며 승인 근거로 충분하지 않습니다. `assess`의 `views` 기본값은 `front`, `right`, `back`이고 총 24장 안에서 나눕니다. 가림, 빠른 변화, 접촉 문제에 따라 다른 각도·확대·재생을 선택하고 미검토 범위를 남깁니다. 자세·타이밍·접촉의 실제 결함은 수치 통과로 지우지 않습니다.
 
 중단 후에는 새 요청을 제출하지 말고 기록된 **자식 revision**을 재개합니다:
@@ -88,4 +92,8 @@ uv run --no-sync python scripts/smoke_assessment.py
 
 `uv run --no-sync python scripts/smoke_kimodo_runtime.py`는 공개 Kimodo 가중치로 CUDA 추론·MotionCorrection·NPZ/BVH/JSON 출력을 확인하는 추가 진단입니다. 텍스트 인코더를 사용하지 않는 빈 조건 검사이며 요청한 문장의 대체 경로가 아닙니다. `.work/`에만 저장하고 `text_conditioning_tested: false`로 명시합니다.
 
-2026-09-13에는 RTX 5090에서 이 빈 조건 진단을 실제 실행했습니다. 2초·60샘플의 모션 추론부터 보정·출력까지 약 5.95초였으며 텍스트 인코더 시간은 포함하지 않습니다. 해당 출력을 기존 SkinTokens 46뼈 캐릭터에 적용하고 18장의 다각도 이미지를 생성해 시작·중간·끝의 정면/측면/후면 9장을 직접 검토했습니다. 원래 바닥보다 약 8.6cm 낮아진 문제를 발견하여 Blender의 새 revision에서 해당 클립만 높이 보정하고 같은 시점·각도를 재검사했습니다. 최종 GLB 63개 시간 샘플의 최저 Z는 약 +2.0mm였고, 기존 4개 클립의 sampler 데이터는 그대로 유지됐습니다. 바닥 수치는 접촉·발 미끄러짐 증거가 아니며 전체 재생·그립·게임 품질을 승인하지 않았습니다. Llama 접근은 401로 거절되어 **실제 문장 조건 추론은 미검증**입니다.
+2026-09-14에는 RTX 5090에서 **실제 문장 조건 추론을 실행**했습니다. 오른손으로 인사하고 왼팔은 내려두라는 요청으로 4초·120샘플의 모션과 NPZ/BVH를 생성했습니다. 런타임 측정 구간은 약 114초로 텍스트 인코더 로딩을 포함하며, Python 초기 import와 Blender 적용·렌더는 제외합니다. 별도 점검에서 MNTP와 supervised 보정 모델의 가중치가 각각 448개 모두 원본 checkpoint와 일치하고 서로 다른 문장이 서로 다른 유한 임베딩을 만드는 것도 확인했습니다.
+
+기존 SkinTokens 46뼈 캐릭터에 적용하면서 큰 머리와 손의 간섭, 약 8.7cm의 바닥 관통을 발견했습니다. 원래 문장의 추론 결과를 보존하고 별도 Blender revision에서 체형에 맞는 팔 보정과 높이 보정을 수행했습니다. 기존 GLB와 편집용 Blend의 FPS 차이로 걷기 데이터가 재샘플링되는 문제도 발견해, 새 클립만 원본 GLB에 병합하도록 수정했습니다. 최종 파일의 기존 네 클립은 sampler 데이터까지 동일합니다. 체형별 자연스러움·접촉·발 미끄러짐·재생 품질은 모델 실행 성공과 별도로 검토해야 합니다.
+
+최종 후보의 8개 시점 × 4방향 32장과 손·팔·얼굴 주변 확대 10장을 직접 검사했습니다. 60Hz 바닥 검사에서 메시의 최저 Z는 약 +2.0–2.85mm였습니다. **두 차례 국소 보정 후에도 손이 머리에 닿는 모습과 팔의 심한 주름이 남아 시각 품질은 실패로 기록했습니다.** 추가적인 리그·가중치·접촉 보정이 필요하며, 이 캐릭터의 게임 동작을 승인하지 않았습니다. 연속 재생·정밀 충돌·발 미끄러짐과 해당 클립의 엔진 적용은 미검증입니다.

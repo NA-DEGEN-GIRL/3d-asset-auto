@@ -1,6 +1,7 @@
 """Text-motion request, immutable checkpoint and interface contracts; no inference/API."""
 
 import asyncio
+import hashlib
 import importlib.util
 import json
 import struct
@@ -89,7 +90,8 @@ def inference(command, log, **kwargs):
                "binding_sha256": saved["binding_sha256"], "files": files})
 
 
-def test_recovery_reuses_inference_and_preserves_bound_source(runtime, monkeypatch):
+@pytest.mark.parametrize("failure_stage", ["authoring", "delivery"])
+def test_recovery_reuses_inference_and_preserves_bound_source(runtime, monkeypatch, failure_stage):
     calls, revisions = [], []
 
     def infer(*args, **kwargs):
@@ -98,11 +100,23 @@ def test_recovery_reuses_inference_and_preserves_bound_source(runtime, monkeypat
 
     def blender(root, worker, out):
         calls.append("blender")
-        assert worker["preserve_animations"] and worker["preview_clips"] == ["wave"]
-        if calls.count("blender") == 1:
+        assert worker["preview_clips"] == ["wave"]
+        if not worker.get("authoring"):
+            assert worker["preserve_input_glb"] and worker["source"] == str(out / "generated.glb")
+            if failure_stage == "delivery" and calls.count("blender") == 2:
+                raise RuntimeError("render interrupted")
+            (out / "asset.glb").write_bytes(b"merged fixture")
+            return
+        assert worker["preserve_animations"]
+        if failure_stage == "authoring" and calls.count("blender") == 1:
             raise RuntimeError("render interrupted")
         write_json(out / "authoring.json", {"input_animations": {"clips": ["idle"]}})
         write_json(out / "retarget-map.json", {"visual_review": "pending"})
+
+    def merge(out, clip_name):
+        calls.append("merge")
+        assert clip_name == "wave"
+        return {"output_sha256": hashlib.sha256(b"merged fixture").hexdigest()}
 
     def finish(root, spec, revision, out, **kwargs):
         assert kwargs["parent"] == "r-original"
@@ -114,6 +128,7 @@ def test_recovery_reuses_inference_and_preserves_bound_source(runtime, monkeypat
 
     monkeypatch.setattr(pipeline, "run_logged", infer)
     monkeypatch.setattr(pipeline, "blender", blender)
+    monkeypatch.setattr(text_motion, "merge_generated_clip", merge)
     monkeypatch.setattr(pipeline, "finalize", finish)
     with pytest.raises(RuntimeError, match="resume-text-motion"):
         text_motion.generate(runtime, request(), on_revision=revisions.append)
@@ -124,7 +139,9 @@ def test_recovery_reuses_inference_and_preserves_bound_source(runtime, monkeypat
     monkeypatch.setattr(kimodo_runtime, "installation", lambda root: pytest.fail("inference must not restart"))
     final = text_motion.resume(runtime, "person", revision)
     assert text_motion.resume(runtime, "person", revision) == final
-    assert calls == ["inference", "blender", "blender"]
+    expected = ["inference", "blender", *(["merge", "blender"] if failure_stage == "delivery" else []),
+                "blender", "merge", "blender"]
+    assert calls == expected
     (out / "input.blend").write_bytes(b"changed source")
     with pytest.raises(ValueError, match="snapshot changed"):
         text_motion.resume(runtime, "person", revision)
