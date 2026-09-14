@@ -75,6 +75,8 @@ SkinTokens는 선택한 현재 GLB를 입력으로 사용하고 `use_transfer`�
 
 `walk`·`run`은 양쪽 thigh→shin→foot의 실제 계층이 필요하고 `idle`은 chest가 필요합니다. 추가 역할은 `root`, `pelvis`, `chest`, `head`, 양쪽 `upper_arm`·`forearm`입니다. 이름 매핑과 입력 정면 `rig_forward_axis`를 실제 모델에 맞춥니다. 지원 이름 별칭의 기준은 [동작 worker](../src/asset_auto/blender_motion_worker.py)입니다.
 
+새 리그나 변경·미검증된 리그는 복잡한 동작 전에 필요한 관절 사슬과 실제 메시 변형을 먼저 확인합니다. [단계별 진단](QUALITY.md#리그와-동작의-단계별-진단)에 따라 원본 모션·골격 적용·가중치·장비·출력의 문제를 구분하고, 검증된 동일 상태의 근거는 재사용합니다.
+
 전체 5방향 렌더, `animation-previews.json`의 샘플 PNG, `local-motion.json`의 조밀한 시간 샘플 바닥 검사를 확인합니다. `ground_checks`는 최종 `asset.glb`를 재가져와 검사한 결과이고 `generated_ground_checks`는 중간 출력의 결과입니다. 각 `artifact`의 파일명·단계·SHA256으로 대상을 구분하며 최종 결과는 검사 보고서와 manifest에도 보존됩니다. 절차적 IK의 접지 보정량·관절 도달 범위 제한과 실제 변형을 함께 검토합니다. 발 미끄러짐 방지·발뒤꿈치부터 발끝으로 구르는 동작·연속 자기 충돌 검사는 구현하지 않았으며 접지 보정이 자연스러운 보행을 보증하지는 않습니다.
 
 자동 미리보기는 최대 8클립×3프레임입니다. import한 전체 클립은 보존되지만 `sampled_clips < total_clips`이면 나머지는 시각 미검토입니다. 샘플 프레임만으로 동작 전체 시간 구간을 검증했다고 보고하지 않습니다.
