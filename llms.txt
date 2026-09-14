@@ -15,6 +15,8 @@
 - [Blender editing and clips](docs/BLENDER.md): Trusted local scripts for object/custom motion, rig/weight/material changes, compatible clip merging, animation preservation and checkpoint recovery.
 - [Kimodo text motion](docs/KIMODO.md): Explicitly user-selected local learned humanoid motion, observed rig mapping, clip accumulation, pinned setup and inference recovery.
 - [Usage and quality](docs/QUALITY.md): Purpose-based functional criteria, representation limits, playback contracts, optional final-GLB motion assessment, critical frames and scoped evidence.
+- [Surface diagnosis and finishing](docs/FINISHING.md): Locate the first damaged processing stage, distinguish seams/holes/fragments, and reuse a repair workflow only under matching conditions.
+- [Clip preservation comparison](docs/BLENDER.md#개별-클립-수정과-보존-비교): Read-only `compare-animations` / `compare_asset_animations`, declared clip edits, exact time/channel/model differences and limits of preservation evidence.
 
 ## Understand and troubleshoot
 

@@ -91,6 +91,34 @@ uv run --no-sync python -m asset_auto.cli job JOB_ID
 
 병합은 기준 모델의 메시·스킨·정지 기하를 유지하고 호환되는 클립 데이터만 가져옵니다. 이름만 비슷한 다른 리그를 자동으로 맞추지 않습니다. 노드 계층·정지 변환·skin/morph 호환성이 맞지 않으면 먼저 `blender-edit` 스크립트에서 실제 뼈 대응과 constraint를 작성·bake한 뒤 병합합니다. 애니메이션 확장 데이터는 지원하지 않으며, 알려지지 않은 동작 의미를 버리고 통과시키지 않습니다.
 
+## 개별 클립 수정과 보존 비교
+
+수정 전에 변경할 클립 이름과 의도한 범위를 정합니다. `blender-edit`는 완료 부모의 해시가 확인된 `source.blend`를 기본 입력으로 사용합니다. 스크립트 안에서 다시 GLB를 가져오거나 다른 FPS로 전체 동작을 다시 만들면 불필요한 재샘플링이 생길 수 있으므로, 해당 원본의 action·시간 기준을 활용합니다. 의도된 기존 클립 수정에만 `preserve_animations: false`를 쓰고 나머지는 스크립트에서도 보존합니다. 이 옵션과 `preview_clips`는 변경 허용 클립 목록을 자동 집행하는 기능이 아닙니다.
+
+최종 GLB 두 개를 비교하는 `compare-animations`는 Blender·GPU·API 호출 없이 즉시 JSON을 반환합니다. 다음 요청에서 `changed_clips`는 의도적으로 추가·수정·제거할 클립이며, 생략하면 모든 기존 클립을 보호 대상으로 비교합니다. 실제 두 입력 어디에도 없는 이름과 중복 선언은 거절합니다. 외부 파일은 절대 경로, 런타임 안의 파일은 루트 기준 경로를 사용할 수 있습니다.
+
+```json
+{
+  "before": "/absolute/runtime/.assets/my-character/BEFORE_REVISION/asset.glb",
+  "after": "/absolute/runtime/.assets/my-character/AFTER_REVISION/asset.glb",
+  "changed_clips": ["cast"]
+}
+```
+
+```sh
+uv run --no-sync python -m asset_auto.cli compare-animations .work/compare-clips.json
+```
+
+위 JSON을 `.work/compare-clips.json`에 저장합니다. MCP `compare_asset_animations(request)`도 같은 검사를 수행합니다. 결과를 보존할 때는 입력 해시와 함께 로컬 작업 기록에 저장합니다. 원본·revision·review를 변경하지 않으며 비교 실행 성공 자체가 보존 통과는 아닙니다.
+
+- `clips`: 이름별 추가·삭제·변경 여부, 시작/끝/길이(초), 키 수와 시간·보간·변환/morph 데이터 차이. 버퍼 위치나 sparse/interleaved 저장 방식이 달라도 읽어낸 데이터로 비교하며, cubic tangent도 포함합니다.
+- `model_context`: 메시·가중치·바인드·노드 기본값/계층·재질·이미지 등 core glTF 모델 데이터 비교. 클립이 같아도 이 문맥이 바뀌면 같은 변형·외관으로 승인하지 않습니다. 지원하지 않는 확장은 `unverified`입니다.
+- `preservation_status`: 보호 클립과 모델 문맥이 같으면 `preserved`, 예상 밖의 클립 또는 모델 변경이면 `changed`, 문맥을 확인할 수 없으면 `unverified`, 보호할 기존 클립이 없으면 `no_protected_clips`입니다. 선언한 수정 동작의 품질은 별도 검토합니다.
+
+이 도구는 정확한 데이터 보존 검사입니다. 재샘플링·쿼터니언 표현 변경·노드 순서 변경처럼 결과 동작이 같을 가능성이 있어도 `changed`로 보수적으로 보고할 수 있습니다. 필요한 경우 같은 초 단위 시점의 관절·변형 메시를 Blender에서 비교하고, 변형 정점 대응이 달라졌다면 그에 맞는 비교 방법과 허용 오차를 정합니다. 길이·시작 시각을 먼저 비교하고, 끝 자세나 정규화된 진행률만 맞춰 타이밍 변화를 숨기지 않습니다. 실제 재생·접촉·시각 품질과 `usage.json`의 사용 정책은 이 도구가 판정하지 않습니다.
+
+모델·리그 변경 없이 보정 클립만 바뀌었다면 필요한 클립만 기존 GLB에 명시적으로 병합해 다른 클립의 재내보내기를 피할 수 있습니다. 공유 메시·리그·가중치를 고쳤다면 그 수정이 포함된 모델을 기준으로 삼고 영향받는 동작을 다시 검토합니다. 보존 수치를 맞추려고 수정 전 모델로 되돌리지 않습니다.
+
 ## 검토와 중단 복구
 
 기능이 있는 부품이나 중요한 동작은 [품질 명세와 assess](QUALITY.md)로 사용 범위·재생 정책·조건부 수치 검사·핵심 시점 렌더를 추가합니다. 복잡하거나 반복해 실패하는 동작은 [참고 자료](QUALITY.md#동작-참고-자료-활용)에서 목표 자세·접촉 사건을 정리하고 실제 포즈와 비교해 수정합니다. 리그·동작의 결함은 [단계별 진단](QUALITY.md#리그와-동작의-단계별-진단)으로 원본 모션·대상 골격·메시·장비·출력을 비교하고 원인에 맞는 부분을 수정합니다. 병합과 편집은 해시로 묶인 `usage.json`의 의도를 이어받고 품질 증거는 새로 확인합니다.

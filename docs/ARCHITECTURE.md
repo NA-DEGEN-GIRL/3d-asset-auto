@@ -70,6 +70,8 @@ Tripo의 비용 계획은 로컬 읽기 전용이며 선택 필드 `max_credits`
 
 `merge-animations`는 완료된 기준 모델과 revision/외부 GLB 사본을 검증하고 호환되는 클립만 전달합니다. 기준 기하·스킨·정지 상태를 유지하며 기본 중복 정책은 거절입니다. 다른 리그는 사용자 스크립트의 명시적인 constraint·bake 리타게팅이 필요합니다. authoring 결과는 원래 생성 출처와 구분한 `local_processing`으로 기록합니다. 사용법은 [Blender 편집](BLENDER.md)에 있습니다.
 
+`compare-animations`와 MCP `compare_asset_animations`는 같은 읽기 전용 비교 함수를 호출합니다. 두 GLB의 해시, 선언한 변경 클립, 실제 시간·보간·변환 데이터와 core glTF 모델 문맥의 차이를 즉시 반환합니다. Blender·작업 큐·새 revision·review 기록을 만들지 않습니다. 정확한 보존을 확인할 수 없는 데이터 변화·확장은 별도로 표시하며, 변형 메시의 재생 비교와 시각 품질은 LLM의 추가 검토 대상입니다. [검사 계약](BLENDER.md#개별-클립-수정과-보존-비교)을 참고하세요.
+
 로컬 분리는 먼저 `prepare-segment`로 12개 1024px 뷰와 기하 context를 만들고 원본·context 파일 해시를 묶습니다. LLM이 해당 이미지를 보고 부품 이름과 포함·제외할 픽셀을 정하면 GeoSAM2가 학습된 마스크를 메시 면으로 전파합니다. 최종 사용자에게 annotation을 넘기지 않으며, 분류하지 못한 면도 `unclassified`로 보존합니다. 이 경로는 원본 삼각형·UV·재질·노멀·위치를 유지하고 예산 초과 시에도 감면하지 않습니다. 개별 부품 렌더를 검사하기 전까지 이름은 제안된 의미입니다. 단순 연결 성분 분리를 의미 분리의 근거로 대신하지 않습니다.
 
 로컬 처리 출처는 `local_processing`에 기록하며 원래 생성 provider는 그대로 둡니다. 명시적 Tripo는 별도의 `remote_processing`을 사용하고, 입력 방향 변환·리그 ID·유료 단계 체크포인트를 보존합니다. 상세 필드와 provider별 제한은 [캐릭터 후처리](CHARACTERS.md)와 [Tripo 옵션](TRIPO.md#리깅애니메이션부품-분리)에 있습니다.

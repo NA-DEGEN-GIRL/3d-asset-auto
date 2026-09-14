@@ -119,6 +119,17 @@ def build_server(root):
         return jobs.submit(root, "merge-animations", request)
 
     @server.tool()
+    def compare_asset_animations(request: dict) -> dict:
+        """Read-only GLB clip/model comparison, excluding declared clip edits from preservation claims.
+
+        Returns data differences immediately without Blender, generation, new revisions or visual approval.
+        """
+        from .animation_compare import compare_request
+        from .models import AnimationComparisonRequest
+
+        return compare_request(root, AnimationComparisonRequest.model_validate(request))
+
+    @server.tool()
     def resume_blender_edit(asset_id: str, revision: str) -> dict:
         """Resume a recorded local Blender edit with its saved script, parameters and input revision."""
         return jobs.submit(root, "resume-blender-edit", {"asset_id": asset_id, "revision": revision})

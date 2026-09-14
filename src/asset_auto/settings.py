@@ -117,6 +117,9 @@ def capabilities(root):
                              "supports": ["skeletal animation", "rigid object animation", "multiple clips"]},
         "clip_merge": {"available": blender_available, "command": "merge-animations",
                        "requires": "compatible GLB node hierarchy and skin bind pose", "retargeting": False},
+        "clip_comparison": {"available": True, "command": "compare-animations", "read_only": True,
+                            "requires": "two GLB files and declared intended clip changes",
+                            "automatic_visual_approval": False},
         "tripo_option": {"available": result["providers"]["tripo"], "explicit_selection_required": True},
     }
     result["blender_authoring"] = {

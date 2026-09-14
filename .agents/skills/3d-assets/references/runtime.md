@@ -21,6 +21,7 @@ resume-tripo-process <asset_id> <revision> [--async]
 edit <changes.json> [--async]
 blender-edit <request.json> [--async]
 merge-animations <request.json> [--async]
+compare-animations <request.json>
 resume-blender-edit <asset_id> <revision> [--async]
 resume-merge-animations <asset_id> <revision> [--async]
 job <job_id>
@@ -40,6 +41,8 @@ mcp
 For `rig`/`animate`/`segment`, read the [character guide](../../../../docs/CHARACTERS.md). General `process` defaults to local SkinTokens rigging, procedural Blender motion or GeoSAM2 masks. `process-plan` checks the exact source/backend without inference. `prepare-segment` renders a hash-bound twelve-view context under `.work/`; the agent inspects it and authors named pixel prompts. `resume-process` uses the child's saved provider/request and reuses verified outputs where available. MCP equivalents are `process_plan`, `process_asset`, `prepare_local_segmentation`, and `resume_asset_processing`.
 
 For local custom edits and clip assembly, read the [Blender guide](../../../../docs/BLENDER.md). `blender-edit` snapshots an exact parent's GLB/Blend and trusted Python script, preserves existing clips by default, and exports/reviews a new revision. `merge-animations` retains the base model and transfers compatible selected clips. Their resume commands use the incomplete child and saved inputs; an `authored.blend` execution checkpoint avoids rerunning the script after a render failure. MCP names are `edit_in_blender`, `merge_asset_animations`, `resume_blender_edit`, and `resume_animation_merge`. Generation provider does not choose the editing method.
+
+Use read-only `compare-animations` / MCP `compare_asset_animations(request)` after scoped clip edits to detect changes outside declared `changed_clips`. It compares final GLB channel/time data and core model context without Blender or new revisions. See [comparison limits and recovery](../../../../docs/BLENDER.md#개별-클립-수정과-보존-비교); differing data requires diagnosis, and unchanged data is not visual approval.
 
 When the user explicitly selects Kimodo for learned humanoid motion on an existing rig, read [Kimodo](../../../../docs/KIMODO.md). `text-motion-plan` checks the source, observed SOMA-to-target map, clip conflicts and local capability without inference. `text-motion` creates a child with local learned motion, mapped Blender retargeting and retained clips. `resume-text-motion` reuses hash-bound inference and authoring checkpoints. MCP names are `text_motion_plan`, `generate_text_motion` and `resume_text_motion`. Install this separate backend only for selected Kimodo work; availability does not make it the default animation route.
 

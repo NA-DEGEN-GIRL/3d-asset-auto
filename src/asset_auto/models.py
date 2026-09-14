@@ -241,6 +241,20 @@ class MergeAnimationsRequest(StrictModel):
     preview_clips: list[ClipName] | None = Field(None, min_length=1, max_length=8)
 
 
+class AnimationComparisonRequest(StrictModel):
+    before: str = Field(min_length=1)
+    after: str = Field(min_length=1)
+    changed_clips: list[ClipName] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def unique_changes(self):
+        if len(self.changed_clips) != len(set(self.changed_clips)) or any(
+            not name.strip() for name in self.changed_clips
+        ):
+            raise ValueError("Declared changed clips must be unique and nonblank")
+        return self
+
+
 class UsageFeature(StrictModel):
     name: str = Field(min_length=1)
     representation: str = Field(min_length=1)

@@ -30,6 +30,8 @@ def main():
     command.add_argument("spec", type=Path)
     command = commands.add_parser("text-motion-plan")
     command.add_argument("spec", type=Path)
+    command = commands.add_parser("compare-animations")
+    command.add_argument("spec", type=Path)
     for operation in ("process-plan", "tripo-process-plan"):
         command = commands.add_parser(operation)
         command.add_argument("spec", type=Path)
@@ -66,6 +68,11 @@ def main():
             result = capabilities(root)
         elif args.command == "list":
             result = Store(root).list()
+        elif args.command == "compare-animations":
+            from .animation_compare import compare_request
+            from .models import AnimationComparisonRequest
+
+            result = compare_request(root, AnimationComparisonRequest.model_validate(read_json(args.spec)))
         elif args.command in ("text-motion-plan", "text-motion"):
             from . import text_motion
 
