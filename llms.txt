@@ -2,26 +2,28 @@
 
 > Local-first 3D asset runtime: reference image → TRELLIS.2 → Blender → agent inspection → GLB. Generation provider is independent of editing: the agent chooses no rig, rigid object motion, a SkinTokens draft, custom Blender scripts or compatible clip merging. Kimodo motion and Tripo are used only when explicitly selected by the user. Godot checks are project-dependent and interactive viewers require a user request.
 
+Human guides are available in [English](README.en.md) and [한국어](README.md). Paired guides link to their other language at the top; the installation guide and agent/runtime references are written in English.
+
 ## Install and operate
 
 - [Install](INSTALL.md): Default TRELLIS/models/Blender installation, skill links, optional engine/viewer/MCP components and updates.
-- [Quick start](QUICKSTART.md): Korean usage guide with generation, edits, asynchronous jobs and visual review.
+- [Quick start](QUICKSTART.en.md): Generation, edits, asynchronous jobs and visual review.
 - [Agent instructions](AGENTS.md): Repository commands, source contracts and maintenance invariants.
 - [Asset skill](.agents/skills/3d-assets/SKILL.md): Workflow for creating and reviewing assets.
 - [Request fields](.agents/skills/3d-assets/references/specs.md): Generation and edit specifications.
 - [Runtime reference](.agents/skills/3d-assets/references/runtime.md): CLI commands and artifact layout.
-- [Tripo option](docs/TRIPO.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, automatic standard generation with optional credit limit, and known-task recovery.
-- [Character and part processing](docs/CHARACTERS.md): Default local rigging, motion, agent-prompted semantic parts, character imports and provider-aware recovery.
-- [Blender editing and clips](docs/BLENDER.md): Trusted local scripts for object/custom motion, rig/weight/material changes, compatible clip merging, animation preservation and checkpoint recovery.
-- [Kimodo text motion](docs/KIMODO.md): Explicitly user-selected local learned humanoid motion, observed rig mapping, clip accumulation, pinned setup and inference recovery.
-- [Usage and quality](docs/QUALITY.md): Purpose-based functional criteria, representation limits, playback contracts, optional final-GLB motion assessment, critical frames and scoped evidence.
-- [Surface diagnosis and finishing](docs/FINISHING.md): Locate the first damaged processing stage, distinguish seams/holes/fragments, and reuse a repair workflow only under matching conditions.
-- [Clip preservation comparison](docs/BLENDER.md#개별-클립-수정과-보존-비교): Read-only `compare-animations` / `compare_asset_animations`, declared clip edits, exact time/channel/model differences and limits of preservation evidence.
+- [Tripo option](docs/TRIPO.en.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, automatic standard generation with optional credit limit, and known-task recovery.
+- [Character and part processing](docs/CHARACTERS.en.md): Default local rigging, motion, agent-prompted semantic parts, character imports and provider-aware recovery.
+- [Blender editing and clips](docs/BLENDER.en.md): Trusted local scripts for object/custom motion, rig/weight/material changes, compatible clip merging, animation preservation and checkpoint recovery.
+- [Kimodo text motion](docs/KIMODO.en.md): Explicitly user-selected local learned humanoid motion, observed rig mapping, clip accumulation, pinned setup and inference recovery.
+- [Usage and quality](docs/QUALITY.en.md): Purpose-based functional criteria, representation limits, playback contracts, optional final-GLB motion assessment, critical frames and scoped evidence.
+- [Surface diagnosis and finishing](docs/FINISHING.en.md): Locate the first damaged processing stage, distinguish seams/holes/fragments, and reuse a repair workflow only under matching conditions.
+- [Clip preservation comparison](docs/BLENDER.en.md#editing-one-clip-and-comparing-preservation): Read-only `compare-animations` / `compare_asset_animations`, declared clip edits, exact time/channel/model differences and limits of preservation evidence.
 
 ## Understand and troubleshoot
 
-- [Overview](README.md): Implemented scope, verified results and current limitations.
-- [Architecture](docs/ARCHITECTURE.md): Components, coordinate conventions, revisions and separate quality gates.
-- [Troubleshooting](docs/TROUBLESHOOTING.md): Offline viewer, downloads, environment locks and interrupted jobs.
+- [Overview](README.en.md): Implemented scope, verified results and current limitations.
+- [Architecture](docs/ARCHITECTURE.en.md): Components, coordinate conventions, revisions and separate quality gates.
+- [Troubleshooting](docs/TROUBLESHOOTING.en.md): Offline viewer, downloads, environment locks and interrupted jobs.
 
 This file is a navigation aid, not an installer or a guarantee that every client automatically reads it. Install the shared checkout before linking its skill; add learned postprocessing models only when needed. Kimodo provides a separate learned humanoid-motion path with mapped retargeting; local presets and custom authoring remain available without that model. Import rigs as `character`, or unrigged object/morph clips as `animated`; static import/edit reject animation. General automatic retarget solvers, retopology, texture rebaking and TRELLIS multiview are not implemented. Inspect actual geometry, complementary views of moving states and part previews; ready files, inferred outputs and visually approved results are separate states.

@@ -42,7 +42,7 @@ npm --prefix web run build
 
 These are repository maintenance checks, not steps to run for every requested asset. MCP tests require `uv sync --locked --extra mcp` during setup. For Blender, export or Godot behavior changes, run `uv run --no-sync python scripts/smoke.py`; it creates isolated artifacts under `.work/` and needs Blender/Godot but no GPU. Its procedural fixtures test processing deterministically; they are not the default generation workflow. For viewer changes, verify the affected operation in an actual browser. Windows launcher changes need a local start/reuse/readiness check; Linux CI does not prove Windows background process behavior.
 
-For documentation-only changes, check links and commands against the current implementation; do not download models or regenerate assets unnecessarily. Maintain concise task-specific docs and avoid copying an entire API reference into every entrypoint.
+For documentation-only changes, check links and commands against the current implementation; do not download models or regenerate assets unnecessarily. Maintain concise task-specific docs and avoid copying an entire API reference into every entrypoint. Keep Korean guides and their `.en.md` counterparts aligned when behavior or commands change, and preserve the language links at the top.
 
 For Blender authoring, clip merge or preset preservation changes, use the relevant `scripts/smoke_authoring.py`, `scripts/smoke_animation_merge.py` and `scripts/smoke_local_motion.py` checks. They exercise actual Blender exports and recovery using isolated local fixtures, without inference or API submissions.
 

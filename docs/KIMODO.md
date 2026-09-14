@@ -1,5 +1,7 @@
 # Kimodo 로컬 텍스트 모션
 
+**한국어** | [English](KIMODO.en.md)
+
 [공식 Kimodo](https://github.com/nv-tlabs/kimodo)의 `Kimodo-SOMA-RP-v1.1`로 사람 동작을 생성하고, 이미 리깅된 에셋에 적용합니다. **문장 → 로컬 모션 추론 → 관찰한 뼈 대응으로 Blender 적용 → 기존 클립을 포함한 새 GLB → 다각도 검토** 흐름입니다. 메시 생성기와 독립적이며 Tripo API를 사용하지 않습니다. 새 메시 생성 기본값은 계속 TRELLIS.2입니다.
 
 Kimodo는 캐릭터 메시를 자동 리깅하지 않습니다. 뼈와 스킨 가중치는 기존 리그 또는 [SkinTokens 리깅](CHARACTERS.md#리깅)으로 먼저 준비하고, 생성된 모션을 그 리그에 적용합니다.

@@ -1,5 +1,7 @@
 # 리깅·애니메이션·부품 분리
 
+**한국어** | [English](CHARACTERS.en.md)
+
 생성 provider와 이후 편집은 독립적이고 기본 편집은 **로컬**입니다. LLM이 모델과 요청을 보고 정적 유지, 리그 없는 object 동작, 기존 리그 활용, SkinTokens 리깅 초안, 사용자 Blender 스크립트 중 필요한 방식을 고릅니다. 이 문서는 `process`의 리깅·기본 동작·GeoSAM2 분리를 다룹니다. 사용자 동작·리그/가중치 수정·클립 병합은 [Blender 편집 가이드](BLENDER.md)를 사용합니다. API 키나 Tripo 크레딧은 필요하지 않고, 모델은 해당 추론이 필요할 때만 설치합니다.
 
 사용자가 Tripo를 명시한 경우에만 `provider: "tripo"` 또는 기존 `tripo-process` 명령을 사용합니다. 설치 실패나 키 보유를 이유로 provider를 자동 전환하지 않습니다. 유료 옵션의 비용·리깅 방향·원격 복구는 [Tripo 가이드](TRIPO.md#리깅애니메이션부품-분리)를 참고합니다.

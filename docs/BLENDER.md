@@ -1,5 +1,7 @@
 # 로컬 Blender 편집과 클립 병합
 
+**한국어** | [English](BLENDER.en.md)
+
 생성 provider와 편집 방식은 별개입니다. TRELLIS·Tripo·import 어느 모델이든 기존 결과를 로컬에서 수정할 수 있습니다. 정적 소품에는 리그를 추가하지 않고, 문·뚜껑·떠 있는 물체는 object keyframe으로 움직입니다. 몸의 변형이 필요하면 기존 리그를 사용하거나 [SkinTokens 리깅 초안](CHARACTERS.md#리깅)을 만든 뒤 필요한 뼈·가중치·동작을 Blender에서 다듬습니다. LLM이 요청과 실제 모델을 보고 방식을 고릅니다.
 
 `blender-edit`는 완료된 부모의 원본과 LLM이 작성한 Python 스크립트를 복사해 새 revision에서 실행합니다. 임의의 로컬 `bpy` 코드를 실행하므로 샌드박스가 아닙니다. 요청 범위에 맞게 작성·검토한 스크립트를 사용하며 웹 뷰어에는 실행 API가 없습니다. 기존 모델을 수정하는 기능을 새 메시의 TRELLIS/명시적 Tripo 추론 우회에 사용하지 않습니다.

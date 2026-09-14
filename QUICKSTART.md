@@ -1,5 +1,7 @@
 # 빠른 사용 가이드
 
+**한국어** | [English](QUICKSTART.en.md)
+
 기본은 **이미지 준비 → TRELLIS.2 생성 → Blender 후처리 → LLM의 수치·렌더 검토 → GLB 전달**입니다. Godot와 웹 뷰어를 실행할 필요는 없습니다. 새 PC는 [INSTALL.md](INSTALL.md)의 기본 설치를 완료하고, 아래 CLI 명령은 저장소 루트에서 실행합니다.
 
 유료 Tripo를 쓰려면 “Tripo3D로 만들어 줘”라고 명시하고 [Tripo 가이드](docs/TRIPO.md)의 키·요청 예시를 사용합니다. 에셋당 표준 생성 1회는 기본 설정으로 자동 진행하므로 `max_credits`를 직접 지정할 필요가 없습니다. 단일 이미지 또는 정면 포함 2–4방향 이미지를 지원하며, 나머지 Blender 처리·렌더 검토·GLB 전달은 같습니다. API 키가 있어도 아래 기본 흐름은 TRELLIS를 사용합니다.

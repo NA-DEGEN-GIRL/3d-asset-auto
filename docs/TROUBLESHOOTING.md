@@ -1,5 +1,7 @@
 # 문제 해결
 
+**한국어** | [English](TROUBLESHOOTING.en.md)
+
 명령은 설치한 저장소 루트에서 실행합니다. 공통 첫 확인:
 
 ```sh
