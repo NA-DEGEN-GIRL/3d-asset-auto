@@ -2,11 +2,22 @@
 
 [한국어](KIMODO.md) | **English**
 
-[Kimodo](https://github.com/nv-tlabs/kimodo) `Kimodo-SOMA-RP-v1.1` generates human motion for an already rigged asset: **text → local inference → observed bone mapping in Blender → new GLB retaining existing clips → multiview review**. It is independent of the mesh generator and uses no Tripo API. New mesh generation still defaults to TRELLIS.2.
+[Kimodo](https://github.com/nv-tlabs/kimodo) `Kimodo-SOMA-RP-v1.1` generates human 3D motion drafts for an already rigged asset through observed bone mapping. It does not guarantee naturalness; the agent completes the motion in Blender against reference targets for the character and intended use. It is independent of the mesh generator and uses no Tripo API. New mesh generation still defaults to TRELLIS.2.
 
 Kimodo does not automatically rig the character mesh. Prepare bones/skin weights through an existing rig or [SkinTokens](CHARACTERS.en.md#rigging) first.
 
 **Install and run Kimodo only for explicitly selected Kimodo work.** Generic animation requests, installed weights or failed Blender edits do not select it. Otherwise use existing clips, [Blender authoring](BLENDER.en.md) or procedural `process` presets. Once selected, proceed within the request through setup, inference, application and review without repeated confirmation. Existing Kimodo clips can be corrected in Blender without rerunning inference.
+
+## Workflow for selected Kimodo work
+
+For humanoids with explicit Kimodo selection, first consider **reference review → rig checks → Kimodo draft → Blender finishing → final comparison**. This describes how to complete selected work, not automatic provider selection for generic humanoid animation.
+
+1. **Set per-clip references and expression targets.** Review reference video during initial design and use the [motion reference guide](MOTION_REFERENCES.en.md#turn-references-into-actual-edits) to select poses, trajectories, part lead/follow and rhythm. Reuse sufficient existing material and fill only relevant gaps within the authorized scope.
+2. **Check the target rig and generate the basic motion.** [Probe required joint ranges and deformation](QUALITY.en.md#staged-rig-and-motion-diagnosis), establish observed bone mapping, then use `text-motion-plan` → `text-motion` for the draft. Preserve source motion and distinguish differences already present there from those introduced by applying it to the target skeleton, mesh or equipment. Reuse suitable existing Kimodo sources; decide on new inference from source problems and the task budget.
+3. **Finish for the character in Blender.** Use `blender-edit` to repair diagnosed pose, trajectory, timing, contact and joint-deformation issues. If source meaning is correct, retain inference and fix application-stage mapping, constraints, rig or weights. Treat over-shrinking intended movement to avoid penetration as an [expression regression](QUALITY.en.md#repair-and-stopping-conditions).
+4. **Compare and complete each final-GLB clip.** Compare [corresponding reference events](MOTION_REFERENCES.en.md#compare-reference-and-final-motion) side by side and inspect the same moments from complementary angles. Review transitions/rhythm, technical stability and expression targets separately; repair unmet criteria, export again and recheck within the actual task budget. Report unresolved clips as incomplete with specific differences. Assemble completed clips in one final GLB after preservation checks.
+
+The adapter accepts text for inference. Images/video inform the agent's prompts and Blender decisions; they are not Kimodo video inputs or automatic motion extraction.
 
 ## Install when needed
 
@@ -75,10 +86,6 @@ The adapter maps SOMA global rotations to the target rest pose/hierarchy and sca
 For the next requested motion, use the preceding result as parent and a new `clip_name`, accumulating named clips in **one final GLB**. Names are not silently overwritten. Use `blender-edit` for intended changes and `merge-animations` for compatible separate clips. Follow [per-clip completion](QUALITY.en.md#complete-each-requested-clip); shared pose sheets or a few successful generations cannot approve the entire set.
 
 `text-motion` keeps the Blender-applied result in `retargeted.glb` and **merges only the new clip into the original GLB**. Existing sampler data is not resampled when the Blend and original GLB have different frame rates. `animation-merge.json` records preservation/hashes and final inspection/renders use the merged file. The same selected-clip merge can retain other data after compatible local correction.
-
-After generation perform **target application → multiview/playback review → needed Blender corrections → final-GLB recheck**. Use [staged diagnosis](QUALITY.en.md#staged-rig-and-motion-diagnosis) to compare source motion, target skeleton, skin, equipment and export. When the source meaning is correct and application caused the defect, retain inference and repair the responsible mapping/rig/weights/contact/timing. Decide on new inference from source defects and the task budget.
-
-For complex or creative motion, use [image and video references](QUALITY.en.md#using-motion-references) during initial design. The adapter accepts text, not pose-sheet/video inputs or automatic motion extraction. References inform prompts and Blender decisions.
 
 Corrections create new revisions. Set `preserve_animations: false` only for intended existing-clip changes, preserve other actions in the script and compare output data. Merge compatible corrected clips with explicit `on_conflict: "replace"` only for selected names. If rig/weights changed, keep the corrected model as the final base and review affected earlier motion. See [Blender contracts](BLENDER.en.md).
 

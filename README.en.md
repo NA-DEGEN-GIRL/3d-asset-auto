@@ -12,6 +12,8 @@ Generation and editing are independent choices. Keep static props unrigged, use 
 
 **Kimodo requires an explicit request such as “Generate this motion with Kimodo.”** Generic animation requests use existing clips, Blender authoring or local presets as appropriate. Installed weights or difficult edits do not authorize automatic Kimodo selection.
 
+For selected humanoid work, first consider [reference review → rig checks → Kimodo draft → Blender finishing → final comparison](docs/KIMODO.en.md#workflow-for-selected-kimodo-work). Kimodo provides a 3D motion starting point; complete final clips against both technical stability and adopted expression targets.
+
 ## Documentation
 
 | Task | Guide |

@@ -15,7 +15,7 @@ Human guides are available in [English](README.en.md) and [한국어](README.md)
 - [Tripo option](docs/TRIPO.en.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, automatic standard generation with optional credit limit, and known-task recovery.
 - [Character and part processing](docs/CHARACTERS.en.md): Default local rigging, motion, agent-prompted semantic parts, character imports and provider-aware recovery.
 - [Blender editing and clips](docs/BLENDER.en.md): Trusted local scripts for object/custom motion, rig/weight/material changes, compatible clip merging, animation preservation and checkpoint recovery.
-- [Kimodo text motion](docs/KIMODO.en.md): Explicitly user-selected local learned humanoid motion, observed rig mapping, clip accumulation, pinned setup and inference recovery.
+- [Kimodo text motion](docs/KIMODO.en.md): Explicitly selected humanoid work prioritizes reference review, rig checks, Kimodo drafts, Blender finishing and final comparison; observed mapping, clip preservation, pinned setup and recovery.
 - [Usage and quality](docs/QUALITY.en.md): Purpose-based functional criteria, representation limits, playback contracts, optional final-GLB motion assessment, critical frames and scoped evidence.
 - [Image and video motion references](docs/MOTION_REFERENCES.en.md): Initial design for complex/creative clips, optional Grok Imagine headless use, actual media completion, timestamped frame review and selective Blender application; not automatic motion capture.
 - [Surface diagnosis and finishing](docs/FINISHING.en.md): Locate the first damaged processing stage, distinguish seams/holes/fragments, and reuse a repair workflow only under matching conditions.
