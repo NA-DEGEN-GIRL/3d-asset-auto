@@ -24,6 +24,7 @@ Generation and editing are independent choices. Keep static props unrigged, use 
 | Diagnose damaged surfaces and reuse a finishing approach | [Finishing](docs/FINISHING.en.md) |
 | Explicitly select local learned human motion | [Kimodo](docs/KIMODO.en.md) |
 | Define functional criteria and review each motion | [Quality](docs/QUALITY.en.md) |
+| Plan image/video references for difficult or creative motion | [Motion references](docs/MOTION_REFERENCES.en.md): initial design, optional Grok headless, frame review and Blender application |
 | Maintain the repository | [Agent instructions](AGENTS.md) |
 | Understand data flow and validation states | [Architecture](docs/ARCHITECTURE.en.md) |
 | Resolve setup, generation or viewer failures | [Troubleshooting](docs/TROUBLESHOOTING.en.md) |
@@ -61,6 +62,8 @@ To delegate installation, provide the repository URL and ask:
 Numerical checks, visual review and engine/browser checks provide different evidence. An importer or renderer succeeding does not prove useful game motion or artistic quality.
 
 For several motions, complete **references → authoring → multiview/playback review → repair and recheck for each clip**, then deliver them together. Repeated or side-swapped generated poses need diagnosis; use existing motion or video when images cannot resolve sequencing. Do not compress the entire requested set into one or two overview sheets. See [per-clip completion](docs/QUALITY.en.md#complete-each-requested-clip).
+
+For difficult or creative motion, plan image and temporal references during initial design. Available tools such as Grok Imagine can animate a reference image, informing selected poses/timing in Blender after the reference's structure and contacts are inspected. Automatic video-to-3D motion extraction is not provided. Grok/FFmpeg are optional reference tools and are not added to the default installation.
 
 After a scoped clip edit, [compare preservation](docs/BLENDER.en.md#editing-one-clip-and-comparing-preservation). A data change calls for diagnosis: the tool does not replace pose/timing comparison of resampled motion or visual review.
 

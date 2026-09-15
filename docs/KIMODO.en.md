@@ -78,7 +78,7 @@ For the next requested motion, use the preceding result as parent and a new `cli
 
 After generation perform **target application → multiview/playback review → needed Blender corrections → final-GLB recheck**. Use [staged diagnosis](QUALITY.en.md#staged-rig-and-motion-diagnosis) to compare source motion, target skeleton, skin, equipment and export. When the source meaning is correct and application caused the defect, retain inference and repair the responsible mapping/rig/weights/contact/timing. Decide on new inference from source defects and the task budget.
 
-Use [motion references](QUALITY.en.md#using-motion-references) when targets are unclear or correction repeatedly fails. The adapter accepts text, not pose-sheet/video inputs or automatic motion extraction. References inform prompts and Blender decisions.
+For complex or creative motion, use [image and video references](QUALITY.en.md#using-motion-references) during initial design. The adapter accepts text, not pose-sheet/video inputs or automatic motion extraction. References inform prompts and Blender decisions.
 
 Corrections create new revisions. Set `preserve_animations: false` only for intended existing-clip changes, preserve other actions in the script and compare output data. Merge compatible corrected clips with explicit `on_conflict: "replace"` only for selected names. If rig/weights changed, keep the corrected model as the final base and review affected earlier motion. See [Blender contracts](BLENDER.en.md).
 

@@ -17,6 +17,7 @@ Human guides are available in [English](README.en.md) and [한국어](README.md)
 - [Blender editing and clips](docs/BLENDER.en.md): Trusted local scripts for object/custom motion, rig/weight/material changes, compatible clip merging, animation preservation and checkpoint recovery.
 - [Kimodo text motion](docs/KIMODO.en.md): Explicitly user-selected local learned humanoid motion, observed rig mapping, clip accumulation, pinned setup and inference recovery.
 - [Usage and quality](docs/QUALITY.en.md): Purpose-based functional criteria, representation limits, playback contracts, optional final-GLB motion assessment, critical frames and scoped evidence.
+- [Image and video motion references](docs/MOTION_REFERENCES.en.md): Initial design for complex/creative clips, optional Grok Imagine headless use, actual media completion, timestamped frame review and selective Blender application; not automatic motion capture.
 - [Surface diagnosis and finishing](docs/FINISHING.en.md): Locate the first damaged processing stage, distinguish seams/holes/fragments, and reuse a repair workflow only under matching conditions.
 - [Clip preservation comparison](docs/BLENDER.en.md#editing-one-clip-and-comparing-preservation): Read-only `compare-animations` / `compare_asset_animations`, declared clip edits, exact time/channel/model differences and limits of preservation evidence.
 
