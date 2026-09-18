@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="style.css">
+  <title>VFX Studio · Asset Auto</title>
+</head>
+<body>
+  <header><a class="brand" href="./"><span class="mark">✳</span> ASSET AUTO <span class="divider">/</span> <span class="muted">VFX STUDY 01</span></a><span class="status"><i></i> LIVE · THREE.JS</span></header>
+  <main>
+    <section class="stage" aria-label="3D 효과 미리보기">
+      <div class="stage-heading"><span class="eyebrow" id="effect-method">PROCEDURAL STUDY</span><h1 id="effect-title">Arcane Pulse<span>비전 충격파</span></h1><p id="effect-description">응축된 빛이 퍼지는 순간.</p></div>
+      <div id="viewport"></div>
+      <div id="error" role="alert" hidden></div>
+      <div class="stage-footer"><span>드래그 · 회전 &nbsp; / &nbsp; 휠 · 확대</span><span id="render-status">렌더러 준비 중</span></div>
+    </section>
+    <aside>
+      <div class="panel-heading"><span class="eyebrow">PREVIEW CONTROLS</span><span class="badge">01</span></div>
+      <section class="control-section"><h2>효과 선택 <span>Study</span></h2><label for="effect" class="sr-only">효과 선택</label><select id="effect"><option value="pulse">도형 기반 · 충격파</option value="soul" disabled>이미지·영상 기반 · 영혼 불꽃</option></select></section>
+      <section class="control-section"><h2>재생 <span>Playback</span></h2>
+        <div class="play-row"><button id="play" class="primary">일시정지</button><button id="replay">↺ 다시 재생</button></div>
+        <label class="row">반복 재생<input id="loop" type="checkbox" checked></label>
+        <label class="row" for="speed">재생 속도<select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option></select></label>
+      </section>
+      <section class="control-section"><h2>시점과 배경 <span>Look</span></h2>
+        <div class="segmented" role="group" aria-label="카메라"><button data-camera="perspective" aria-pressed="true">사선</button><button data-camera="side" aria-pressed="false">측면</button><button data-camera="top" aria-pressed="false">위</button></div>
+        <div class="segmented backgrounds" role="group" aria-label="배경"><button data-background="dark" aria-pressed="true"><i class="swatch dark"></i>어두움</button><button data-background="light" aria-pressed="false"><i class="swatch light"></i>밝음</button></div>
+        <label class="row">가림 테스트<input id="occluder" type="checkbox"></label>
+        <label class="row">두 효과 겹쳐 보기<input id="overlap" type="checkbox"></label>
+      </section>
+      <section class="control-section"><h2>효과 구성 <span>Layers</span></h2>
+        <div id="layers">
+        <label class="row"><span><b class="dot"></b>파동 · Ring</span><input type="checkbox" data-layer="ring" checked></label>
+        <label class="row"><span><b class="dot"></b>잔광 · Crown</span><input type="checkbox" data-layer="crown" checked></label>
+        <label class="row"><span><b class="dot"></b>광원핵 · Core</span><input type="checkbox" data-layer="core" checked></label>
+        <label class="row"><span><b class="dot"></b>불티 · Sparks</span><input type="checkbox" data-layer="sparks" checked></label>
+        </div>
+      </section>
+      <p class="note">한 번의 효과를 천천히 살펴보세요.<br>타임라인을 움직이면 같은 순간을<br>다른 방향에서 비교할 수 있습니다.</p>
+    </aside>
+    <section class="timeline" aria-label="효과 타임라인">
+      <div class="time-heading"><span><i class="live-dot"></i><strong id="phase">응축</strong></span><output id="time" for="scrub">0.00 <span>/ 2.40 s</span></output></div>
+      <label class="sr-only" for="scrub">효과 시간</label><input type="range" id="scrub" min="0" max="2.4" value="0" step="0.001">
+      <div class="moments"><button data-time="0.30">01 <span>응축</span></button><button data-time="0.56">02 <span>방출</span></button><button data-time="1.05">03 <span>확산</span></button><button data-time="1.90">04 <span>소멸</span></button></div>
+    </section>
+    <section class="references" id="references" hidden>
+      <div class="reference-heading"><span class="eyebrow">REFERENCE → REALTIME</span><h2>표현의 출발점</h2><p>ImageGen의 형태·질감 → Grok의 시간 변화 → 위 화면의 게임용 플립북</p></div>
+      <div class="reference-grid"><figure><img id="reference-image" alt="ImageGen으로 생성한 영혼 불꽃의 기준 이미지"><figcaption>01 · ImageGen 원본</figcaption></figure><figure><video id="reference-video" controls muted playsinline preload="metadata" aria-label="Grok 영혼 불꽃 참고 영상"></video><figcaption>02 · Grok 참고 영상 · 6초</figcaption></figure></div>
+      <p class="reference-note">위 효과는 영상의 96프레임을 텍스처로 재생합니다. 볼륨 시뮬레이션이 아닌 카메라 방향의 평면 효과이며, 원본 영상의 검은 배경을 밝기 기반으로 제거합니다. 밝은 배경과 가림 테스트에서 경계를 확인하세요. 반복 버튼은 재발동이며 자연스럽게 이어지는 루프를 뜻하지 않습니다.</p>
+    </section>
+  </main>
+  <footer><span>참고 자료와 게임 효과를 비교하는 VFX 샘플</span><span>ONE SHOT <b>·</b> LOCAL PREVIEW</span></footer>
+  <script type="module" src="preview.js"></script>
+</body>
+</html>

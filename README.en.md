@@ -27,6 +27,7 @@ For selected humanoid work, first consider [reference review → rig checks → 
 | Explicitly select local learned human motion | [Kimodo](docs/KIMODO.en.md) |
 | Define functional criteria and review each motion | [Quality](docs/QUALITY.en.md) |
 | Plan image/video references for difficult or creative motion | [Motion references](docs/MOTION_REFERENCES.en.md): initial design, optional Grok headless, frame review and Blender application |
+| Author spell effects, shockwaves or particles | [VFX](docs/VFX.en.md): representation, lifecycle, review and a Three.js web test |
 | Maintain the repository | [Agent instructions](AGENTS.md) |
 | Understand data flow and validation states | [Architecture](docs/ARCHITECTURE.en.md) |
 | Resolve setup, generation or viewer failures | [Troubleshooting](docs/TROUBLESHOOTING.en.md) |
@@ -57,11 +58,14 @@ To delegate installation, provide the repository URL and ask:
 | Explicit Tripo processing | Paid biped rigging, motion presets and beta semantic segmentation |
 | Revisions and delivery | Preserved parents, editable Blend, self-contained GLB, five overview PNGs and inspection/provenance records |
 | Optional project adapters | Godot import/mesh/material/collision checks; requested Three.js preview with orbit, zoom, wireframe, revision selection and downloads |
+| Game VFX authoring | Image/video-informed authoring/review guidance and Three.js shockwave/generated-video flipbook examples; no universal generator or cross-engine converter |
 | Agent access | CLI, linked personal skill and optional stdio MCP |
 
 `process` motion presets are procedural. Kimodo is a separate learned-motion path and its mapping-based application does not automatically solve target contacts, grips or seamless loops. Its text encoder requires Hugging Face model access. General automatic retarget solvers, TRELLIS multiview, automatic retopology and texture rebaking are not implemented. Tripo is the available multiview generation option. Inspect actual geometry, part boundaries, materials and motion; retain unclassified faces.
 
 Numerical checks, visual review and engine/browser checks provide different evidence. An importer or renderer succeeding does not prove useful game motion or artistic quality.
+
+Use the [VFX workflow](docs/VFX.en.md) to choose mesh animation, textures, particles or shaders for game effects. Rendering points, rings and ribbons can be authored directly; separate physical props retain the normal generation policy. Deliver native source and playback contracts for custom shaders/emitters rather than assuming one GLB preserves them. Create a web preview only when requested.
 
 For several motions, complete **references → authoring → multiview/playback review → repair and recheck for each clip**, then deliver them together. Repeated or side-swapped generated poses need diagnosis; use existing motion or video when images cannot resolve sequencing. Do not compress the entire requested set into one or two overview sheets. See [per-clip completion](docs/QUALITY.en.md#complete-each-requested-clip).
 
