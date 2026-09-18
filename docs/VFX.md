@@ -132,7 +132,21 @@ node examples/vfx-web/build.mjs --media-dir .work/vfx-soul/reference
 
 `createSoulFlame({ texture, columns, rows, frames, fps })`는 `group`, `duration`, `update(seconds)`, `setLayer(name, visible)`, `dispose()`를 제공합니다. 층 이름은 `body`와 `halo`입니다. 텍스처는 호출자가 소유하여 마지막 인스턴스 제거 후 따로 `dispose()`합니다. 프레임 선택은 역방향 탐색이 가능하며 마지막 프레임에서 멈춥니다. 이 예제의 UI 반복은 효과 재발동이고 연속 불꽃 루프는 아닙니다.
 
+### 생성 메시를 사용하는 얼음 낙하 예제
+
+`ice-effect.js`는 실제 GLB의 이름 있는 클립을 재생하며, 독립된 두 인스턴스·역방향 시간 이동·최종 파편 유지와 서리 입자를 지원합니다. 참조 영상은 비교 자료이고 주효과는 입체 메시입니다. 로컬 제작에서는 ImageGen 형태 → TRELLIS.2 → 원본 표면 복구·파편 절단 → Blender 강체 계산·베이크를 사용했고, 내부 단면에는 별도로 생성한 얼음 텍스처를 적용했습니다. 단면의 Three.js 재질 보정은 GLB 재질과 별도입니다.
+
+생성 결과는 Git에 포함되지 않습니다. 로컬 폴더에 `ice.glb`, `ice.png`, `ice.mp4`, `ice-events.json`을 준비한 뒤 연결합니다. 사건 파일은 `clip`, 양수 `duration`, 클립 안의 `impact`, 타임라인 버튼용 시각 네 개의 `moments`, 표시용 `fragments`를 포함합니다. 필요하면 `start_offset`에 GLB의 시작 시각을 지정합니다. 이 예제의 Blender 24 FPS 클립은 `1/24`초이며 모든 사건·버튼 시각은 그 시작점부터 잽니다.
+
+```sh
+node examples/vfx-web/build.mjs --ice-dir .work/vfx-ice/delivery
+```
+
+기존 불꽃 자료도 유지하려면 같은 명령에 `--media-dir .work/vfx-soul/reference`를 추가합니다. 서버는 위와 같은 `.work/vfx-web/site/`를 제공합니다. 조립·분리·확산·정착을 같은 시각의 여러 방향에서 비교하고, 입자를 꺼 메시 자체도 검사합니다. 충돌 시점이 고정된 재생 예제이며 임의 지형에 반응하는 실시간 파쇄가 아닙니다. 상용 게임 품질이나 다수 동시 효과의 성능을 보증하지 않습니다.
+
 ### 작은 자동 검사와 한계
+
+얼음 재생 검사는 클립 종료 후 역방향 탐색, 정착한 조각 유지, 인스턴스 독립성과 공유 GLB 자원의 소유권도 확인합니다.
 
 ```sh
 node examples/vfx-web/build.mjs --test

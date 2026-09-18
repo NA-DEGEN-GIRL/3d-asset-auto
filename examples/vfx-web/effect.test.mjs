@@ -1,8 +1,9 @@
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
-import { Group, DataTexture } from 'three';
+import { Group, DataTexture, Mesh, BoxGeometry, MeshStandardMaterial, AnimationClip, VectorKeyframeTrack } from 'three';
 import { createArcanePulse, pulseState, PULSE } from './effect.js';
 import { createSoulFlame, flipbookFrame } from './soul-effect.js';
+import { createIceFall } from './ice-effect.js';
 
 test('seeking backwards reproduces geometry and seeded variants remain independent', () => {
   const a = createArcanePulse({ seed: 17 });
@@ -82,4 +83,29 @@ test('soul instances share caller-owned media but preserve independent timing an
   a.dispose(); a.dispose(); assert.equal(textureDisposals, 0);
   b.update(1); b.dispose(); texture.dispose(); assert.equal(textureDisposals, 1);
   assert.throws(() => createSoulFlame({ texture, frames: 97 }), /atlas/);
+});
+
+test('ice shared clip seeks after its end, retains settled pieces and keeps instances independent', () => {
+  const scene = new Group();
+  const geometry = new BoxGeometry(); const material = new MeshStandardMaterial();
+  const piece = new Mesh(geometry, material); piece.name = 'fragment'; scene.add(piece);
+  const gltf = { scene, animations: [new AnimationClip('fall', 3, [
+    new VectorKeyframeTrack('fragment.position', [0, 1, 3], [0, 4, 0, 0, 1, 0, 2, 0.5, 0]),
+  ])] };
+  const events = { clip: 'fall', duration: 3, impact: 1, start_offset: 0 };
+  const a = createIceFall({ gltf, events }), b = createIceFall({ gltf, events });
+  const position = (fx) => fx.group.getObjectByName('fragment').position.toArray();
+  a.update(3); assert.deepEqual(position(a), [2, 0.5, 0]); assert.equal(a.group.visible, true);
+  a.update(0.5); assert.deepEqual(position(a), [0, 2.5, 0]);
+  b.update(2); assert.deepEqual(position(b), [1, 0.75, 0]);
+  assert.deepEqual(position(a), [0, 2.5, 0]); assert.deepEqual(piece.position.toArray(), [0, 0, 0]);
+  a.setLayer('body', false); a.update(2); assert.equal(a.group.children[0].visible, false);
+  assert.equal(b.group.children[0].visible, true);
+  let sharedDisposals = 0, ownedDisposals = 0;
+  geometry.addEventListener('dispose', () => sharedDisposals++);
+  material.addEventListener('dispose', () => sharedDisposals++);
+  a.group.getObjectByName('fragment').material.addEventListener('dispose', () => ownedDisposals++);
+  a.dispose(); a.dispose(); assert.equal(ownedDisposals, 1); assert.equal(sharedDisposals, 0);
+  b.update(0.5); b.dispose(); geometry.dispose(); material.dispose();
+  assert.equal(sharedDisposals, 2);
 });

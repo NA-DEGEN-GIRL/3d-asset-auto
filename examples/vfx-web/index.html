@@ -23,8 +23,9 @@
         <h2>효과 선택 <span>Study</span></h2>
         <label for="effect" class="sr-only">효과 선택</label>
         <select id="effect">
+          <option value="ice" disabled>3D 메시 · 얼음 낙하와 파쇄</option>
           <option value="pulse">도형 기반 · 충격파</option>
-          <option value="soul" disabled>이미지·영상 기반 · 영혼 불꽃</option>
+          <option value="soul" disabled>2D 플립북 · 영혼 불꽃</option>
         </select>
       </section>
       <section class="control-section"><h2>재생 <span>Playback</span></h2>
@@ -33,7 +34,7 @@
         <label class="row" for="speed">재생 속도<select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option></select></label>
       </section>
       <section class="control-section"><h2>시점과 배경 <span>Look</span></h2>
-        <div class="segmented" role="group" aria-label="카메라"><button data-camera="perspective" aria-pressed="true">사선</button><button data-camera="side" aria-pressed="false">측면</button><button data-camera="top" aria-pressed="false">위</button></div>
+        <div class="segmented" role="group" aria-label="카메라"><button data-camera="perspective" aria-pressed="true">사선</button><button data-camera="side" aria-pressed="false">측면</button><button data-camera="back" aria-pressed="false">후면</button><button data-camera="top" aria-pressed="false">위</button></div>
         <div class="segmented backgrounds" role="group" aria-label="배경"><button data-background="dark" aria-pressed="true"><i class="swatch dark"></i>어두움</button><button data-background="light" aria-pressed="false"><i class="swatch light"></i>밝음</button></div>
         <label class="row">가림 테스트<input id="occluder" type="checkbox"></label>
         <label class="row">두 효과 겹쳐 보기<input id="overlap" type="checkbox"></label>

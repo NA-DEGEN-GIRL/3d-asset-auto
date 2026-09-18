@@ -132,7 +132,21 @@ After reloading, the soul flame is selected with its source image/video below; s
 
 `createSoulFlame({ texture, columns, rows, frames, fps })` exposes `group`, `duration`, `update(seconds)`, `setLayer(name, visible)` and `dispose()`. Layers are `body` and `halo`. The caller owns the texture and disposes it separately after removing its last instance. Frame selection supports reverse seeking and clamps to the final frame. UI looping retriggers the effect; it is not a continuous flame loop.
 
+### Falling ice using generated meshes
+
+`ice-effect.js` plays a named clip from an actual GLB, with independent instances, reverse seeking, retained final fragments and supporting frost particles. Reference footage is comparison material; the primary effect is 3D geometry. The local study used ImageGen shape design → TRELLIS.2 → source-surface repair and fragment cuts → Blender rigid-body evaluation and baking, with a separately generated ice texture on interior faces. Three.js interior material adjustments are separate from the GLB material.
+
+Generated results are not in Git. Supply a local directory containing `ice.glb`, `ice.png`, `ice.mp4` and `ice-events.json`. The event file contains `clip`, positive `duration`, an `impact` within the clip, four `moments` for timeline buttons and `fragments` for display. Set `start_offset` to the GLB start time when needed. This study's Blender 24 FPS clip starts at `1/24` seconds; all event/button times are relative to that start.
+
+```sh
+node examples/vfx-web/build.mjs --ice-dir .work/vfx-ice/delivery
+```
+
+Add `--media-dir .work/vfx-soul/reference` to the same command to retain existing flame media. Serve the same `.work/vfx-web/site/` directory as above. Compare assembly, separation, spread and settling at matching times from multiple angles; disable particles to inspect the meshes alone. Impact time is authored playback, not runtime fracture responding to arbitrary terrain. This does not establish commercial-game quality or performance with many simultaneous effects.
+
 ### Small automated checks and limits
+
+Ice playback checks also cover reverse seeking after clip end, retained settled pieces, instance independence and shared GLB resource ownership.
 
 ```sh
 node examples/vfx-web/build.mjs --test

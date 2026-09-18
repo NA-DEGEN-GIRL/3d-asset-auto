@@ -20,11 +20,12 @@ class EffectOptions(HTMLParser):
             self.in_effect_select = False
 
 
-def test_vfx_effect_selector_contains_both_modes_before_media_initialization():
+def test_vfx_effect_selector_has_optional_media_modes_before_initialization():
     html = Path(__file__).resolve().parents[1] / "examples" / "vfx-web" / "index.html"
     parser = EffectOptions()
     parser.feed(html.read_text(encoding="utf-8"))
 
-    assert [option.get("value") for option in parser.options] == ["pulse", "soul"]
-    assert "disabled" not in parser.options[0]
-    assert "disabled" in parser.options[1]
+    assert [option.get("value") for option in parser.options] == ["ice", "pulse", "soul"]
+    assert "disabled" in parser.options[0]
+    assert "disabled" not in parser.options[1]
+    assert "disabled" in parser.options[2]
