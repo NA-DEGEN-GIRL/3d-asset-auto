@@ -1,16 +1,15 @@
 ---
 name: 3d-assets
-description: Create 3D assets with TRELLIS.2; edit, rig, animate or combine clips in Blender; author game VFX for the target renderer. Use for mesh refinement, learned rig drafts, semantic parts and reviewed delivery. Kimodo and Tripo require explicit selection; viewers are optional.
+description: Create 3D assets with TRELLIS.2 and edit, rig, animate or combine clips in Blender. Use for mesh refinement, learned rig drafts, semantic parts and reviewed GLB delivery. Kimodo human motion and Tripo require explicit user selection; engines and viewers are optional.
 ---
 
 # 3D assets
 
-For mesh runtime operations, use `scripts/assetctl.py` through this skill's resolved path; its wrapper locates the shared runtime even from another project. Run `doctor` to discover actual capabilities. Read [runtime.md](references/runtime.md) for commands and [specs.md](references/specs.md) when constructing requests. A submitted job or installed file is not evidence of successful inference.
+Use `scripts/assetctl.py` through this skill's resolved path; its wrapper locates the shared runtime even from another project. Run `doctor` to discover actual capabilities. Read [runtime.md](references/runtime.md) for commands and [specs.md](references/specs.md) when constructing requests. A submitted job or installed file is not evidence of successful inference.
 
 ## Choose the workflow
 
-- Match the target project's existing scale, naming, materials and budgets. With no target, deliver portable asset/source files without choosing an engine or creating an app.
-- For game spell/impact/aura/trail VFX, read [VFX.md](../../../docs/VFX.md) before implementation. Break the request into spatial forms, motion/events, interactions and delivery; distinguish callable features, custom authoring and missing capabilities. For requested 3D effects, retain the main form and movement in 3D: playing reference footage on a camera-facing plane does not fulfill falling, breaking or freely viewed objects. Inspect needed image/temporal references during design and translate adopted targets into geometry, motion and materials; sprites/flipbooks can support suitable layers. The guide covers a tested fragment-to-GLB path and its limits. Rendering carriers may be authored directly; physical meshes retain the generation rules below. Deliver native resources and timing/lifecycle contracts for behavior GLB cannot carry. Follow VFX-specific review and create a viewer only when requested.
+- Match the target project's existing scale, naming, materials and budgets. With no target, deliver portable GLB/source files without choosing an engine or creating an app.
 - Before making or editing, define a few observable acceptance criteria for the request's core purpose and expected viewing/use conditions. Infer reasonable defaults and record assumptions. For functional work include representation, operating range, interactions and playback intent. Read [QUALITY.md](../../../docs/QUALITY.md) when appearance, interaction or motion determines acceptance; it guides targeted inspection, repair and optional `assess`. Choose criteria for this use, not a universal anatomy, topology or style checklist.
 - For complex, creative or unfamiliar motion, plan [image and temporal references](../../../docs/QUALITY.md#동작-참고-자료-활용) during initial design, within the authorized scope. Define the expression to retain per clip using [motion reference guidance](../../../docs/MOTION_REFERENCES.md), which also covers optional Grok Imagine. Reuse suitable material and prepare missing references per clip; a mixed-motion overview cannot cover every clip. Preserve adopted motion character when authoring, and diagnose differences rather than defaulting to the current rig controls' convenient range. Generated references are hypotheses: separate intended expression from errors and unknowns.
 - New meshes default to TRELLIS.2. Use a supplied reference or an available image-generation tool to prepare one; `prompt` is provenance, not text-to-image. Do not reconstruct the reference with Blender primitives or import a newly authored procedural mesh to bypass inference. New procedural geometry requires the user's explicit request. Existing supplied meshes can be imported and edited without regeneration.
@@ -41,6 +40,6 @@ Blender renders support agent review without a browser. For standalone assets, d
 
 ## Report
 
-Give the asset/revision, actual generation and processing backends, checks performed, material defects and usable GLB/source paths (native effect files for VFX). Distinguish local readiness, model inference, numeric checks, visual review and engine tests. Mention a viewer URL only if requested and running. Keep models, references, logs and outputs local unless publication was requested; explicitly selected Tripo sends its input to that service.
+Give the asset/revision, actual generation and processing backends, checks performed, material defects and usable GLB/source paths. Distinguish local readiness, model inference, numeric checks, visual review and engine tests. Mention a viewer URL only if requested and running. Keep models, references, logs and outputs local unless publication was requested; explicitly selected Tripo sends its input to that service.
 
 When playback or functional assumptions matter, deliver the GLB-bound `usage.json` too. Preserve and reconcile clip policies/events through edits and merges; inherited intent is not inherited approval. Leave unsupported or unseen criteria explicitly untested.

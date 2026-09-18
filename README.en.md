@@ -27,7 +27,7 @@ For selected humanoid work, first consider [reference review → rig checks → 
 | Explicitly select local learned human motion | [Kimodo](docs/KIMODO.en.md) |
 | Define functional criteria and review each motion | [Quality](docs/QUALITY.en.md) |
 | Plan image/video references for difficult or creative motion | [Motion references](docs/MOTION_REFERENCES.en.md): initial design, optional Grok headless, frame review and Blender application |
-| Author 3D spell effects, fragments or particles | [VFX](docs/VFX.en.md): capability boundaries, references → falling/breaking authoring, review and optional web tests |
+| Review the VFX separation design and existing experiments | [game-vfx design notes](docs/GAME_VFX_DESIGN.en.md), [VFX experiments](docs/VFX.en.md): separate skill and dedicated tool integrations are not implemented |
 | Maintain the repository | [Agent instructions](AGENTS.md) |
 | Understand data flow and validation states | [Architecture](docs/ARCHITECTURE.en.md) |
 | Resolve setup, generation or viewer failures | [Troubleshooting](docs/TROUBLESHOOTING.en.md) |
@@ -58,14 +58,13 @@ To delegate installation, provide the repository URL and ask:
 | Explicit Tripo processing | Paid biped rigging, motion presets and beta semantic segmentation |
 | Revisions and delivery | Preserved parents, editable Blend, self-contained GLB, five overview PNGs and inspection/provenance records |
 | Optional project adapters | Godot import/mesh/material/collision checks; requested Three.js preview with orbit, zoom, wireframe, revision selection and downloads |
-| Game VFX authoring | Image/video references → Blender/destination authoring guidance. Small fragment physics → shared clip → GLB check passed; no dedicated automatic fracture or game collision integration |
 | Agent access | CLI, linked personal skill and optional stdio MCP |
 
 `process` motion presets are procedural. Kimodo is a separate learned-motion path and its mapping-based application does not automatically solve target contacts, grips or seamless loops. Its text encoder requires Hugging Face model access. General automatic retarget solvers, TRELLIS multiview, automatic retopology and texture rebaking are not implemented. Tripo is the available multiview generation option. Inspect actual geometry, part boundaries, materials and motion; retain unclassified faces.
 
 Numerical checks, visual review and engine/browser checks provide different evidence. An importer or renderer succeeding does not prove useful game motion or artistic quality.
 
-Use the [VFX workflow](docs/VFX.en.md) to distinguish existing operations, custom authoring and missing capabilities first. Falling and breaking ice, for example, can follow references → physical chunk models → Blender fragments/motion → GLB or destination event handling. **Playing reference imagery/video on a plane does not substitute for a requested 3D effect.** Rendering points, rings and ribbons can be authored directly; new chunks/props retain the normal generation policy. Physics simulation, arbitrary shaders, emitters and gameplay logic need appropriate source and playback contracts beyond GLB. The existing soul flame is a 2D flipbook study; create web previews only when requested.
+Complete game VFX authoring is separated from the scope of `3d-assets`. This skill can supply models such as ice chunks or meteors and mesh animations used by an effect. **`game-vfx` is [in design](docs/GAME_VFX_DESIGN.en.md), not an installable skill or a dedicated generator integration yet.** Existing [VFX examples and checks](docs/VFX.en.md) remain separate experimental resources.
 
 For several motions, complete **references → authoring → multiview/playback review → repair and recheck for each clip**, then deliver them together. Repeated or side-swapped generated poses need diagnosis; use existing motion or video when images cannot resolve sequencing. Do not compress the entire requested set into one or two overview sheets. See [per-clip completion](docs/QUALITY.en.md#complete-each-requested-clip).
 

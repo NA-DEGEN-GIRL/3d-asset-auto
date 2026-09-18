@@ -1,6 +1,8 @@
-# Game effects and VFX
+# VFX experiment notes
 
 [한국어](VFX.md) | **English**
+
+> **Scope change:** Complete VFX authoring guidance has been separated from `3d-assets`. This document preserves methods, examples and validation limits from earlier authoring experiments; it is not the active skill workflow or a dedicated VFX tool integration. Its rendering-carrier rules do not change physical model generation policy. A separate `game-vfx` is described in the [design notes](GAME_VFX_DESIGN.en.md); no installable skill exists yet.
 
 The current tools can **author falling, separating and moving 3D fragments and effects for a destination renderer**. There is no dedicated generator that completes an effect from one request or automatic fracture command. The [falling and breaking example](#example-falling-and-breaking-objects) and [small capability check](#3d-fragment-physics-and-glb-check) distinguish authoring possibilities from verified behavior. Existing [shockwave](../examples/vfx-web/effect.js) and [flame flipbook](../examples/vfx-web/soul-effect.js) examples cover particular representations; the latter is a 2D study.
 
