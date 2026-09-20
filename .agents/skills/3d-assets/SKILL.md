@@ -7,6 +7,8 @@ description: Create 3D assets with TRELLIS.2 and edit, rig, animate or combine c
 
 Use `scripts/assetctl.py` through this skill's resolved path; its wrapper locates the shared runtime even from another project. Run `doctor` to discover actual capabilities. Read [runtime.md](references/runtime.md) for commands and [specs.md](references/specs.md) when constructing requests. A submitted job or installed file is not evidence of successful inference.
 
+On a non-Windows host, a registered workspace-skill-bridge descriptor for this skill routes the same wrapper to the Windows runtime that owns the installed checkout; upload every file input first and rewrite embedded paths to the returned Windows paths. Read [Windows bridge routing](references/windows-bridge.md) before using or changing that route; without a descriptor the local runtime behavior is unchanged.
+
 ## Choose the workflow
 
 - Match the target project's existing scale, naming, materials and budgets. With no target, deliver portable GLB/source files without choosing an engine or creating an app.
