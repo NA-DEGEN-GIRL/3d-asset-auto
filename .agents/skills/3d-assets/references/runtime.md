@@ -2,7 +2,7 @@
 
 The wrapper accepts all `assetctl` arguments. In the runtime repository itself, use `uv run --no-sync python -m asset_auto.cli ...` after `uv sync`. The `--no-sync` form avoids reinstalling a Windows executable while another process is serving the viewer.
 
-The wrapper runs the local runtime unchanged. On a non-Windows host, a registered workspace-skill-bridge descriptor that enables this skill routes the same arguments to the Windows runtime that owns the installed checkout; read [windows-bridge.md](windows-bridge.md) before using or changing that route.
+The wrapper supports `--execution local|windows|auto`, `runtime-status` and `runtime-configure`. Read [execution-setup.md](execution-setup.md) for OS-specific preparation, registration and stable job routing; read [windows-bridge.md](windows-bridge.md) for cross-host file transfer. Runtime commands below are unchanged.
 
 ```text
 doctor

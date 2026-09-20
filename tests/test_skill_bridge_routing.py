@@ -284,3 +284,74 @@ def test_missing_local_runtime_reports_the_install_hint(wrapper, tmp_path):
     with pytest.raises(SystemExit, match="uv sync"):
         wrapper.main(["doctor"], os_name="posix", environ={"HOME": str(tmp_path / "home")},
                      root=tmp_path / "absent")
+def register_fixture(wrapper, tmp_path, root, execution="auto"):
+    environ = {"HOME": str(tmp_path / "home"), "CODEX_HOME": str(tmp_path / "codex")}
+    path = wrapper.runtime_preferences(environ)
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"version": 1, "root": str(root), "execution": execution}), encoding="utf-8")
+    return environ
+
+
+def test_registered_native_takes_priority_over_bridge(wrapper, tmp_path, fake_subprocess):
+    native, python = runtime_root(tmp_path, "posix")
+    environ = register_fixture(wrapper, tmp_path, native)
+    environ["CODEX_WORKSPACE_SKILL_BRIDGE"] = str(tmp_path / "stale-bridge")
+    assert wrapper.main(["doctor"], os_name="posix", environ=environ, root=tmp_path / "projection") == 0
+    assert fake_subprocess.calls[0][0][0] == str(python)
+
+
+def test_explicit_windows_still_works_with_native_registered(wrapper, tmp_path, fake_subprocess, posix_os):
+    posix_os()
+    native, _ = runtime_root(tmp_path, "posix")
+    environ = register_fixture(wrapper, tmp_path, native)
+    descriptor, client = bridge_dir(tmp_path / "bridge")
+    environ["CODEX_WORKSPACE_SKILL_BRIDGE"] = str(descriptor)
+    assert wrapper.main(["--execution", "windows", "job", "known-job"], os_name="posix", environ=environ) == 0
+    command = fake_subprocess.calls[0][0]
+    assert str(client) in command and command[-2:] == ["job", "known-job"]
+    assert "--execution" not in command
+
+
+def test_local_selection_ignores_broken_bridge(wrapper, tmp_path, fake_subprocess):
+    native, python = runtime_root(tmp_path, "posix")
+    environ = {"HOME": str(tmp_path / "home"), "CODEX_WORKSPACE_SKILL_BRIDGE": str(tmp_path / "missing")}
+    assert wrapper.main(["--execution", "local", "doctor"], os_name="posix", environ=environ, root=native) == 0
+    assert fake_subprocess.calls[0][0][0] == str(python)
+
+
+def test_explicit_windows_never_silently_runs_native(wrapper, tmp_path, fake_subprocess):
+    native, _ = runtime_root(tmp_path, "posix")
+    environ = register_fixture(wrapper, tmp_path, native)
+    with pytest.raises(SystemExit, match="no enabled bridge"):
+        wrapper.main(["--execution", "windows", "generate", "request.json"], os_name="posix", environ=environ)
+    assert fake_subprocess.calls == []
+
+
+def test_missing_registered_native_never_falls_back(wrapper, tmp_path, fake_subprocess):
+    environ = register_fixture(wrapper, tmp_path, tmp_path / "removed")
+    with pytest.raises(SystemExit, match="uv sync"):
+        wrapper.main(["generate", "request.json"], os_name="posix", environ=environ)
+    assert fake_subprocess.calls == []
+
+
+def test_registration_roundtrip_and_repair(wrapper, tmp_path, fake_subprocess, capsys):
+    native, python = runtime_root(tmp_path, "posix")
+    (native / "pyproject.toml").write_text("[project]", encoding="utf-8")
+    environ = {"HOME": str(tmp_path / "home")}
+    path = wrapper.runtime_preferences(environ)
+    path.parent.mkdir(parents=True)
+    path.write_text("{broken", encoding="utf-8")
+    assert wrapper.main(["runtime-configure", "--root", str(native)], os_name="posix", environ=environ) == 0
+    assert json.loads(capsys.readouterr().out)["registered"]
+    assert wrapper.main(["doctor"], os_name="posix", environ=environ) == 0
+    assert fake_subprocess.calls[0][0][0] == str(python)
+
+
+def test_runtime_status_does_not_run_any_job(wrapper, tmp_path, fake_subprocess, capsys):
+    native, _ = runtime_root(tmp_path, "posix")
+    environ = register_fixture(wrapper, tmp_path, native)
+    assert wrapper.main(["runtime-status"], os_name="posix", environ=environ) == 0
+    report = json.loads(capsys.readouterr().out)
+    assert report["local_installed"] and report["local_registered"]
+    assert report["windows_bridge_enabled"] is False
+    assert fake_subprocess.calls == []

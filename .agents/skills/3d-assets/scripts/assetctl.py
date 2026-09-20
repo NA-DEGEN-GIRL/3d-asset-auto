@@ -1,18 +1,18 @@
 """Invoke the shared runtime from any game project or personal-skill junction.
 
-On a non-Windows host a registered workspace-skill-bridge descriptor that enables this
-skill forwards the same arguments to the bridge client, which runs the runtime on the
-Windows host that owns the installed checkout. Without a descriptor the wrapper keeps its
-native local runtime contract, including `<root>/.venv/bin/python` on Linux. See
-references/windows-bridge.md.
+Select local or Windows execution explicitly, or register a native runtime for auto.
+Without native registration, preserve the existing SSH-to-Windows bridge behavior.
+See references/execution-setup.md and references/windows-bridge.md.
 """
 
+import argparse
 import json
 import os
 import stat
 import subprocess
 import sys
 from pathlib import Path
+from uuid import uuid4
 
 SKILL_NAME = "3d-assets"
 CLIENT_NAME = "client.py"
@@ -108,16 +108,89 @@ def bridge_command(os_name, environ, arguments):
     return [sys.executable, str(client), "--connection", str(path), "run", SKILL_NAME, "--", *arguments]
 
 
+def runtime_preferences(environ):
+    home = environ.get("HOME") or environ.get("USERPROFILE") or str(Path.home())
+    directory = Path(environ.get("XDG_CONFIG_HOME") or (Path(home) / ".config"))
+    return directory / "codex-skill-runtimes" / (SKILL_NAME + ".json")
+
+
+def runtime_options(arguments, environ, runtime_root, os_name):
+    """Resolve host selection before any runtime/API call; never retry elsewhere."""
+    path = runtime_preferences(environ)
+    preferences = {}
+    if path.exists() and arguments[:1] != ["runtime-configure"]:
+        try:
+            preferences = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, ValueError):
+            raise SystemExit("Invalid runtime registration; use runtime-configure again.") from None
+        if (not isinstance(preferences, dict) or preferences.get("version") != 1
+                or preferences.get("execution") not in ("auto", "local", "windows")
+                or not isinstance(preferences.get("root"), str)
+                or not Path(preferences["root"]).is_absolute()):
+            raise SystemExit("Invalid runtime registration; use runtime-configure again.")
+    if arguments and arguments[0] == "runtime-configure":
+        parser = argparse.ArgumentParser(description="Register this host's installed skill runtime.")
+        parser.add_argument("--root", required=True)
+        parser.add_argument("--execution", choices=("auto", "local", "windows"), default="auto")
+        options = parser.parse_args(arguments[1:])
+        root = Path(options.root).expanduser().resolve()
+        python = root / ".venv" / ("Scripts/python.exe" if os_name == "nt" else "bin/python")
+        if not python.is_file() or not (root / "pyproject.toml").is_file():
+            raise SystemExit("Install the runtime with uv sync before registering this root.")
+        path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+        temporary = path.with_name(path.name + "." + uuid4().hex + ".tmp")
+        try:
+            with temporary.open("x", encoding="utf-8") as stream:
+                json.dump({"version": 1, "root": str(root), "execution": options.execution}, stream)
+            temporary.chmod(0o600)
+            temporary.replace(path)
+        finally:
+            temporary.unlink(missing_ok=True)
+        print(json.dumps({"registered": True, "root": str(root), "execution": options.execution}))
+        return None
+    execution = preferences.get("execution", "auto")
+    arguments = list(arguments)
+    if arguments and arguments[0] == "--execution":
+        if len(arguments) < 3 or arguments[1] not in ("auto", "local", "windows"):
+            raise SystemExit("Use --execution auto|local|windows before the runtime command.")
+        execution, arguments = arguments[1], arguments[2:]
+    registered = bool(preferences)
+    local_root = Path(preferences["root"]) if registered else runtime_root
+    if arguments == ["runtime-status"]:
+        python = local_root / ".venv" / ("Scripts/python.exe" if os_name == "nt" else "bin/python")
+        bridge_enabled, bridge_error = False, None
+        try:
+            bridge_enabled = bridge_command(os_name, environ, ["doctor"]) is not None
+        except SystemExit as error:
+            bridge_error = str(error)
+        print(json.dumps({"skill": SKILL_NAME, "execution": execution, "local_root": str(local_root),
+                          "local_installed": python.is_file(), "local_registered": registered,
+                          "windows_bridge_enabled": bridge_enabled, "bridge_error": bridge_error,
+                          "note": "Installation is not inference proof. Run doctor/plan on the selected host."}))
+        return None
+    return arguments, local_root, execution, registered
+
+
 def main(argv=None, *, os_name=None, environ=None, root=None):
     arguments = list(sys.argv[1:] if argv is None else argv)
     os_name = os.name if os_name is None else os_name
     environ = os.environ if environ is None else environ
-    command = bridge_command(os_name, environ, arguments)
-    if command is not None:
-        return subprocess.run(command, check=False).returncode
     runtime_root = Path(__file__).resolve().parents[4] if root is None else Path(root)
+    options = runtime_options(arguments, environ, runtime_root, os_name)
+    if options is None:
+        return 0
+    arguments, runtime_root, execution, registered = options
+    if os_name != "nt" and (execution == "windows" or (execution == "auto" and not registered)):
+        command = bridge_command(os_name, environ, arguments)
+        if command is not None:
+            return subprocess.run(command, check=False).returncode
+        if execution == "windows":
+            raise SystemExit("Windows execution requested but this skill has no enabled bridge. Check SSH skill settings.")
     environment = dict(environ)
-    environment.setdefault("ASSET_AUTO_ROOT", str(runtime_root))
+    if registered:
+        environment["ASSET_AUTO_ROOT"] = str(runtime_root)
+    else:
+        environment.setdefault("ASSET_AUTO_ROOT", str(runtime_root))
     python = runtime_root / ".venv" / ("Scripts/python.exe" if os_name == "nt" else "bin/python")
     if not python.exists():
         raise SystemExit(f"Runtime environment missing; run uv sync in {runtime_root}")

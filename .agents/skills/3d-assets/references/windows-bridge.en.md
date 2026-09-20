@@ -14,6 +14,7 @@ When a Windows machine already holds a working checkout, a registered bridge let
 
 Delegation requires all of:
 
+- execution is explicitly `--execution windows`, or `auto` with no registered native runtime; see [execution-setup.md](execution-setup.md),
 - the host is not Windows (`os.name != "nt"`); Windows always uses the local runtime,
 - a descriptor file exists, is private and same-user owned, and parses as a JSON object,
 - its `enabled_skills` list contains `3d-assets`,
@@ -27,7 +28,7 @@ Descriptor lookup order:
 
 The wrapper reads only `client` and `enabled_skills`. `client` may be omitted; the wrapper then expects `client.py` next to the descriptor. The descriptor itself is created on the remote account by the installer — it is the remote half of the connection and holds a scoped bearer credential, so keep it mode 600 there.
 
-Configuration errors stop the run with a message naming the file and the fix; they are never downgraded to a local install hint:
+When the Windows route is selected, configuration errors stop the run with a message naming the file and the fix; they are never downgraded to a local install hint. Explicit local execution and registered-native auto do not require the bridge:
 
 - an explicit override that points at a missing file,
 - a descriptor that exists but cannot be read, is not valid JSON, or is not a JSON object,
