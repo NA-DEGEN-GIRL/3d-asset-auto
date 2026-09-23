@@ -1,5 +1,11 @@
 # Authoring and review
 
+## Project and representation
+
+Inspect the existing engine/renderer, relevant version/backend, release platform, camera range, interaction and output contract before choosing implementation. A web project may use different rendering backends; Godot desktop and web exports may expose different features. Check the actual configuration and needed features rather than inferring capability from an engine name. Reuse working project materials/particles when they fit; do not install a second engine or a new effect library merely to follow an example.
+
+Keep two concerns distinct: producing ingredients (meshes, textures, fields, baked motion) and assembling their target playback (materials, emitters, trails, lighting and events). Choose them together early enough to avoid an unplayable bake. If the target is unknown, an explicit portable-format request can still be completed; clarify only missing constraints that materially change the result. Shared ingredients and effect intent are not an automatic shader/scene conversion contract.
+
 ## Expression before implementation
 
 For each effect, identify the characteristics that make the adopted reference recognizable in motion, including its large-scale shape and event rhythm where relevant. Preserve those characteristics before adding fine noise, particles or glow. A plausible effect of the same element may still miss the requested expression. Infer useful defaults from the request and project, and record the intended differences when adapting a reference.
@@ -30,15 +36,25 @@ Use the simplest representation that meets the intended camera, interaction and 
 - **Curves, ribbons and meshes:** arcs, trails, blades, rings and branches benefit from reusable trajectory/width/time controls. Test perspective and occlusion; a ribbon may be appropriate while still requiring thickness or additional orientations for the expected camera range.
 - **Mesh animation or baked physics:** use existing models plus Blender object animation, cuts or rigid bodies for solid fragments. A precomputed contact with a flat ground is not live collision with arbitrary terrain. Reuse `3d-assets` sources without changing completed revisions.
 - **Particles and flipbooks:** appropriate for embers, mist, smoke accents and camera-constrained elements. Test transparency and overlap. A whole reference video on one plane does not satisfy a free-camera spatial spell.
-- **Heavier simulation:** consider Blender fluid/volume baking when the requested behavior benefits from it. Probe a bounded setup before long bakes, then verify the chosen export/playback path. The current examples do not establish Mantaflow, liquid or general volume-cache delivery.
+- **Offline simulation:** use Blender/Mantaflow when fluid evolution contributes to the target shape or motion. Gas/fire/smoke and liquid paths produce different ingredients and require suitable conversion. Ice solids or lightning do not become fluid tasks simply because this tool is installed. Use the [bake workflow](#simulation-ingredients) when chosen; the supplied gallery is not a general volume-cache exporter/player.
 
 Adapt fitting components and connect dependent visual layers to the same authored event positions and times. For multiple contacts, releases or moving sources, verify that each response follows its own cause; a shared decorative burst can conceal missing behavior. Decompose combined spells into named layers/events for inspection. If adjustments cannot recover the intended expression, change the relevant structure, representation or source rather than repeating small parameter edits.
+
+## Simulation ingredients
+
+First prove a bounded authoring → bake → conversion → target-playback path for the relevant behavior. Preserve the editable scene, source cache, settings, frame times, units/bounds and conversion provenance. Match original and converted samples at the same source time before judging the final composition. Inspect domain clipping, quantization/filtering and source-to-playback time mapping when shape or rhythm changes. Neither a completed bake nor a cache file proves that the expected field or mesh was rendered.
+
+Choose the delivery representation for the camera and budget: mesh animation, particle textures/flipbooks, sampled volumes or another supported representation. A view-dependent bake needs an explicit camera contract; it cannot silently replace a requested spatial main effect. The maintained helper in this skill produces procedural ingredients, not Mantaflow caches. Task-specific Blender scripts and conversion/runtime work are needed for a fluid route; a local experiment does not establish a shipped one-command tool or a tested liquid adapter. Consult the [Blender fluid manual](https://docs.blender.org/manual/en/latest/physics/fluid/introduction.html) for the selected Blender version rather than inventing helper flags.
+
+Simulation is a source for artistic shaping. Inspect the primary layer without glow/secondary particles where useful: a smooth hot rod, broad puff or washed-out core can survive a successful solver run. Locate the first loss of expression in source, conversion, material or composition, then change that cause. Spatial taper, color/opacity transfer or moving material detail may help; label them as authored treatments rather than additional solved turbulence. Recheck that they retain the adopted mass, motion and rhythm. Preserve revisions instead of repeatedly rebaking over the source.
 
 ## From authoring to game playback
 
 Keep the `.blend` or other editable source alongside the exported geometry, textures, parameters and target code. Record seed, input hashes, coordinate conversion, size, duration, event times and resource ownership. Blender uses Z-up; glTF and these web examples use Y-up. Avoid converting an imported GLB twice.
 
 Plan how the effect starts, seeks, stops, restarts and finishes. A seeded absolute-time update is useful for reproducible review, but target gameplay may also need live endpoints, attachment transforms or collision callbacks. Keep visual contact events distinct from damage logic. State when scene lighting, post-processing or a particular shader is required for the shown result.
+
+Bind causally related layers to the same event positions and playback clock. Distinguish an object's center from its visible contact surface, and source-frame time from game time. A moving local volume can drag its old wake with it; use appropriate world/local placement for trails and lingering material. Verify the visible contact and transition, not only matching origin coordinates. Record artistic scaling, retiming, clipping and fades separately from source physics.
 
 For a requested web preview, use the example build/runtime contract in [runtime.md](runtime.md). For an existing game project, implement or adapt only its renderer path. A web viewer's material override or particle layer is not embedded in the GLB. Engine-agnostic delivery can preserve ingredients and intent, but should not claim untested portability.
 
@@ -58,7 +74,15 @@ Keep editable working sources locally, but honor the requested delivered files. 
 4. Record the defect, moment, view, failed criterion and likely source. Correct authoring, bake/export or runtime as appropriate. Re-export/rebuild and compare the same conditions, including plausible regressions in expression and untouched effects.
 5. Separate structural correctness, visual expression and target integration. Compare the complete result with the adopted quality target at normal playback and viewing distance, beyond isolated details or defect-free frames. A working component study remains incomplete when its defining shape, timing or material character is missing. Record the remaining visible difference and repair its cause, or report the concrete limit preventing completion.
 
-Treat excessive brightness, geometry and particles as costs, not substitutes for expression. Test performance at the requested resolution, hardware and simultaneous count before making performance claims; a responsive isolated demo establishes only that tested case.
+Treat excessive brightness, geometry and particles as costs, not substitutes for expression. A user-rejected or visibly inadequate example is not an acceptance baseline just because its runtime works. Completion requires both the adopted expression and the applicable technical criteria; bounded test artifacts may remain explicitly incomplete.
+
+## Runtime cost and target checks
+
+Identify target constraints early and measure before claiming game readiness. Choose representative resolution/device, viewing distance and concurrent effects from the project; avoid universal particle limits or automatic quality reductions for every web game. Separate compressed download size from decoded CPU memory, GPU resources/upload cost and rendering time. Transparent screen coverage, overlap, ray-marching and repeated instances can dominate even with small geometry or compressed files.
+
+For the actual target, check required depth/blending, scene lighting, loading/first-use behavior and lifecycle/resource ownership. Warm up only where relevant, and confirm that stopping or disposing an instance does not corrupt shared resources. Record what was measured and what remains unknown. After optimization, repeat the same visual comparisons; a faster but flattened or weakened effect is a regression if it loses the agreed expression.
+
+Check only the requested or project-relevant adapter. Moving a reviewed web effect to Godot requires review of that export/backend; the source ingredients and event intent can transfer without implying identical materials or performance. Do not build both engines on every asset request. Engine feature limits change: consult the installed version and official documentation when selecting features rather than embedding timeless claims such as “web supports only CPU particles.”
 
 ## Licensing and provenance
 

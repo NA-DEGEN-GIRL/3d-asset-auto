@@ -2,7 +2,7 @@
 
 [한국어](VFX.md) | **English**
 
-Game effect authoring uses the separate [game-vfx skill](../.agents/skills/game-vfx/SKILL.md). Blender is the default authoring tool, combined with procedural fields, curves, shaders and reusable components. Connect `3d-assets` when a separate physical model is needed; effects without model requirements do not need TRELLIS or Tripo. This document covers the initial implementation and retained experiments; [design and execution](GAME_VFX_DESIGN.en.md) describes setup, commands and license scope.
+Game effect authoring uses the separate [game-vfx skill](../.agents/skills/game-vfx/SKILL.md). Inspect the actual project's renderer, version, target device, camera, interactions and quality goals before choosing authoring and playback methods. Blender is a preferred available local tool for relevant ingredient authoring and baking; procedural fields, curves, shaders and native engine tools are also valid. Connect `3d-assets` when a separate physical model is needed; effects without model requirements do not need TRELLIS or Tripo. [Design and execution](GAME_VFX_DESIGN.en.md) covers setup, commands and licensing for the supplied examples; [independent-session testing](VFX_TESTING.en.md) covers evaluating the skill with real requests.
 
 ## Current game-vfx implementation
 
@@ -24,13 +24,15 @@ New [web example source](../examples/game-vfx/LICENSE.txt) is MIT; the Blender `
 
 Earlier experiments cover **falling, separating and moving 3D fragments and effects for a destination renderer**. The [falling and breaking example](#example-falling-and-breaking-objects) and [small capability check](#3d-fragment-physics-and-glb-check) distinguish authoring possibilities from verified behavior. The existing `examples/vfx-web/` [shockwave](../examples/vfx-web/effect.js) and [flame flipbook](../examples/vfx-web/soul-effect.js) are separate from the new `examples/game-vfx/` gallery. The old flame flipbook remains a 2D study.
 
+A separate local fireball experiment converted Mantaflow flight/impact bakes into density/flame volumes and reviewed multiple angles, occlusion and contact in Three.js. Smooth cores, rounded impacts and fine-flame detail remained below the visual target; production performance, Godot and liquids were not validated. This experiment does not add a maintained Mantaflow exporter or player to the supplied helper or gallery.
+
 ## Establish capabilities and required work first
 
 Before implementation, separate the request into **primary spatial forms, motion and state changes, environmental interactions, supporting effects and delivery target**. Identify which parts use callable operations, require custom authoring or lack a needed capability; explain the production path and unverified scope. `doctor` discovers installation state, not feasibility or quality of an entire effect. Use a small capability check when an unverified connection determines whether the result can work.
 
 | Stage | Current support and boundary |
 | --- | --- |
-| Appearance and timing references | Use available ImageGen/Grok tools or existing material. Images/video are design inputs, not automatically extracted 3D geometry, particles or collision data |
+| Appearance and timing references | Use available ImageGen/Grok tools within authorization or existing material. Images/video are design inputs, not automatically extracted 3D geometry, particles or collision data |
 | Physical chunk models | Reference image → default TRELLIS.2, explicitly selected Tripo or existing meshes. Ice shading and interior cut surfaces need separate finishing |
 | Fragments, falling and physics | Trusted Python in `blender-edit` can edit Blender meshes, evaluate rigid bodies and author keyframes. No dedicated fracture request schema; GeoSAM semantic parts are not fracture |
 | Playback files | Evaluated fragment transforms → shared clip → GLB is covered by the check below. Blender physics caches, colliders and arbitrary shaders do not travel with that GLB |
@@ -40,7 +42,7 @@ Before implementation, separate the request into **primary spatial forms, motion
 
 ## Choose the representation first
 
-Define the purpose, destination project/renderer, camera distance, origin/direction/scale, and the relationship between anticipation, release, dissipation and gameplay events. A short impact, persistent aura and moving projectile need different criteria. If the engine is unknown, prepare suitable portable ingredients such as textures, meshes and timing notes; do not add a web app or choose an engine without a preview request.
+Inspect the purpose and actual project to establish renderer/version/rendering path, target device/resolution, camera range, origin/direction/scale and interactions. Define anticipation, release, dissipation and gameplay-event relationships, adopted reference expression and required quality, then choose authoring tools and final playback separately. A short impact, persistent aura and moving projectile need different criteria. If the engine is unknown, prioritize producing the requested output format with suitable textures, meshes and timing notes; do not add a web app or choose an engine without a preview request.
 
 | Expression needed | Authoring and delivery |
 | --- | --- |
@@ -51,14 +53,16 @@ Define the purpose, destination project/renderer, camera distance, origin/direct
 
 A VFX request includes authoring its rendering points, quads, rings, ribbons and shaders. Do not force TRELLIS or a rig onto these rendering carriers. **New physical models such as ice chunks, meteors, weapons or buildings still follow the default TRELLIS policy.** Cutting fragments and interior faces from an existing mesh is editing and does not require regeneration. Explicit-selection requirements for Tripo and Kimodo remain unchanged.
 
-GLB can carry reusable meshes and supported animation. Do not assume it preserves arbitrary shaders, emitters, screen distortion, postprocessing or gameplay logic. Deliver native effects with code/shaders/textures and settings. Implement and test engine-specific behavior separately; do not require both Godot and Three.js for every effect.
+Reuse editable sources, materials, visual intent and contracts for scale, timing, event positions and start/impact/end behavior. Implement and test these through each engine's shaders, particles, scenes and playback API. GLB carries meshes and supported animation; it does not preserve every arbitrary shader, emitter, screen distortion, postprocessing operation or gameplay behavior. Deliver native effects with the necessary code/shaders/textures and settings. Do not require both Godot and Three.js for every effect.
+
+Blender simulation or baking is an option for obtaining needed forms and flow. Authored curves, fields, shaders, textures and engine particles can also meet the goal. Installation or a successful simulation does not approve quality: verify the path into the destination renderer and inspect actual playback.
 
 ## Effects defined by texture and flow
 
 Do not substitute recolored default particles or geometric shapes for fire, water, ice or spirits when form, surface and temporal change determine quality. Reuse sufficient existing material or **prepare relevant image and temporal references during initial design**. Define adopted silhouette, texture, flow direction, release speed and aftermath as appropriate. Do not require new image/video generation for every intentionally geometric effect or simple range indicator.
 
 - **Images:** Use ImageGen or available tools to design the expression or create production textures. Distinguish reference artwork from runtime textures; inspect transparency, padding, edges and repeatability before using the latter. Wobbling a single fire image does not reproduce newly forming and splitting flame tongues.
-- **Video:** Adopt onset, peak expression, disappearance and intervening flow from Grok or other references. Follow [Grok operation/recovery guidance](MOTION_REFERENCES.en.md#grok-build-headless-use). For 3D objects, apply event times, trajectories, rotation and speed changes as authoring references. Consider flipbooks only where a planar representation suits the selected layer, checking camera, scale, background and frame consistency. A generated multi-panel image is not automatically a temporally coherent frame sequence.
+- **Video:** Adopt onset, peak expression, disappearance and intervening flow from Grok or other references. Follow [Grok operation/recovery guidance](MOTION_REFERENCES.en.md#grok-build-headless-use) within authorization. For 3D objects, apply event times, trajectories, rotation and speed changes as authoring references. Consider flipbooks only where a planar representation suits the selected layer, checking camera, scale, background and frame consistency. A generated multi-panel image is not automatically a temporally coherent frame sequence.
 - **Implementation choice:** Flipbooks can suit flames or smoke under limited viewing conditions. Free-view volume, water refraction/intersections, spatial trails or collisions may need Blender simulation/meshes or destination depth, normal, particle and shader features. Do not assume video automatically reconstructs 3D flow, depth or normals.
 - **Compositing:** Select relevant primary shapes, detail particles, trails, grounding and aftermath. Coordinate their onsets/lifetimes and preserve the main effect's readability rather than simply adding layers. Camera shake, light, sound and damage are separate integration elements; add them only when relevant to the request and destination.
 

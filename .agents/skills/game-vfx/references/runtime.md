@@ -1,5 +1,7 @@
 # Local authoring and web examples
 
+This reference describes the bundled Three.js gallery, not a required renderer for every VFX task. Use the target project's existing integration when appropriate; read [workflow.md](workflow.md) for selecting ingredients and optional simulation. Local Mantaflow experiments do not add a maintained fluid exporter/player to the helper or the commands below.
+
 ## Locate the runtime
 
 Resolve the installed skill's `SKILL.md` path through junctions/symlinks. In this repository layout, `Path(skill_md).resolve().parents[3]` is the shared runtime root containing `.agents/`, `examples/` and `web/`. Confirm that the expected helper and build file exist before running them. Do not assume the requesting project's working directory is the runtime and do not hard-code a developer drive or profile path.

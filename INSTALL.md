@@ -176,6 +176,8 @@ Verify the wrapper from a **different working directory**, using absolute paths.
 
 On Linux, the interpreter is `<checkout>/.venv/bin/python`. The JSON `root` must identify the intended runtime. Skill discovery may require a new agent session; if it is not listed, supply the skill file's absolute path explicitly. Do not claim a personal skill is connected solely because the repository was cloned.
 
+For `game-vfx`, use the same link procedure with `game-vfx` in both the source and destination folder names. Its bundled gallery resolves this checkout through the link; using an existing game's renderer does not require adopting that gallery or installing the 3D inference models. See the [VFX guide](docs/VFX.en.md) and [independent-session testing](docs/VFX_TESTING.en.md). Verify discovery in the testing session; an already loaded skill may need a fresh session or explicit reread after an update.
+
 ## 5. Optional MCP client connection
 
 Install the extra before launching the client:

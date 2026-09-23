@@ -2,7 +2,7 @@
 
 [한국어](GAME_VFX_DESIGN.md) | **English**
 
-Status: **Blender-centered implementation with refined expression and contact responses**. A separate [game-vfx skill](../.agents/skills/game-vfx/SKILL.md), Blender ingredient builder and fire/ice/lightning [web playback module](../examples/game-vfx/effects.js) are provided. This does not add a general VFX command to `asset_auto`, and there are no Houdini/EmberGen adapters. Usage and boundaries are separated below.
+Status: **A skill that selects authoring and playback for the project, with bounded example implementations**. A separate [game-vfx skill](../.agents/skills/game-vfx/SKILL.md), Blender ingredient builder and fire/ice/lightning [web playback module](../examples/game-vfx/effects.js) are provided. The examples' tool combination is not a default route for every effect. There is no general VFX command in `asset_auto`, maintained Mantaflow exporter/player or Houdini/EmberGen adapter.
 
 ## Problem to solve
 
@@ -24,20 +24,24 @@ Effects without mesh requirements need no TRELLIS/Tripo installation or calls. N
 ## Required foundations
 
 - **Verified production path:** Tool integration with readiness checks, actual execution, settings/seed/output/version records and failure recovery. Use MCP only when it provides the needed access; reuse working CLI or scripting paths first.
-- **Reusable effect configurations:** Suitable simulation settings, shaders/materials/textures and mesh/particle/trail timing. Preserve editable sources and resource usage terms. Do not make one example's values universal.
-- **Playback contract:** Required files, coordinates/scale/time, start/cancel/retrigger/end behavior and resource ownership. Distinguish GLB models/clips from engine-specific behavior. With no engine selected, deliver materials and specifications and mark integration untested.
+- **Reusable effect configurations:** Preserve editable sources, materials, visual intent and event contracts, including simulation settings and bakes when relevant. Adapt engine-specific shaders, particles and scenes separately; do not make one example's values or code universal. Preserve resource usage terms.
+- **Playback contract:** Required files, coordinates/scale/time, event positions, start/impact/cancel/retrigger/end behavior and resource ownership. Distinguish GLB models/clips from engine-specific behavior. With no engine selected, prioritize the requested output format and include suitable materials, specifications and untested integration scope.
 - **Expression review:** Set acceptance criteria against the user's request and adopted references, rather than lowering them to what the starting example easily produces. Establish large-scale shape and event rhythm first, then verify that dependent responses follow their own event positions and times. Compare the complete expression at normal playback and viewing distance; particle/glow quantity or defect-free stills alone cannot approve it. Full footage on a plane cannot replace a requested freely viewed spatial main effect.
 
-## Selected tools and unknowns
+## Choose authoring and playback from the project
 
-| Candidate | Purpose to investigate | Still to verify |
+First inspect the actual project's engine, renderer, version, rendering path and existing effect conventions. Establish target device/resolution, camera range, interactions such as scale, direction, contact, attachment and collision, references and quality goals. Choose the tools that produce the required data separately from the final playback implementation. Blender is a preferred available local tool for relevant ingredient authoring and baking, not a mandatory step for every effect.
+
+| Option | Suitable work | Boundary to check |
 | --- | --- | --- |
-| Existing Blender — default | 3D noise baking, editable lightning curves and reused fragment motion/bakes | Fire uses an authored spatial density shader; Mantaflow/liquids are untested |
-| Houdini — deferred | Investigate destruction/fluid/particle authoring if a need is demonstrated | Additional tooling, licensing and automation are excluded from default setup |
-| EmberGen — deferred | Investigate fire/smoke simulation if a need is demonstrated | Additional tooling, licensing and automation are excluded from default setup |
-| Destination engine effect system | Material assembly, particles/materials and game event integration | Project-specific implementation and performance; do not always require both Godot and Three.js |
+| Existing Blender | Editable curves/meshes, noise/texture authoring, animation and relevant simulation bakes | Supplied helper builds noise and lightning paths; volume/physics-cache delivery needs a separately verified path |
+| Procedural scripts/material tools | Fields, trajectories, ribbons, shaders and reusable settings | Check requested forms and temporal changes at the intended camera |
+| Destination engine effect system | Material assembly, particles/scenes and gameplay-event integration | Check expression, lifecycle and performance for the actual version/rendering path/device |
+| Additional DCC/simulation tools | A concrete authoring need not met by available tools | Verify installation, licensing, automation and output; do not add them as default dependencies |
 
-Official references: [Blender automation](https://docs.blender.org/manual/en/4.5/advanced/command_line/index.html), [Godot 3D particles](https://docs.godotengine.org/en/stable/tutorials/3d/particles/index.html). Default authoring uses existing Blender and Python without requiring a separate MCP. Three.js is the requested preview destination for this task, not a requirement for other projects.
+Simulation is one way to produce a chosen expression; successful execution or physical calculation does not guarantee quality. Keep the separate local Mantaflow fireball experiment's [observed scope and unresolved issues](VFX.en.md#retained-authoring-experiments) distinct from supplied example capabilities. With no engine selected, prioritize producing the requested output format and include suitable sources, materials and specifications; do not automatically build both Godot and web versions.
+
+Official references: [Blender automation](https://docs.blender.org/manual/en/4.5/advanced/command_line/index.html), [Godot 3D particles](https://docs.godotengine.org/en/stable/tutorials/3d/particles/index.html). The supplied Blender helper runs through Python without a separate MCP. The Three.js gallery below is an example for requested web previews.
 
 ## Criteria for an initial implementation
 
@@ -49,6 +53,8 @@ Choose a bounded effect category and destination, then use a small case to check
 - Reports distinguish learned generation, simulation, authored code and untested coverage.
 
 Retain existing [VFX experiments](VFX.en.md), `examples/vfx-web/`, the rigid-body fixture and local outputs. This initial implementation covers the three representations below; it does not promise general effect generation or commercial-game quality. The skill separates essential decisions from detail loaded only when relevant.
+
+When evaluating the skill itself, use [independent-session testing](VFX_TESTING.en.md) to execute real requests and return evidence to the authoring session. This does not require a full evaluation report for every ordinary effect request.
 
 ## Run the fire, ice and lightning examples
 
