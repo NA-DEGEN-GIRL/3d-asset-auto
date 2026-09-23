@@ -21,10 +21,12 @@ Human guides are available in [English](README.en.md) and [한국어](README.md)
 - [Surface diagnosis and finishing](docs/FINISHING.en.md): Locate the first damaged processing stage, distinguish seams/holes/fragments, and reuse a repair workflow only under matching conditions.
 - [Clip preservation comparison](docs/BLENDER.en.md#editing-one-clip-and-comparing-preservation): Read-only `compare-animations` / `compare_asset_animations`, declared clip edits, exact time/channel/model differences and limits of preservation evidence.
 
-## VFX design and experiments
+## Game VFX
 
-- [game-vfx design notes](docs/GAME_VFX_DESIGN.en.md): Proposed separate effect workflow built around verified tools and reusable resources. Not an installed skill or callable generator. Use 3d-assets only for needed mesh components and their editing/animation.
-- [VFX experiments](docs/VFX.en.md): Retained authoring studies, optional web examples and fragment physics-to-GLB checks. Experimental guidance, not the active asset skill workflow or proof of a general VFX backend.
+- [game-vfx skill](.agents/skills/game-vfx/SKILL.md): Separate Blender-first effect authoring and per-effect review. Procedural fields, paths, particles and shaders are valid; use 3d-assets only for needed physical mesh components. Resolve the installed skill path to find its shared runtime.
+- [game-vfx design and execution](docs/GAME_VFX_DESIGN.en.md): Initial Blender noise/lightning helper and reusable fire, baked ice and lightning Three.js gallery. Setup, media preparation, preview commands, scoped MIT web/GPL Blender-helper licenses and current limits. No general generation CLI/MCP or automatic cross-engine converter.
+- [VFX runtime contract](.agents/skills/game-vfx/references/runtime.md): Actual helper flags/outputs, full-gallery media list, per-effect resources, absolute-time playback, layers, ownership and focused checks. Individual effects do not require the full gallery or model inference.
+- [VFX authoring and experiments](docs/VFX.en.md): Current implementation alongside retained shockwave, 2D flipbook and fragment physics-to-GLB studies. Shader/particle runtime is separate from GLB; code availability and numeric checks do not prove visual quality or target performance.
 
 ## Understand and troubleshoot
 

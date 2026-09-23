@@ -2,7 +2,7 @@
 
 **한국어** | [English](GAME_VFX_DESIGN.en.md)
 
-상태: 재설계 제안. 설치 가능한 `game-vfx` 스킬, VFX 전용 생성 명령, 아래 후보 도구의 자동 제어 어댑터는 아직 없습니다. 이 문서는 구현·구매·설치 여부를 결정하지 않습니다.
+상태: **Blender 중심의 첫 구현**. 별도 [game-vfx 스킬](../.agents/skills/game-vfx/SKILL.md), Blender 재료 생성 도구와 불·얼음·번개용 [웹 재생 모듈](../examples/game-vfx/effects.js)을 제공합니다. `asset_auto`에 범용 VFX 생성 명령을 추가한 것은 아니며, Houdini·EmberGen 어댑터도 없습니다. 사용법과 실제 경계는 아래에 구분합니다.
 
 ## 해결할 문제
 
@@ -15,7 +15,7 @@
 | 담당 | 역할과 경계 |
 | --- | --- |
 | `3d-assets` | 모델 생성·편집·리깅·메시 애니메이션. 효과에 필요한 얼음·운석 등의 물체가 있을 때 사용 |
-| 제안하는 `game-vfx` | 효과의 형태·시간·레이어, 제작 도구 실행, 재사용 가능한 효과 구성, 대상 렌더러 출력과 검수 |
+| `game-vfx` | 효과의 형태·시간·레이어, 제작 도구 실행, 재사용 가능한 효과 구성, 대상 렌더러 출력과 검수 |
 | 이미지·영상 도구 | 표현 참고와 사용할 수 있는 텍스처 재료. 영상에서 3D 물리나 게임 효과를 자동 복원한다고 가정하지 않음 |
 | 대상 게임 | 지형·부착 위치·충돌·피해 사건과 재생 수명. 시각 사건과 실제 게임 판정을 구분 |
 
@@ -28,16 +28,16 @@
 - **재생 계약:** 필요한 파일, 좌표·크기·시간, 시작·중단·재발동·종료와 자원 소유권. GLB에 담기는 모델/클립과 엔진별 동작을 구분합니다. 엔진 미정이면 재료와 명세를 전달하고 통합 미검증을 표시합니다.
 - **표현 검수:** 참고에서 채택한 표현과 실제 출력의 사건·실루엣·속도 변화를 비교합니다. 필요한 시점·배경·동시 발동 조건에서 검토하고 수정합니다. 주효과가 자유 시점의 입체 표현을 요구한다면 전체 영상을 평면에 재생하는 것으로 대체하지 않습니다.
 
-## 도구 후보와 미확인 사항
+## 선택한 도구와 미확인 사항
 
 | 후보 | 검토 목적 | 아직 확인할 것 |
 | --- | --- | --- |
-| 기존 Blender | 메시 편집, 강체 파편 운동과 베이크 경로 재사용; 필요한 다른 시뮬레이션 검토 | 기존 파편 검사가 불·유체의 품질이나 재사용 가능한 VFX 자동화를 증명하지 않음 |
-| Houdini | 파쇄·유체·입자 제작과 게임용 데이터 출력 | 로컬 실행·라이선스 조건, LLM 제어, 선택한 대상의 재생 경로 |
-| EmberGen | 불·연기·폭발 시뮬레이션과 텍스처/볼륨 출력 | 로컬 실행·라이선스 조건, 자동 제어 가능 범위와 대상에서 필요한 입체 표현 |
+| 기존 Blender — 기본 | 3D 노이즈 베이크, 편집 가능한 번개 곡선, 기존 파편 운동과 베이크 재사용 | 불 예제는 시뮬레이션 결과가 아닌 저작한 공간 밀도 셰이더이며 Mantaflow·액체는 미검증 |
+| Houdini — 보류 | 필요가 확인될 때 파쇄·유체·입자 제작 검토 | 추가 도구·라이선스·자동 제어 연결을 기본 설치에 포함하지 않음 |
+| EmberGen — 보류 | 필요가 확인될 때 불·연기 시뮬레이션 검토 | 추가 도구·라이선스·자동 제어 연결을 기본 설치에 포함하지 않음 |
 | 대상 엔진의 효과 시스템 | 만들어진 재료의 조합, 파티클·재질·게임 사건 연결 | 프로젝트별 구현과 성능; Godot·Three.js 양쪽을 항상 요구하지 않음 |
 
-공식 기능 참고: [Houdini Realtime FX](https://www.sidefx.com/products/houdini/vfx/realtime-fx/), [EmberGen 문서](https://docs.jangafx.com/embergen/), [Godot 3D 파티클](https://docs.godotengine.org/en/stable/tutorials/3d/particles/index.html). 제품 기능과 이 저장소의 실제 연동 검증은 별개입니다. 기본 도구는 아직 선정하지 않았으며 추가 비용·다운로드·계정 연결을 이 제안만으로 시작하지 않습니다.
+공식 기능 참고: [Blender 자동화](https://docs.blender.org/manual/en/4.5/advanced/command_line/index.html), [Godot 3D 파티클](https://docs.godotengine.org/en/stable/tutorials/3d/particles/index.html). 기본 제작은 기존 Blender와 Python으로 실행하며 별도 MCP를 요구하지 않습니다. Three.js는 이번에 요청한 웹 미리보기의 대상이며 다른 프로젝트에 강제하지 않습니다.
 
 ## 첫 구현의 판단 기준
 
@@ -48,4 +48,44 @@
 - 채택한 표현이 최종 대상에서 확인되고, 입체성·투명도·접촉·수명·동시 사용 중 해당 조건을 검토함.
 - 생성형 모델, 시뮬레이션, 저작 코드의 역할과 미검증 범위를 구분해 보고함.
 
-기존 [VFX 실험](VFX.md), `examples/vfx-web/`, 강체 검사와 로컬 결과물은 재사용 후보로 보존합니다. 현재 예제의 실행 가능성을 별도 `game-vfx` 구현 완료나 상용 게임 품질의 근거로 확대하지 않습니다. 새 스킬은 확인된 제작 경로를 짧게 안내하고 상세 도구·출력 지침만 필요할 때 읽도록 구성하는 방향입니다.
+기존 [VFX 실험](VFX.md), `examples/vfx-web/`, 강체 검사와 로컬 결과물은 보존합니다. 첫 구현은 아래 세 표현에 한정되며 범용 효과 생성이나 상용 게임 품질을 보증하지 않습니다. 스킬에는 핵심 판단을 두고 제작·출력 상세를 필요할 때 읽도록 분리했습니다.
+
+## 불·얼음·번개 예제 실행
+
+| 예제 | 실제 제작·재생 | 파일 밖에 남는 동작 |
+| --- | --- | --- |
+| 불 | Blender의 반복 가능한 3D 노이즈 → 공간을 따라 밀도를 적분하는 화염 셰이더, 입체 불씨 | 화염·시간·빛·입자는 Three.js 코드. 유체 해석이나 전체 영상 평면 재생이 아님 |
+| 얼음 | 기존 TRELLIS 모델·Blender 강체 베이크 → 세 번의 시간차 낙하·파편 재생 | 재질 보정·서리·수명은 웹 코드. 원본에 기록된 평평한 바닥의 움직임 |
+| 번개 | Blender 곡선과 경로 데이터 → 굵기가 다른 입체 줄기·가지와 시간차 방전 | 빛·잔광·재생은 웹 코드. 실제 전기/충돌 해석이 아님 |
+
+Blender 실행 파일을 확인한 뒤 새 출력 폴더에 재료를 만듭니다. 아래 `<blender>`는 해당 실행 파일 경로입니다.
+
+```text
+<blender> --background --python .agents/skills/game-vfx/scripts/prepare_blender.py -- --output .work/game-vfx/bake-r1 --seed 17
+```
+
+`source.blend`, `noise.png`, `recipes.json`, `recipe-geometry.glb`, `provenance.json`이 생성됩니다. 기존 출력 폴더를 덮어쓰지 않습니다. `recipe-geometry.glb`는 번개 경로의 정적 형상이며 세 효과 전체를 담은 GLB가 아닙니다.
+
+미리보기용 폴더에는 `noise.png`, `recipes.json`, `ice.glb`, `fire.png`, `ice.png`, `lightning.png`를 준비합니다. PNG 세 장은 효과별 참고 이미지이며 `fire.mp4`, `ice.mp4`, `lightning.mp4`는 선택적 참고 영상입니다. 얼음 GLB에는 `ice_fall_break` 클립이 필요합니다. 이 예제의 원본은 6초, 충돌 2초, 시작 오프셋 `1/24`초이며 다른 클립을 쓰면 재생 코드와 명세를 함께 조정합니다. 생성 미디어는 Git에 없으므로 새 clone은 이 재료를 준비해야 합니다. 불·번개만 다른 프로젝트에서 쓸 때는 얼음 GLB가 필요하지 않습니다.
+
+```sh
+node examples/game-vfx/build.mjs --media-dir .work/game-vfx/media
+uv run --no-sync python -m http.server 8776 --bind 127.0.0.1 --directory .work/game-vfx/site
+```
+
+`web/node_modules`가 없다면 `npm --prefix web ci`로 웹 의존성만 설치합니다. [미리보기](http://127.0.0.1:8776/)에는 세 효과 선택·시간 이동·시점·속도·크기·배경·겹침·보조 층 검토가 있습니다. 사이트 디렉터리만 제공하며 계정·생성 API를 노출하지 않습니다.
+
+`createEffect(id, options)`는 `group`, `duration`, `impact`, `update(seconds)`, `setLayer(name, visible)`, `dispose()`를 제공합니다. `seed`, `scale`, `speed`로 재사용하고 `group` 변환으로 배치합니다. 속도는 모듈과 외부 시계 양쪽에서 중복 적용하지 않습니다. 호출자가 제공한 텍스처·GLB 자원은 호출자가 소유하며, 종료한 인스턴스만 제거해도 다른 인스턴스가 유지됩니다. 실제 데이터 계약과 수정 지침은 [runtime.md](../.agents/skills/game-vfx/references/runtime.md)를 따릅니다.
+
+```sh
+node examples/game-vfx/build.mjs --test
+node .work/game-vfx/effects.test.cjs
+```
+
+자동 검사는 시간 이동·재발동·유효한 좌표·인스턴스 독립·자원 소유권을 대상으로 합니다. 브라우저의 시각 품질, 다른 엔진, 저사양 장치나 다수 동시 효과의 성능을 대신하지 않습니다.
+
+## 설치와 라이선스
+
+개인 스킬 폴더의 `game-vfx`를 저장소의 `.agents/skills/game-vfx`에 연결합니다. 다른 작업 폴더에서는 연결을 해석해 실제 저장소를 찾으므로 개발자 PC 경로를 복사하지 않습니다. 기본 모델 생성 설치는 VFX 재료 저작의 필수 조건이 아닙니다.
+
+새 [웹 예제 코드](../examples/game-vfx/LICENSE.txt)는 MIT, 새 Blender `bpy` [도구](../.agents/skills/game-vfx/scripts/prepare_blender.py)는 [GPL-3.0-or-later](../.agents/skills/game-vfx/scripts/COPYING.txt)로 범위를 구분합니다. 나머지 저장소나 외부 미디어의 라이선스를 이 변경으로 다시 지정하지 않습니다. Blender 출력물과 공개 Python 애드온의 조건은 서로 다릅니다. [Blender 공식 안내](https://www.blender.org/about/license/)와 외부 입력·생성 서비스의 이용 조건을 확인하며 출처를 보존합니다. 배포용 웹 빌드는 Three.js 고지를 함께 포함합니다.

@@ -27,7 +27,7 @@ LLM은 제공된 이미지나 사용 가능한 이미지 생성 도구로 참조
 | 명시적으로 선택한 로컬 사람 모션 생성 | [Kimodo](docs/KIMODO.md) — 선택 설치·기존 리그 적용·클립 누적 |
 | 기능·동작의 사용 조건과 품질 검사 | [품질 명세](docs/QUALITY.md) — 표현 방식·재생 정책·핵심 시점·검사 범위 |
 | 어려운·창의적인 동작의 이미지·영상 참고 | [동작 참고](docs/MOTION_REFERENCES.md) — 초기 설계, 선택적 Grok headless, 프레임 검토와 Blender 적용 |
-| VFX 분리 설계·기존 실험 확인 | [game-vfx 설계 메모](docs/GAME_VFX_DESIGN.md), [VFX 실험 기록](docs/VFX.md) — 별도 스킬·전용 도구 연결은 아직 미구현 |
+| 불·얼음·번개 효과 제작·미리보기 | [game-vfx 스킬](.agents/skills/game-vfx/SKILL.md), [설계·실행 안내](docs/GAME_VFX_DESIGN.md), [VFX 제작과 실험](docs/VFX.md) — Blender 재료 저작·재사용 웹 효과의 첫 구현 |
 | 저장소 수정·유지보수하기 | [AGENTS.md](AGENTS.md) — 에이전트 작업 지침 |
 | 구성·데이터·검증 상태 이해하기 | [아키텍처](docs/ARCHITECTURE.md) |
 | 연결·설치·생성 오류 해결하기 | [문제 해결](docs/TROUBLESHOOTING.md) |
@@ -60,13 +60,16 @@ LLM은 제공된 이미지나 사용 가능한 이미지 생성 도구로 참조
 | 결과물 | 편집 가능한 `.blend`, 자체 포함 GLB, 5방향 PNG, 검사·출처 기록 |
 | Godot (선택) | 대상 프로젝트에 필요한 import·메시·재질·충돌체 검사 |
 | Three.js 웹 (선택) | 요청한 경우 회전·확대, 와이어프레임, 버전 전환, GLB 다운로드 |
+| 별도 `game-vfx` 스킬 | Blender 노이즈·번개 경로 저작, 기존 얼음 클립 재사용, 불·얼음·번개 Three.js 재생과 요청한 웹 미리보기 |
 | 에이전트 연결 | CLI, 개인 스킬 연결, 선택적 stdio MCP 어댑터 |
 
 **현재 제한:** `process` 동작은 절차적 이족 프리셋이고, Kimodo는 별도의 로컬 학습 모션 경로입니다. Kimodo의 대응 기반 적용은 체형에 따른 접지·그립·루프를 자동 해결하지 않으며 텍스트 인코더에 Hugging Face 모델 접근 권한이 필요합니다. 범용 자동 리타게팅 해법, TRELLIS 멀티뷰, 자동 리토폴로지·텍스처 재베이크는 제공하지 않습니다. 부품 이름·경계·재질과 동작 품질은 실제 렌더로 확인하며 분류하지 못한 면은 보존합니다. 멀티뷰 메시 생성은 Tripo 옵션에서만 지원합니다.
 
 수치 검사 통과와 시각 품질 통과는 별도입니다. Godot import나 Three.js 렌더 성공도 실제 게임의 동작·아트 품질까지 보증하지 않습니다.
 
-게임 VFX 전체 제작은 `3d-assets`의 담당 범위에서 분리합니다. 이 스킬은 효과에 필요한 얼음 덩어리·운석 같은 모델과 메시 애니메이션을 제공할 수 있습니다. **`game-vfx`는 [설계 단계](docs/GAME_VFX_DESIGN.md)이며 아직 설치 가능한 스킬이나 전용 생성 도구 연결이 아닙니다.** 기존 [VFX 예제·검사](docs/VFX.md)는 별도 실험 자료로 보존합니다.
+게임 VFX는 별도 [game-vfx 스킬](.agents/skills/game-vfx/SKILL.md)에서 **Blender 기본 저작 + 재사용 가능한 효과 구성 + 대상 렌더러 출력**으로 처리합니다. 첫 구현은 공간 화염 셰이더, 기존 얼음 파쇄 클립, 분기 번개와 [Three.js 갤러리](docs/GAME_VFX_DESIGN.md)를 제공합니다. VFX용 절차적 필드·곡선·입자는 정상 제작 경로이며 TRELLIS가 필요하지 않습니다. `3d-assets`는 별도의 얼음 덩어리·운석 같은 모델이나 메시 애니메이션이 필요할 때 사용합니다.
+
+불 예제는 유체 시뮬레이션이 아니며 얼음은 미리 계산한 평평한 바닥의 운동입니다. 셰이더·입자·빛·수명 처리가 GLB에 모두 들어가지는 않습니다. 범용 VFX 생성 CLI/MCP, 임의 지형 충돌, 다른 엔진 변환이나 상용 게임 품질을 보장하는 기능은 아닙니다. 기존 [VFX 실험](docs/VFX.md)도 보존하며 효과별 참고·다각도·재생 검토와 수정을 이어갑니다. 웹 미리보기는 요청한 경우에만 실행합니다.
 
 여러 애니메이션은 **클립별로 필요한 참고 → 제작 → 다각도·재생 검토 → 수정·재검사**를 진행하고 한 GLB에 모읍니다. 생성 자세 시트에서 같은 자세가 반복되거나 좌우·접촉 순서가 모순되면 부족한 자료를 보완하고, 이미지로 판단하기 어려운 부분은 기존 모션·영상으로 확인합니다. 동작 수가 많다는 이유로 전체 참고를 한두 장에 압축하지 않습니다. [품질 가이드](docs/QUALITY.md#여러-클립의-개별-완성)를 참고하세요.
 
@@ -105,6 +108,8 @@ uv run --no-sync python -m asset_auto.cli generate .work/asset.json --async
 
 스킬 폴더만 복사하면 런타임이 설치되지는 않습니다. 다른 게임 프로젝트에서 쓰려면 [INSTALL의 스킬 연결 절차](INSTALL.md#4-connect-the-agent-skill)를 따릅니다.
 
+VFX 작업에는 별도 `game-vfx` 스킬을 연결하고 [설계·실행 안내](docs/GAME_VFX_DESIGN.md)를 따릅니다. 기존 Blender로 재료를 저작할 수 있으며, 불·번개의 절차적 제작만을 위해 TRELLIS 가중치를 설치할 필요는 없습니다. 요청 예: “`$game-vfx` 게임에 어울리는 불기둥을 만들고 참고와 비교하며 다듬어 줘. 웹에서 볼 수 있게 해 줘.”
+
 ## 검증 현황
 
 2026-09-15 기준 v0.1 구현에서 확인한 결과:
@@ -141,3 +146,5 @@ uv run --no-sync python -m asset_auto.cli generate .work/asset.json --async
 - [Godot](https://godotengine.org/) / [Three.js](https://threejs.org/): 엔진·웹 검증.
 
 도구·모델 가중치와 DINOv3/BiRefNet 같은 구성 요소의 라이선스는 각각 확인해야 합니다. 이 저장소는 실행 파일이나 모델 가중치를 재배포하지 않습니다.
+
+새 `game-vfx`의 [웹 예제 코드](examples/game-vfx/LICENSE.txt)는 MIT, [Blender Python 도구](.agents/skills/game-vfx/scripts/COPYING.txt)는 GPL-3.0-or-later입니다. 이 범위 지정은 나머지 저장소·생성 미디어·외부 입력을 다시 라이선스하지 않습니다. 배포 시 의존성 고지와 입력 재료의 이용 조건을 함께 확인합니다.

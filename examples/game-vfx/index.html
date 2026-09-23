@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="dark">
+  <meta name="description" content="불, 얼음, 번개 마법을 여러 방향에서 살펴보는 게임 VFX 스터디.">
+  <title>Elemental Works · Game VFX</title>
+  <link rel="stylesheet" href="./style.css">
+</head>
+<body>
+  <header class="masthead">
+    <a href="./" class="brand" aria-label="Elemental Works 처음으로"><span class="brand-mark" aria-hidden="true">✳</span> ELEMENTAL WORKS</a>
+    <span class="lab-tag"><i></i> GAME VFX LAB <span>—</span> 01 / 03</span>
+  </header>
+  <main>
+    <div class="intro">
+      <div><p class="eyebrow">SHAPING THE ELEMENTS</p><h1>마법이 움직이는 방식.</h1></div>
+      <p class="intro-copy">불의 흐름, 얼음의 무게, 번개의 순간.<br>세 가지 원소를 입체 공간에서 살펴보세요.</p>
+    </div>
+    <nav class="effect-cards" aria-label="마법 선택">
+      <button class="effect-card fire" data-effect="fire" aria-pressed="true" disabled>
+        <span class="effect-symbol" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M22 4c1 9-8 11-7 18 1-4 6-5 7-9 5 5 10 10 8 17-3 9-19 9-22 0C4 21 12 18 11 12c3 2 4 4 4 7 0-6 7-9 7-15Z"/></svg></span>
+        <span class="card-copy"><span class="card-number">01 / FIRE</span><strong>불 마법</strong><span class="card-subtitle">응축과 분출</span></span><span class="card-arrow" aria-hidden="true">↗</span>
+      </button>
+      <button class="effect-card ice" data-effect="ice" aria-pressed="false" disabled>
+        <span class="effect-symbol" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="m20 3 13 10-3 19-10 5L8 29 7 13Z"/><path d="m20 3-5 15 5 19 6-20Zm-5 15-8-5m19 4 7-4M15 18l-7 11m18-12 4 15"/></svg></span>
+        <span class="card-copy"><span class="card-number">02 / ICE</span><strong>얼음 마법</strong><span class="card-subtitle">낙하와 파쇄</span></span><span class="card-arrow" aria-hidden="true">↗</span>
+      </button>
+      <button class="effect-card lightning" data-effect="lightning" aria-pressed="false" disabled>
+        <span class="effect-symbol" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M24 3 9 23h10l-3 14 15-22H21Z"/></svg></span>
+        <span class="card-copy"><span class="card-number">03 / LIGHTNING</span><strong>번개 마법</strong><span class="card-subtitle">축적과 방전</span></span><span class="card-arrow" aria-hidden="true">↗</span>
+      </button>
+    </nav>
+
+    <section class="workbench" aria-label="입체 효과 미리보기">
+      <div class="stage-column">
+        <div class="stage" id="stage">
+          <div id="viewport" aria-label="3D 마법 미리보기"></div>
+          <div class="stage-top"><span class="stage-label"><i></i> LIVE 3D</span><div class="stage-background" aria-label="배경 색상"><button data-background="dark" aria-pressed="true" title="어두운 배경">어두움</button><button data-background="light" aria-pressed="false" title="밝은 배경">밝음</button></div></div>
+          <div class="stage-bottom"><span>드래그하여 회전 · 스크롤하여 확대</span><span id="stage-phase">준비 중</span></div>
+          <div id="loading" class="loading" role="status"><span class="loading-orbit"></span><strong>마법을 준비하고 있습니다</strong><span>입체 모델과 재료를 불러오는 중</span></div>
+          <div id="error" class="error" role="alert" hidden></div>
+        </div>
+        <div class="transport">
+          <div class="transport-buttons"><button id="play" class="primary" disabled>일시정지</button><button id="restart" class="restart" disabled aria-label="처음부터 다시 재생" title="처음부터 다시 재생">↺</button></div>
+          <div class="timeline"><label class="sr-only" for="scrub">재생 시점</label><input id="scrub" type="range" min="0" max="5" step="0.001" value="0" disabled><div class="timeline-labels"><output id="elapsed" for="scrub">0.00 s</output><span id="duration">— s</span></div></div>
+          <label class="repeat-control"><input id="repeat" type="checkbox" checked><span>반복</span></label>
+        </div>
+      </div>
+
+      <aside class="inspector">
+        <p class="eyebrow" id="effect-eyebrow">01 / FIRE STUDY</p>
+        <h2 id="effect-name">불 마법</h2><p class="effect-subtitle" id="effect-subtitle">응축과 분출</p>
+        <p class="effect-description" id="effect-description">효과를 불러오는 중입니다.</p>
+        <fieldset id="controls" disabled>
+          <legend class="sr-only">미리보기 조절</legend>
+          <div class="control-section"><p class="control-heading">결정적 순간 <span>KEY MOMENTS</span></p><div class="moments" id="moments"></div></div>
+          <div class="control-section"><p class="control-heading">관찰 방향 <span>CAMERA</span></p><div class="segmented camera-controls"><button data-camera="perspective" aria-pressed="true">사선</button><button data-camera="side" aria-pressed="false">측면</button><button data-camera="rear" aria-pressed="false">후면</button><button data-camera="top" aria-pressed="false">위</button></div></div>
+          <div class="control-section settings"><label for="speed">재생 속도</label><select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="1.5">1.5×</option></select><label for="scale">효과 크기 <output id="scale-value">1.0×</output></label><input id="scale" type="range" min="0.65" max="1.35" step="0.05" value="1"></div>
+          <div class="control-section switches"><label><span>보조 입자와 잔광</span><input id="secondary" type="checkbox" checked></label><label><span>두 효과 겹쳐 보기</span><input id="overlap" type="checkbox"></label><label><span>가림 물체 표시</span><input id="occluder" type="checkbox"></label></div>
+        </fieldset>
+        <p class="inspector-note">같은 순간을 다른 방향에서 확인해 보세요.</p>
+      </aside>
+    </section>
+
+    <details class="reference-panel" id="references">
+      <summary><span><span class="reference-plus">+</span> 표현 참고 자료</span><span class="reference-summary">형태와 흐름을 위한 이미지 · 영상 <span aria-hidden="true">↗</span></span></summary>
+      <div class="reference-content"><div class="reference-copy"><p class="eyebrow">DESIGN REFERENCE</p><h3 id="reference-title">불 마법의 표현</h3><p>색감·실루엣·흐름을 검토하기 위한 참고 자료입니다. 위 미리보기는 별도의 입체 장면이며, 이 이미지를 화면에 재생하는 방식이 아닙니다.</p><p id="video-note">참고 영상을 불러오는 중입니다.</p></div><figure><img id="reference-image" alt="선택한 마법의 표현 참고 이미지" loading="lazy"><figcaption>형태 · 색감 참고</figcaption></figure><figure id="video-figure" hidden><video id="reference-video" controls playsinline preload="metadata"></video><figcaption>흐름 · 타이밍 참고</figcaption></figure></div>
+    </details>
+    <footer><span>ELEMENTAL WORKS <span class="footer-separator">/</span> GAME VFX STUDIES</span><span>불 · 얼음 · 번개 <span class="footer-separator">—</span> 세 가지 제작 예시</span></footer>
+  </main>
+  <script type="module" src="./preview.js"></script>
+</body>
+</html>

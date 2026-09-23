@@ -27,7 +27,7 @@ For selected humanoid work, first consider [reference review → rig checks → 
 | Explicitly select local learned human motion | [Kimodo](docs/KIMODO.en.md) |
 | Define functional criteria and review each motion | [Quality](docs/QUALITY.en.md) |
 | Plan image/video references for difficult or creative motion | [Motion references](docs/MOTION_REFERENCES.en.md): initial design, optional Grok headless, frame review and Blender application |
-| Review the VFX separation design and existing experiments | [game-vfx design notes](docs/GAME_VFX_DESIGN.en.md), [VFX experiments](docs/VFX.en.md): separate skill and dedicated tool integrations are not implemented |
+| Author and preview fire, ice and lightning effects | [game-vfx skill](.agents/skills/game-vfx/SKILL.md), [design and execution](docs/GAME_VFX_DESIGN.en.md), [VFX authoring and experiments](docs/VFX.en.md): initial Blender ingredient authoring and reusable web effects |
 | Maintain the repository | [Agent instructions](AGENTS.md) |
 | Understand data flow and validation states | [Architecture](docs/ARCHITECTURE.en.md) |
 | Resolve setup, generation or viewer failures | [Troubleshooting](docs/TROUBLESHOOTING.en.md) |
@@ -58,13 +58,16 @@ To delegate installation, provide the repository URL and ask:
 | Explicit Tripo processing | Paid biped rigging, motion presets and beta semantic segmentation |
 | Revisions and delivery | Preserved parents, editable Blend, self-contained GLB, five overview PNGs and inspection/provenance records |
 | Optional project adapters | Godot import/mesh/material/collision checks; requested Three.js preview with orbit, zoom, wireframe, revision selection and downloads |
+| Separate `game-vfx` skill | Blender noise/lightning-path authoring, reusable ice clips, fire/ice/lightning Three.js playback and requested web previews |
 | Agent access | CLI, linked personal skill and optional stdio MCP |
 
 `process` motion presets are procedural. Kimodo is a separate learned-motion path and its mapping-based application does not automatically solve target contacts, grips or seamless loops. Its text encoder requires Hugging Face model access. General automatic retarget solvers, TRELLIS multiview, automatic retopology and texture rebaking are not implemented. Tripo is the available multiview generation option. Inspect actual geometry, part boundaries, materials and motion; retain unclassified faces.
 
 Numerical checks, visual review and engine/browser checks provide different evidence. An importer or renderer succeeding does not prove useful game motion or artistic quality.
 
-Complete game VFX authoring is separated from the scope of `3d-assets`. This skill can supply models such as ice chunks or meteors and mesh animations used by an effect. **`game-vfx` is [in design](docs/GAME_VFX_DESIGN.en.md), not an installable skill or a dedicated generator integration yet.** Existing [VFX examples and checks](docs/VFX.en.md) remain separate experimental resources.
+Game VFX uses a separate [game-vfx skill](.agents/skills/game-vfx/SKILL.md) built around **Blender authoring, reusable effect components and target-renderer output**. The initial implementation provides a spatial fire shader, an existing ice-fracture clip, branching lightning and a [Three.js gallery](docs/GAME_VFX_DESIGN.en.md). Procedural fields, curves and particles are valid VFX production methods and need no TRELLIS. Use `3d-assets` when a separate physical model such as an ice chunk or meteor, or mesh animation, is needed.
+
+The fire example is not fluid simulation, and the ice uses precomputed movement on a flat surface. Shaders, particles, lights and lifecycle do not all fit in a GLB. This is not a general VFX generation CLI/MCP, arbitrary-terrain collision system, cross-engine converter or commercial-quality guarantee. Existing [VFX experiments](docs/VFX.en.md) remain available, with references, multiview/playback review and repairs performed per effect. Launch a web preview only when requested.
 
 For several motions, complete **references → authoring → multiview/playback review → repair and recheck for each clip**, then deliver them together. Repeated or side-swapped generated poses need diagnosis; use existing motion or video when images cannot resolve sequencing. Do not compress the entire requested set into one or two overview sheets. See [per-clip completion](docs/QUALITY.en.md#complete-each-requested-clip).
 
@@ -101,6 +104,8 @@ Example requests after connecting the skill:
 
 Copying the skill folder alone does not install the runtime. Follow the [skill-link procedure](INSTALL.md#4-connect-the-agent-skill) to use the shared checkout from another project.
 
+For VFX, connect the separate `game-vfx` skill and follow [design and execution](docs/GAME_VFX_DESIGN.en.md). Existing Blender can author the ingredients; procedural fire/lightning work does not require installing TRELLIS weights. Example request: “`$game-vfx` Create a game fire pillar, refine it against references, and show it in a web preview.”
+
 ## Recorded validation
 
 The v0.1 implementation has the following recorded results as of **2026-09-15**. These are development records, not mandatory steps for every asset:
@@ -130,3 +135,5 @@ Core pins are in [bootstrap.py](scripts/bootstrap.py). Optional rigging, segment
 - [Godot](https://godotengine.org/), [Three.js](https://threejs.org/): optional integration checks.
 
 Tools, model weights and components such as DINOv3/BiRefNet have their own terms. This repository does not redistribute binaries or model weights.
+
+The new `game-vfx` [web example source](examples/game-vfx/LICENSE.txt) is MIT; its [Blender Python helper](.agents/skills/game-vfx/scripts/COPYING.txt) is GPL-3.0-or-later. These scoped notices do not relicense the rest of the repository, generated media or external inputs. Preserve dependency notices and check input-material terms when distributing outputs.

@@ -1,10 +1,28 @@
-# VFX experiment notes
+# VFX authoring and experiments
 
 [한국어](VFX.md) | **English**
 
-> **Scope change:** Complete VFX authoring guidance has been separated from `3d-assets`. This document preserves methods, examples and validation limits from earlier authoring experiments; it is not the active skill workflow or a dedicated VFX tool integration. Its rendering-carrier rules do not change physical model generation policy. A separate `game-vfx` is described in the [design notes](GAME_VFX_DESIGN.en.md); no installable skill exists yet.
+Game effect authoring uses the separate [game-vfx skill](../.agents/skills/game-vfx/SKILL.md). Blender is the default authoring tool, combined with procedural fields, curves, shaders and reusable components. Connect `3d-assets` when a separate physical model is needed; effects without model requirements do not need TRELLIS or Tripo. This document covers the initial implementation and retained experiments; [design and execution](GAME_VFX_DESIGN.en.md) describes setup, commands and license scope.
 
-The current tools can **author falling, separating and moving 3D fragments and effects for a destination renderer**. There is no dedicated generator that completes an effect from one request or automatic fracture command. The [falling and breaking example](#example-falling-and-breaking-objects) and [small capability check](#3d-fragment-physics-and-glb-check) distinguish authoring possibilities from verified behavior. Existing [shockwave](../examples/vfx-web/effect.js) and [flame flipbook](../examples/vfx-web/soul-effect.js) examples cover particular representations; the latter is a 2D study.
+## Current game-vfx implementation
+
+| Component | Actual role and boundary |
+| --- | --- |
+| [Blender ingredient helper](../.agents/skills/game-vfx/scripts/prepare_blender.py) | Creates periodic 3D noise and lightning curves/paths, preserving Blend, static path GLB, settings and hashes. It does not generate complete fire/ice animations |
+| [Fire playback](../examples/game-vfx/effects.js) | Spatial flame shader sampling Blender noise, plus embers. Neither Mantaflow simulation nor video on a plane |
+| Ice playback | Reuses an existing TRELLIS model and Blender rigid-body bake for three staggered falls. Not real-time fracture/collision against arbitrary terrain |
+| Lightning playback | Blender paths become spatial trunks/branches of different widths with staggered discharges. Not a physical electrical solver |
+| [Web gallery](../examples/game-vfx/preview.js) | Effect, camera, time, scale, speed, background, occlusion, overlap and primary/secondary-layer review. Reference images/videos appear separately for comparison |
+
+Follow the [execution steps](GAME_VFX_DESIGN.en.md#run-the-fire-ice-and-lightning-examples) and [exact data contract](../.agents/skills/game-vfx/references/runtime.md). The full gallery requires `noise.png`, `recipes.json`, `ice.glb`, `fire.png`, `ice.png` and `lightning.png`; per-effect MP4 references are optional. Generated media is not included in Git. An individual fire/lightning request does not require the gallery's ice model or rebuilding every example.
+
+The skill separates [per-effect authoring and review](../.agents/skills/game-vfx/references/workflow.md). Seeds, scale, speed and components are reusable, while substantial palette, motion or style changes require the relevant authoring/playback source to be edited. There is no general VFX CLI/MCP in `asset_auto` or automatic cross-engine conversion. For GLB-only requests, design with supported mesh/material/animation representations; do not claim the web fire shader is embedded in the GLB.
+
+New [web example source](../examples/game-vfx/LICENSE.txt) is MIT; the Blender `bpy` helper is [GPL-3.0-or-later](../.agents/skills/game-vfx/scripts/COPYING.txt). These notices do not relicense the rest of the repository, external models or reference media. Preserve input provenance/terms and distribution dependency notices. Available code or passing automated checks are separate from browser visual/performance approval, which requires reviewing the actual result.
+
+## Retained authoring experiments
+
+Earlier experiments cover **falling, separating and moving 3D fragments and effects for a destination renderer**. The [falling and breaking example](#example-falling-and-breaking-objects) and [small capability check](#3d-fragment-physics-and-glb-check) distinguish authoring possibilities from verified behavior. The existing `examples/vfx-web/` [shockwave](../examples/vfx-web/effect.js) and [flame flipbook](../examples/vfx-web/soul-effect.js) are separate from the new `examples/game-vfx/` gallery. The old flame flipbook remains a 2D study.
 
 ## Establish capabilities and required work first
 
