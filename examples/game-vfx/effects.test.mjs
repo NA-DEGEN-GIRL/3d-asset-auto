@@ -19,6 +19,7 @@ function snapshot(effect) {
     objects.push({ name: object.name, visible: object.visible, position: object.position.toArray(),
       quaternion: object.quaternion.toArray(), scale: object.scale.toArray(),
       instances: object.instanceMatrix ? Array.from(object.instanceMatrix.array) : null,
+      drawRange: object.geometry ? { ...object.geometry.drawRange } : null,
       particles: object.isPoints ? Object.fromEntries(Object.entries(object.geometry.attributes).map(([name, attribute]) => [name, Array.from(attribute.array)])) : null,
       opacity: object.material?.opacity ?? object.material?.uniforms?.uOpacity?.value ?? null,
     });
@@ -104,7 +105,7 @@ test('all owned resources dispose once, caller geometry/materials/textures remai
       if (object.geometry && object.geometry !== iceGltf.geometry) ownedResources.add(object.geometry);
       (Array.isArray(object.material) ? object.material : [object.material]).filter(Boolean).forEach((r) => ownedResources.add(r));
     });
-    assert.equal(instanceMeshes.length, 1, `${definition.id} has one owned particle instance buffer`);
+    assert.ok(instanceMeshes.length >= 1, `${definition.id} exposes owned particle instance buffers`);
     const counts = new Map();
     ownedResources.forEach((r) => { counts.set(r, 0); r.addEventListener('dispose', () => counts.set(r, counts.get(r) + 1)); });
     effect.dispose(); effect.dispose();
@@ -152,4 +153,106 @@ test('Blender supplied paths are used verbatim and malformed paths are rejected'
   assert.throws(() => createEffect('lightning', { recipes: { lightning: { paths, roles: ['trunk'] } } }), /Invalid lightning roles/);
   assert.throws(() => createEffect('ice'), /generated glacier/);
   assert.throws(() => createEffect('unknown'), /Unknown effect/);
+});
+
+test('each ice contact drives its own response at the source collision pose', () => {
+  const input = glacier(), effect = createEffect('ice', { iceGltf: input });
+  const events = effect.stats.events;
+  assert.equal(events.length, 3);
+  assert.equal(new Set(events.map((e) => e.time)).size, 3);
+  for (const event of events) {
+    const group = effect.group.getObjectByName(event.id);
+    assert.deepEqual(group.position.toArray(), event.position);
+    effect.update(event.time - .001); assert.equal(group.visible, false);
+    effect.update(event.time + .06); assert.equal(group.visible, true);
+  }
+  effect.update(events[0].time + .06);
+  assert.equal(effect.group.getObjectByName(events[0].id).visible, true);
+  assert.equal(effect.group.getObjectByName(events[1].id).visible, false);
+  assert.equal(effect.group.getObjectByName(events[2].id).visible, false);
+  for (const [i, event] of events.entries()) {
+    effect.update(event.time);
+    const sourcePose = effect.group.getObjectByName(`ice-body-${i}`).children[0].position;
+    assert.ok(Math.abs(sourcePose.x - (event.sourceImpact - 2) * .5) < 1e-5);
+  }
+  effect.update(events[0].cleanupEnd + .03);
+  assert.equal(effect.group.getObjectByName('ice-mass-0').scale.x, 0);
+  assert.ok(effect.group.getObjectByName('ice-mass-2').scale.x > 0);
+  effect.update(2.55); const expected = snapshot(effect);
+  effect.update(4.8); effect.update(2.55); assert.deepEqual(snapshot(effect), expected);
+  effect.dispose();
+});
+
+test('ice event seconds follow playback speed while source time and local positions are preserved', () => {
+  const input = glacier();
+  const normal = createEffect('ice', { iceGltf: input });
+  const fast = createEffect('ice', { iceGltf: input, speed: 2, scale: 3 });
+  const original = structuredClone(normal.stats.events);
+  const fastEvents = structuredClone(fast.stats.events);
+  for (const [i, event] of fast.stats.events.entries()) {
+    assert.equal(event.time, original[i].time / 2);
+    assert.equal(event.cleanupEnd, original[i].cleanupEnd / 2);
+    assert.equal(event.sourceImpact, original[i].sourceImpact);
+    assert.deepEqual(event.position, original[i].position);
+    const response = fast.group.getObjectByName(event.id);
+    assert.deepEqual(response.position.toArray(), event.position);
+    fast.update(event.time - .001); assert.equal(response.visible, false);
+    fast.update(event.time + .025); assert.equal(response.visible, true);
+    fast.update(event.time);
+    const sourcePose = fast.group.getObjectByName(`ice-body-${i}`).children[0].position;
+    assert.ok(Math.abs(sourcePose.x - (event.sourceImpact - 2) * .5) < 1e-5);
+  }
+  fast.update(fastEvents[0].cleanupEnd + .015);
+  assert.equal(fast.group.getObjectByName('ice-mass-0').scale.x, 0);
+  assert.ok(fast.group.getObjectByName('ice-mass-2').scale.x > 0);
+  // Consumers may annotate their instance's metadata without changing another
+  // effect or the animation's independently authored contact coordinates.
+  fast.stats.events[1].time = 99;
+  fast.stats.events[1].sourceImpact = 99;
+  fast.stats.events[1].position[0] = 99;
+  assert.deepEqual(normal.stats.events, original);
+  assert.deepEqual(fast.group.getObjectByName(fastEvents[1].id).position.toArray(), fastEvents[1].position);
+  fast.update(fastEvents[1].time + .025);
+  assert.equal(fast.group.getObjectByName(fastEvents[1].id).visible, true);
+  const again = createEffect('ice', { iceGltf: input, speed: 2 });
+  assert.deepEqual(again.stats.events, fastEvents);
+  normal.dispose(); fast.dispose(); again.dispose();
+});
+
+test('lightning events stay synchronized with leader, contact and restrike at double speed', () => {
+  const normal = createEffect('lightning'), fast = createEffect('lightning', { speed: 2 });
+  for (const event of fast.stats.events) {
+    const canonical = normal.stats.events.find((e) => e.id === event.id);
+    assert.equal(event.time, canonical.time / 2);
+    normal.update(canonical.time + .06); fast.update(event.time + .03);
+    assert.deepEqual(snapshot(fast), snapshot(normal));
+  }
+  const contact = fast.stats.events.find((e) => e.id === 'contact');
+  const roots = [];
+  fast.group.traverse((o) => { if (o.name.startsWith('lightning-ground-')) roots.push(o); });
+  fast.update(contact.time - .03); assert.ok(roots.every((r) => !r.visible));
+  fast.update(contact.time + .03); assert.ok(roots.some((r) => r.visible && r.geometry.drawRange.count > 0));
+  assert.ok(fast.group.getObjectByName('lightning-core-0').visible);
+  fast.stats.events[0].time = 99;
+  assert.equal(normal.stats.events[0].time, 1.6);
+  normal.dispose(); fast.dispose();
+});
+
+test('lightning reaches its contact before ground branches and separates late current', () => {
+  const effect = createEffect('lightning');
+  const core = effect.group.getObjectByName('lightning-core-0');
+  const roots = [];
+  effect.group.traverse((o) => { if (o.name.startsWith('lightning-ground-')) roots.push(o); });
+  effect.update(1.65);
+  assert.ok(core.geometry.drawRange.count > 0 && core.geometry.drawRange.count < core.geometry.index.count);
+  assert.ok(roots.every((r) => !r.visible));
+  effect.update(1.78);
+  assert.equal(core.geometry.drawRange.count, core.geometry.index.count);
+  assert.ok(roots.some((r) => r.visible && r.geometry.drawRange.count > 0));
+  effect.update(2.9);
+  assert.equal(core.visible, false);
+  const lingering = [];
+  effect.group.traverse((o) => { if (o.name.startsWith('lightning-residual-') && o.visible) lingering.push(o); });
+  assert.ok(lingering.length > 0);
+  effect.dispose();
 });

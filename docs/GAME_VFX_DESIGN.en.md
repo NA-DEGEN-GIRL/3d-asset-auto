@@ -2,7 +2,7 @@
 
 [한국어](GAME_VFX_DESIGN.md) | **English**
 
-Status: **initial Blender-centered implementation**. A separate [game-vfx skill](../.agents/skills/game-vfx/SKILL.md), Blender ingredient builder and fire/ice/lightning [web playback module](../examples/game-vfx/effects.js) are provided. This does not add a general VFX command to `asset_auto`, and there are no Houdini/EmberGen adapters. Usage and boundaries are separated below.
+Status: **Blender-centered implementation with refined expression and contact responses**. A separate [game-vfx skill](../.agents/skills/game-vfx/SKILL.md), Blender ingredient builder and fire/ice/lightning [web playback module](../examples/game-vfx/effects.js) are provided. This does not add a general VFX command to `asset_auto`, and there are no Houdini/EmberGen adapters. Usage and boundaries are separated below.
 
 ## Problem to solve
 
@@ -26,7 +26,7 @@ Effects without mesh requirements need no TRELLIS/Tripo installation or calls. N
 - **Verified production path:** Tool integration with readiness checks, actual execution, settings/seed/output/version records and failure recovery. Use MCP only when it provides the needed access; reuse working CLI or scripting paths first.
 - **Reusable effect configurations:** Suitable simulation settings, shaders/materials/textures and mesh/particle/trail timing. Preserve editable sources and resource usage terms. Do not make one example's values universal.
 - **Playback contract:** Required files, coordinates/scale/time, start/cancel/retrigger/end behavior and resource ownership. Distinguish GLB models/clips from engine-specific behavior. With no engine selected, deliver materials and specifications and mark integration untested.
-- **Expression review:** Compare adopted events, silhouettes and speed changes against actual output. Review and repair at relevant viewpoints, backgrounds and concurrent-use conditions. Full footage on a plane cannot replace a requested freely viewed spatial main effect.
+- **Expression review:** Set acceptance criteria against the user's request and adopted references, rather than lowering them to what the starting example easily produces. Establish large-scale shape and event rhythm first, then verify that dependent responses follow their own event positions and times. Compare the complete expression at normal playback and viewing distance; particle/glow quantity or defect-free stills alone cannot approve it. Full footage on a plane cannot replace a requested freely viewed spatial main effect.
 
 ## Selected tools and unknowns
 
@@ -54,9 +54,9 @@ Retain existing [VFX experiments](VFX.en.md), `examples/vfx-web/`, the rigid-bod
 
 | Example | Actual production/playback | Behavior outside the file |
 | --- | --- | --- |
-| Fire | Blender periodic 3D noise → spatial density raymarching and 3D embers | Flame, timing, lighting and particles remain Three.js code; neither fluid simulation nor full-footage planar playback |
-| Ice | Existing TRELLIS mesh/Blender rigid-body bake → three delayed falls and fragment playback | Material adjustments, frost and lifecycle remain web code; motion is baked against the original flat ground |
-| Lightning | Blender curves/path data → hierarchical 3D trunk/branches and delayed discharge | Lighting, afterglow and playback remain web code; no electrical/collision simulation |
+| Fire | Blender periodic 3D noise → spatial vortex of broken flame lobes, upward-traveling eruption and cooling | Flame, timing, cinders and ground afterheat remain Three.js code; an authored density field, not fluid simulation or full-footage planar playback |
+| Ice | Existing TRELLIS mesh/Blender rigid-body bake → staggered falls retimed for acceleration and fragment motion | Secondary shards, ice powder, cold mist and frost follow each contact's position/time in web code, alongside materials and lifecycle; large fragments replay the original flat-ground bake, not live collision |
+| Lightning | Blender angular trunk/fork paths → descending leader, return strokes and ground current | Progressive path reveal, re-strikes, residual current and lighting are authored in web code; no electrical/collision simulation |
 
 Locate Blender, then prepare ingredients in a new output directory. Replace `<blender>` with its executable path.
 
@@ -75,14 +75,16 @@ uv run --no-sync python -m http.server 8776 --bind 127.0.0.1 --directory .work/g
 
 If `web/node_modules` is missing, install only web dependencies with `npm --prefix web ci`. The [preview](http://127.0.0.1:8776/) supports three effects, seeking, cameras, speed, scale, backgrounds, overlap and supporting-layer inspection. Serve only the generated site; no account or generation API is exposed.
 
-`createEffect(id, options)` provides `group`, `duration`, `impact`, `update(seconds)`, `setLayer(name, visible)` and `dispose()`. Reuse through `seed`, `scale`, `speed` and placement via `group` transforms. Do not apply speed twice through both the module and an external clock. Caller-provided textures/GLB resources remain caller-owned, so removing one instance preserves another. Follow [runtime.md](../.agents/skills/game-vfx/references/runtime.md) for actual data contracts and editing guidance.
+`createEffect(id, options)` provides `group`, `duration`, `impact`, `update(seconds)`, `setLayer(name, visible)`, `setSceneDepth(texture, width, height)` and `dispose()`. Reuse through `seed`, `scale`, `speed` and placement via `group` transforms. Do not apply speed twice through both the module and an external clock. Caller-provided textures/GLB resources remain caller-owned, so removing one instance preserves another. Follow [runtime.md](../.agents/skills/game-vfx/references/runtime.md) for actual data contracts and editing guidance.
+
+`effects.js` dispatches effects and owns the shared playback/lifecycle contract. Expression lives in [fire.js](../examples/game-vfx/fire.js), [ice.js](../examples/game-vfx/ice.js) and [lightning.js](../examples/game-vfx/lightning.js), with resource management and shared materials in [common.js](../examples/game-vfx/common.js). Refining one effect does not require rewriting the other effects.
 
 ```sh
 node examples/game-vfx/build.mjs --test
 node .work/game-vfx/effects.test.cjs
 ```
 
-Automated checks cover seeking, replay, valid coordinates, instance independence and resource ownership. They do not approve visual quality, other engines, low-end devices or performance with many simultaneous effects.
+Automated checks cover seeking, replay, valid coordinates, instance independence and resource ownership, plus individual ice contact positions/times and clip playback at those events using synthetic inputs, and lightning's leader → contact → ground-current order. They do not judge natural expression or establish parity with commercial-game quality. Browser visual review, other engines, low-end devices and performance with many simultaneous effects require separate verification.
 
 ## Installation and licensing
 

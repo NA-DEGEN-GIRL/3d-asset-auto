@@ -2,7 +2,7 @@
 
 ## Expression before implementation
 
-For each effect, select the visible characteristics that carry its identity: silhouette, path, build-up, peak event, secondary response and dissipation as relevant. Infer useful defaults from the request and project. Record enough to compare the output, rather than reducing every spell to the same expanding ring plus particles.
+For each effect, identify the characteristics that make the adopted reference recognizable in motion, including its large-scale shape and event rhythm where relevant. Preserve those characteristics before adding fine noise, particles or glow. A plausible effect of the same element may still miss the requested expression. Infer useful defaults from the request and project, and record the intended differences when adapting a reference.
 
 Useful example criteria:
 
@@ -32,7 +32,7 @@ Use the simplest representation that meets the intended camera, interaction and 
 - **Particles and flipbooks:** appropriate for embers, mist, smoke accents and camera-constrained elements. Test transparency and overlap. A whole reference video on one plane does not satisfy a free-camera spatial spell.
 - **Heavier simulation:** consider Blender fluid/volume baking when the requested behavior benefits from it. Probe a bounded setup before long bakes, then verify the chosen export/playback path. The current examples do not establish Mantaflow, liquid or general volume-cache delivery.
 
-Adapt a fitting component instead of reconstructing its infrastructure for every request. When repeated adjustments cannot recover the target expression, reconsider the representation or source, not only constants. Decompose combined spells into named visual layers and events so their contribution can be inspected separately.
+Adapt fitting components and connect dependent visual layers to the same authored event positions and times. For multiple contacts, releases or moving sources, verify that each response follows its own cause; a shared decorative burst can conceal missing behavior. Decompose combined spells into named layers/events for inspection. If adjustments cannot recover the intended expression, change the relevant structure, representation or source rather than repeating small parameter edits.
 
 ## From authoring to game playback
 
@@ -56,7 +56,7 @@ Keep editable working sources locally, but honor the requested delivered files. 
 2. Hold the same important instant and inspect complementary angles. Replay transitions and pulses at the intended speed. Static meshes visible from several angles do not establish that the moving effect retains depth or timing.
 3. Test relevant scene conditions: bright/dark backgrounds, foreground occluders, nearby geometry, ground contact, simultaneous instances and supported scale changes. Check empty/prestart time, cancellation, restart and post-lifetime behavior when part of the contract. Choose coverage from the effect's risks, not a universal number of images.
 4. Record the defect, moment, view, failed criterion and likely source. Correct authoring, bake/export or runtime as appropriate. Re-export/rebuild and compare the same conditions, including plausible regressions in expression and untouched effects.
-5. Separate numeric/structural results, visual expression and target integration. Completion requires the relevant observed criteria, not just tests passing. If a real time/cost constraint stops repairs or an approach stalls, retain the best source and report the specific unresolved behavior rather than calling it approved.
+5. Separate structural correctness, visual expression and target integration. Compare the complete result with the adopted quality target at normal playback and viewing distance, beyond isolated details or defect-free frames. A working component study remains incomplete when its defining shape, timing or material character is missing. Record the remaining visible difference and repair its cause, or report the concrete limit preventing completion.
 
 Treat excessive brightness, geometry and particles as costs, not substitutes for expression. Test performance at the requested resolution, hardware and simultaneous count before making performance claims; a responsive isolated demo establishes only that tested case.
 

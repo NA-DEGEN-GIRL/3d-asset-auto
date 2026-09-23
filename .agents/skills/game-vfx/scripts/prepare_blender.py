@@ -12,6 +12,7 @@ import math
 import random
 import sys
 from array import array
+from itertools import pairwise
 from pathlib import Path
 
 import bpy
@@ -58,36 +59,73 @@ def bake_noise(out):
 
 def lightning_paths(seed):
     rng = random.Random(seed)
+    # Large angular direction changes remain readable at game distance; small
+    # jagged detail supports that silhouette instead of replacing it.
+    knots = [(0, 0.0, 0.0), (6, -0.12, 0.20), (10, 0.98, 0.05),
+             (15, 0.15, -0.76), (20, -0.85, -0.1), (25, 0.25, 0.66),
+             (30, -0.40, 0.04), (34, 0.20, -0.15), (36, 0.0, 0.0)]
     main = []
     for i in range(37):
         t = i / 36
         taper = math.sin(math.pi * t)
-        main.append([round((0.5 * math.sin(t * 17) + rng.uniform(-0.28, 0.28)) * taper, 5),
+        left, right = next((a, b) for a, b in pairwise(knots) if a[0] <= i <= b[0])
+        u = (i - left[0]) / (right[0] - left[0])
+        x = left[1] * (1 - u) + right[1] * u
+        z = left[2] * (1 - u) + right[2] * u
+        main.append([round(x + rng.uniform(-0.13, 0.13) * taper, 5),
                      round(8.0 - 7.84 * t, 5),
-                     round((0.32 * math.sin(t * 23 + 1) + rng.uniform(-0.24, 0.24)) * taper, 5)])
+                     round(z + rng.uniform(-0.11, 0.11) * taper, 5)])
     paths, roles = [main], ['trunk']
-    for i in range(11):
-        origin = main[4 + i * 2]
+    primary_branches = []
+    for i in range(8):
+        origin = main[6 + i * 3]
         angle = i * 2.39996
-        length = rng.uniform(1.2, 2.9)
+        length = rng.uniform(2.0, 3.3)
         branch = [origin]
         for j in range(1, 13):
             t = j / 12
-            branch.append([round(origin[0] + math.cos(angle) * length * t + rng.uniform(-0.18, 0.18), 5),
-                           round(max(0.12, origin[1] - length * 1.3 * t + rng.uniform(-0.12, 0.12)), 5),
-                           round(origin[2] + math.sin(angle) * length * t + rng.uniform(-0.18, 0.18), 5)])
+            elbow = math.sin(t * math.pi) * (0.35 if i % 2 else -0.35)
+            branch.append([round(origin[0] + math.cos(angle) * length * t - math.sin(angle) * elbow + rng.uniform(-0.14, 0.14), 5),
+                           round(max(0.14, origin[1] - length * .80 * t + rng.uniform(-0.10, 0.10)), 5),
+                           round(origin[2] + math.sin(angle) * length * t + math.cos(angle) * elbow + rng.uniform(-0.14, 0.14), 5)])
         paths.append(branch)
         roles.append('branch')
-    for i in range(9):
-        angle = i * math.tau / 9
+        primary_branches.append((branch, angle))
+    for i, (branch, angle) in enumerate(primary_branches):
+        origin = branch[5 + i % 3]
+        angle += .75 if i % 2 else -.8
+        twig = [origin]
+        for j in range(1, 9):
+            t = j / 8
+            twig.append([round(origin[0] + math.cos(angle) * 1.05 * t + rng.uniform(-.07, .07), 5),
+                         round(max(.12, origin[1] - .85 * t), 5),
+                         round(origin[2] + math.sin(angle) * 1.05 * t + rng.uniform(-.07, .07), 5)])
+        paths.append(twig)
+        roles.append('branch')
+    ground_branches = []
+    for i in range(7):
+        angle = i * math.tau / 7 + rng.uniform(-.12, .12)
+        length = rng.uniform(3.0, 4.2)
         branch = [[0.0, 0.10, 0.0]]
         for j in range(1, 13):
             t = j / 12
-            angle += rng.uniform(-0.16, 0.16)
-            branch.append([round(math.cos(angle) * 3.4 * t, 5),
-                           round(0.08 + rng.random() * 0.1, 5),
-                           round(math.sin(angle) * 3.4 * t, 5)])
+            angle += rng.uniform(-0.12, 0.12)
+            branch.append([round(math.cos(angle) * length * t, 5),
+                           round(0.06 + rng.random() * 0.06, 5),
+                           round(math.sin(angle) * length * t, 5)])
         paths.append(branch)
+        roles.append('ground')
+        ground_branches.append((branch, angle))
+    for i, (branch, angle) in enumerate(ground_branches):
+        origin = branch[6]
+        angle += .65 if i % 2 else -.65
+        twig = [origin]
+        for j in range(1, 7):
+            t = j / 6
+            twig.append([round(origin[0] + math.cos(angle) * 1.6 * t + rng.uniform(-.1, .1), 5),
+                         round(.05 + rng.random() * .06, 5),
+                         round(origin[2] + math.sin(angle) * 1.6 * t + rng.uniform(-.1, .1), 5)])
+        paths.append(twig)
         roles.append('ground')
     return paths, roles
 
