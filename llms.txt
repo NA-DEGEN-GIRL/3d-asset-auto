@@ -10,6 +10,7 @@ Human guides are available in [English](README.en.md) and [한국어](README.md)
 - [Quick start](QUICKSTART.en.md): Generation, edits, asynchronous jobs and visual review.
 - [Agent instructions](AGENTS.md): Repository commands, source contracts and maintenance invariants.
 - [Asset skill](.agents/skills/3d-assets/SKILL.md): Workflow for creating and reviewing assets.
+- [Asset user guide](.agents/skills/3d-assets/references/user-guide.en.md): `$3d-assets help` / `설명서`; model roles, defaults, explicit options and request examples without starting production. Korean version linked within.
 - [Request fields](.agents/skills/3d-assets/references/specs.md): Generation and edit specifications.
 - [Runtime reference](.agents/skills/3d-assets/references/runtime.md): CLI commands and artifact layout.
 - [Tripo option](docs/TRIPO.en.md): Explicit provider choice, private key setup, PNG/JPEG and multiview inputs, automatic standard generation with optional credit limit, and known-task recovery.
@@ -24,6 +25,7 @@ Human guides are available in [English](README.en.md) and [한국어](README.md)
 ## Game VFX
 
 - [game-vfx skill](.agents/skills/game-vfx/SKILL.md): Separate Blender-first effect authoring and per-effect review. Procedural fields, paths, particles and shaders are valid; use 3d-assets only for needed physical mesh components. Resolve the installed skill path to find its shared runtime.
+- [VFX user guide](.agents/skills/game-vfx/references/user-guide.en.md): `$game-vfx help` / `설명서`; tools, references, simulation options, target-renderer considerations and request examples. Korean version linked within.
 - [game-vfx design and execution](docs/GAME_VFX_DESIGN.en.md): Initial Blender noise/lightning helper and reusable fire, baked ice and lightning Three.js gallery. Setup, media preparation, preview commands, scoped MIT web/GPL Blender-helper licenses and current limits. No general generation CLI/MCP or automatic cross-engine converter.
 - [VFX runtime contract](.agents/skills/game-vfx/references/runtime.md): Actual helper flags/outputs, full-gallery media list, per-effect resources, absolute-time playback, layers, ownership and focused checks. Individual effects do not require the full gallery or model inference.
 - [VFX authoring and experiments](docs/VFX.en.md): Current implementation alongside retained shockwave, 2D flipbook and fragment physics-to-GLB studies. Shader/particle runtime is separate from GLB; code availability and numeric checks do not prove visual quality or target performance.

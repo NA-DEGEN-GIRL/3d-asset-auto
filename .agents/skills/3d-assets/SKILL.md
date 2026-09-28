@@ -1,9 +1,15 @@
 ---
 name: 3d-assets
-description: Create 3D assets with TRELLIS.2 and edit, rig, animate or combine clips in Blender. Use for mesh refinement, learned rig drafts, semantic parts and reviewed GLB delivery. Kimodo human motion and Tripo require explicit user selection; engines and viewers are optional.
+description: Create 3D assets with TRELLIS.2 and edit, rig, animate or combine clips in Blender. Use for mesh refinement, learned rig drafts, semantic parts, reviewed GLB delivery and explanations of this skill's usage or model choices. Kimodo human motion and Tripo require explicit user selection; engines and viewers are optional.
 ---
 
 # 3D assets
+
+## Help on request
+
+For requests such as `$3d-assets 설명서`, `도움말`, `help`, or questions about models/options, read the [Korean user guide](references/user-guide.md) or [English user guide](references/user-guide.en.md). Reply briefly in the user's language with the relevant defaults, explicit options and a few request examples; expand only the requested topic. A help-only request does not start setup, inference, paid calls or a viewer, and does not require `doctor`. If the user asks what is available on their current host, use read-only capability/resource checks and distinguish supported, installed and inference-verified states without exposing secrets or private device identifiers. When help accompanies an actual asset request, also carry out that explicitly requested work.
+
+## Runtime
 
 Use `scripts/assetctl.py` through this skill's resolved path; its wrapper locates the shared runtime even from another project. Run `doctor` to discover actual capabilities. Read [runtime.md](references/runtime.md) for commands and [specs.md](references/specs.md) when constructing requests. A submitted job or installed file is not evidence of successful inference.
 

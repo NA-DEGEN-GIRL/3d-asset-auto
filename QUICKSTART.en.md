@@ -2,6 +2,8 @@
 
 [한국어](QUICKSTART.md) | **English**
 
+If you forget model names or how to ask, use **`$3d-assets help`**. The [in-skill guide](.agents/skills/3d-assets/references/user-guide.en.md) explains defaults, explicit options and request examples without starting setup or generation. For VFX, ask **`$game-vfx help`**.
+
 The default workflow is **reference image → TRELLIS.2 → Blender processing → agent review → GLB delivery**. No engine or web viewer is required. On a new computer, complete [installation](INSTALL.md). Run the following commands from the runtime root.
 
 For paid Tripo, explicitly request “Use Tripo3D” and follow the [Tripo guide](docs/TRIPO.en.md). One standard generation per requested asset is covered without repeated credit approval; `max_credits` is optional. A configured API key does not change the default TRELLIS workflow.

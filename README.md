@@ -18,6 +18,8 @@ LLM은 제공된 이미지나 사용 가능한 이미지 생성 도구로 참조
 
 | 하려는 일 | 읽을 문서 |
 | --- | --- |
+| 모델·옵션·요청 예시가 기억나지 않을 때 | `$3d-assets 설명서` — [스킬 내 사용 설명서](.agents/skills/3d-assets/references/user-guide.md) |
+| VFX 도구·제작 방식·요청 예시 확인 | `$game-vfx 설명서` — [VFX 사용 설명서](.agents/skills/game-vfx/references/user-guide.md) |
 | 설치된 시스템으로 첫 에셋 만들기 | [QUICKSTART.md](QUICKSTART.md) |
 | 새 PC에 설치하거나 LLM에게 설치 맡기기 | [INSTALL.md](INSTALL.md) — Windows/Linux, 영어 |
 | 공용 장비의 GPU 보호·CPU 예산 설정 | [리소스 정책](docs/RESOURCES.md) — 비공개 운영자 설정·실제 worker의 제한 확인 |

@@ -1,9 +1,15 @@
 ---
 name: game-vfx
-description: Create and refine game spell and impact effects for the target project's renderer, using suitable shaders, particles, meshes and optional Blender baking. Use for fire, ice, lightning, trails and related VFX; request 3d-assets when a separate physical model is needed.
+description: Create and refine game spell and impact effects for the target project's renderer, using suitable shaders, particles, meshes and optional Blender baking. Use for fire, ice, lightning, trails and related VFX, or explain this skill's tools and usage; request 3d-assets when a separate physical model is needed.
 ---
 
 # Game VFX
+
+## Help and manual
+
+For “설명서”, “도움말”, “사용법”, “help”, or questions about this skill's models/tools, read the [Korean user guide](references/user-guide.md) or [English user guide](references/user-guide.en.md). Answer in the user's language with a brief capability, default-tool and optional-tool summary plus useful request examples. Help-only requests do not authorize installation, generation, baking, viewers, paid calls or automatic `doctor` checks. An explicit current-availability request permits relevant read-only installation/resource inspection; distinguish supported workflows, detected installations and actually verified execution, and summarize without credentials or private device/configuration identifiers. If the user also requests production work, explain the relevant choices and continue that authorized work; help wording does not cancel it.
+
+## Production
 
 Start from the target project's renderer and requested expression. Reuse its working effect system where suitable; choose ingredients and playback together. Blender is the preferred available local tool for ingredients or offline baking when needed, not a mandatory first step for every effect. Procedural geometry, fields, particles, simulations and shaders are valid techniques; neither a solver nor a generated reference guarantees a finished effect.
 

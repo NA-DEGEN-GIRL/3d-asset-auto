@@ -18,6 +18,8 @@ For selected humanoid work, first consider [reference review → rig checks → 
 
 | Task | Guide |
 | --- | --- |
+| Recall model choices, options and request examples | `$3d-assets help` — [in-skill user guide](.agents/skills/3d-assets/references/user-guide.en.md) |
+| Recall VFX tools, production choices and request examples | `$game-vfx help` — [VFX user guide](.agents/skills/game-vfx/references/user-guide.en.md) |
 | Make a first asset in an installed runtime | [Quick start](QUICKSTART.en.md) |
 | Install on another computer or delegate installation to an LLM | [Installation](INSTALL.md) |
 | Use paid Tripo single-image or multiview generation | [Tripo](docs/TRIPO.en.md) |
