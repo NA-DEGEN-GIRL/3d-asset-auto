@@ -16,6 +16,12 @@ def config(root):
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
 
 
+def resources(root):
+    from .resources import load
+
+    return load(root)
+
+
 def executable(root, kind):
     conf = config(root)
     explicit = os.environ.get(f"ASSET_AUTO_{kind.upper()}") or conf.get(kind)
@@ -141,4 +147,7 @@ def capabilities(root):
                                        "declared low-activity limit", "declared root drift"],
                             "critical_frame_selection": True, "default_views": ["front", "right", "back"],
                             "automatic_visual_approval": False}
+    from .resources import describe
+
+    result["resources"] = describe(root)
     return result

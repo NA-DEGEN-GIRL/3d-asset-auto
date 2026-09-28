@@ -20,6 +20,7 @@ LLM은 제공된 이미지나 사용 가능한 이미지 생성 도구로 참조
 | --- | --- |
 | 설치된 시스템으로 첫 에셋 만들기 | [QUICKSTART.md](QUICKSTART.md) |
 | 새 PC에 설치하거나 LLM에게 설치 맡기기 | [INSTALL.md](INSTALL.md) — Windows/Linux, 영어 |
+| 공용 장비의 GPU 보호·CPU 예산 설정 | [리소스 정책](docs/RESOURCES.md) — 비공개 운영자 설정·실제 worker의 제한 확인 |
 | 유료 Tripo 단일 이미지·멀티뷰 사용하기 | [Tripo 가이드](docs/TRIPO.md) — 키 설정·비용·중단 복구 |
 | 리깅·애니메이션·자동 부품 분리 | [캐릭터 후처리](docs/CHARACTERS.md) — 기본 로컬 처리·선택적 Tripo |
 | 사용자 동작·리그 수정·클립 합치기 | [Blender 편집](docs/BLENDER.md) — 생성 provider와 독립적인 로컬 작업 |

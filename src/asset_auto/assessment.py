@@ -53,7 +53,7 @@ def assess(root, request: AssessmentRequest):
             write_json(out / "worker-request.json", worker_request)
             pipeline.run_logged([executable(root, "blender"), "--background", "--factory-startup", "--disable-autoexec",
                                  "--python-exit-code", "1", "--python", str(Path(__file__).with_name("blender_assessment_worker.py")),
-                                 "--", str(out / "worker-request.json")], out / "blender.log", cwd=root)
+                                 "--", str(out / "worker-request.json")], out / "blender.log", cwd=root, runtime="blender")
             report = read_json(out / "report.json")
         _, _, final_digest = pipeline.completed_source(root, request.asset_id, request.revision)
         if final_digest != digest:

@@ -23,7 +23,9 @@ Kimodo는 캐릭터 메시를 자동 리깅하지 않습니다. 뼈와 스킨 �
 
 ## 필요한 때 설치
 
-Linux 또는 Windows WSL2, NVIDIA CUDA GPU와 C++ 컴파일러가 필요합니다. 공식 안내상 텍스트 인코더를 포함한 GPU 실행은 약 17GB VRAM을 사용합니다. 이 어댑터는 모델과 인코더를 같은 GPU에서 실행하며 CPU 인코더·원격 인코더 자동 전환을 제공하지 않습니다. 메인 `.venv`와 분리해 설치합니다.
+Linux 또는 Windows WSL2, NVIDIA CUDA GPU와 C++ 컴파일러가 필요하며 메인 `.venv`와 분리해 설치합니다. 기본값은 모션 네트워크와 텍스트 인코더 모두 CUDA 실행입니다. 운영자가 비공개 [리소스 정책](RESOURCES.md)에 `runtimes.kimodo.text_encoder_device: "cpu"`를 명시하면 모션 네트워크만 선택한 GPU에 둘 수 있습니다. CPU·원격 인코더 자동 전환은 없으며 Kimodo 전체 CPU 추론은 지원하지 않습니다.
+
+계획용으로 CUDA 인코더를 포함하면 약 17 GiB VRAM, CPU 인코더를 사용하면 모션 네트워크에 대략 2 GiB를 참고합니다. 실제 적합성을 보장하는 수치는 아닙니다. CPU 인코더는 큰 호스트 RAM과 더 긴 인코딩 시간을 요구합니다. 추론 전에 실제 실행 호스트에서 `resources --runtime kimodo`를 확인합니다. Windows·WSL 경로가 호출 호스트의 GPU 정책을 자동 전달·적용하지는 않으므로 지원하는 worker 호스트 설정을 사용하거나 실행 경계의 차단을 보고합니다. 선택한 GPU가 사용 중이면 기다리며, 다른 장치나 정책 변경이 자동 승인되는 것은 아닙니다.
 
 ```sh
 uv run --no-sync python scripts/bootstrap_kimodo.py

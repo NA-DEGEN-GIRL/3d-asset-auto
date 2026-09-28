@@ -7,6 +7,8 @@ description: Create 3D assets with TRELLIS.2 and edit, rig, animate or combine c
 
 Use `scripts/assetctl.py` through this skill's resolved path; its wrapper locates the shared runtime even from another project. Run `doctor` to discover actual capabilities. Read [runtime.md](references/runtime.md) for commands and [specs.md](references/specs.md) when constructing requests. A submitted job or installed file is not evidence of successful inference.
 
+Respect the execution host's private [resource policy](../../../docs/RESOURCES.en.md). Inspect its resolved GPU/CPU plan before expensive work; wait for a busy selected GPU or Blender slot without switching devices. Do not widen limits or enable protected devices to bypass a failure without user/operator authorization. Keep device identifiers and resource provenance local. CPU-only settings do not provide CPU implementations for CUDA-only backends; Windows/WSL/SSH routing does not prove cross-host enforcement.
+
 For first-time installation or work across Windows and SSH/Linux, read [execution and setup](references/execution-setup.md). Use the same wrapper with `--execution local` or `--execution windows`; inspect the chosen host's doctor/plan and keep that execution host with all job/asset IDs. A registered native runtime is preferred by auto; otherwise the existing SSH-to-Windows bridge remains available. Ask only for missing setup information, never API secrets in chat. For Windows execution from SSH, read [Windows bridge routing](references/windows-bridge.md), upload inputs and rewrite embedded paths before submission.
 
 ## Choose the workflow

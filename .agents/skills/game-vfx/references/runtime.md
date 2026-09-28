@@ -10,15 +10,19 @@ The skill's helper lives at `scripts/prepare_blender.py`; web code lives at `<ru
 
 Use an existing Blender executable. In a configured shared runtime, `3d-assets`' `doctor` can identify it without invoking generation. The example builder uses dependencies installed under `<runtime>/web`; only install those web dependencies if needed. No TRELLIS, Tripo, Kimodo or paid VFX package is required to author the procedural fields and branches.
 
+Read the shared [resource policy](../../../../docs/RESOURCES.en.md) and inspect `resources --runtime blender` on the execution host. Use the guarded command below so custom VFX work shares the operator's CPU/thread budget and Blender concurrency limit. Wait for busy permitted resources without widening policy or changing devices. Mantaflow baking is CPU work; render-device enforcement is separate, and a CUDA mask alone does not exclude protected GPUs from EEVEE/OpenGL. Retain policy/source and observed renderer evidence in private local provenance.
+
 ## Prepare reusable Blender ingredients
 
-The helper runs in Blender, not ordinary Python:
+The helper runs in Blender, launched from the resolved runtime root through the resource guard:
 
 ```text
-<blender> --background --python <absolute-skill-dir>/scripts/prepare_blender.py -- --output <absolute-new-output-dir> --seed 17
+uv run --no-sync python -m asset_auto.cli resources --runtime blender --exec -- <blender> --background --python <absolute-skill-dir>/scripts/prepare_blender.py -- --output <absolute-new-output-dir> --seed 17
 ```
 
 Use a new or empty output directory beneath local `.work/game-vfx/` or the target project's work area; the helper rejects a populated directory. `17` is an example reproducible seed, not a required artistic value. This helper accepts only `--output` and `--seed`. It resets its own background Blender scene and creates field data plus lightning geometry; adapt a separate authoring script for different behavior rather than inventing flags.
+
+`resources --runtime blender --shell-prefix` emits a guarded CLI prefix with the resolved runtime root and `--exec --`, using PowerShell quoting on Windows or shell quoting on POSIX. Append the Blender executable/arguments with that shell's quoting rules. Direct Blender execution bypasses the guard. A policy is not a sandbox for trusted Python: a custom script must preserve the selected renderer/device restrictions.
 
 The helper produces:
 

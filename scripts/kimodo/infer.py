@@ -103,6 +103,8 @@ def generate(runtime, request_file):
             "fps": data["fps"], "frames": len(data["root_positions"]), "seed": request["seed"],
             "prompt": request["prompt"], "elapsed_seconds": time.monotonic() - started,
             "gpu": torch.cuda.get_device_name(0), "files": files,
+            "text_encoder_device": str(encoder.get_device()),
+            "cuda_visible_devices": os.environ.get("CUDA_VISIBLE_DEVICES"),
             "limitations": ["SOMA model uses 30 joints internally; 77 exported joints do not prove detailed finger motion.",
                             "Generated contact labels are not collision tests on the target character."]})
 

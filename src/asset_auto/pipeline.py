@@ -15,7 +15,11 @@ from .settings import executable, model_dir
 from .store import Store, child, now, read_json, write_json
 
 
-def run_logged(command, log, timeout=900, cwd=None):
+def run_logged(command, log, timeout=900, cwd=None, *, runtime=None):
+    if runtime is not None:
+        from .runtime_execution import run
+
+        return run(Path(cwd), runtime, command, log=log, timeout=timeout)
     flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     with log.open("wb") as stream:
         result = subprocess.run(
@@ -71,6 +75,7 @@ def blender(root, request, out):
         ],
         out / "blender.log",
         cwd=root,
+        runtime="blender",
     )
     validate_glb(out / "asset.glb")
     for name in (
@@ -115,6 +120,9 @@ def finalize(root, spec, revision, out, parent=None, edits=None, processing=None
         "inspection": report,
         "files": files,
         "toolchain": installed,
+        # Hardware identifiers, private config paths and process details stay in
+        # local sidecars, outside the ordinary asset-delivery manifest.
+        "resource_reports": [path.name for path in sorted(out.glob("*.resources.json"))],
         "coordinate_system": "glTF Y-up, meters",
         "renders": [f"{v}.png" for v in ("front", "back", "left", "right", "perspective")],
         "asset_type": "character" if report.get("rigging", {}).get("armatures") else
@@ -198,11 +206,19 @@ def generate(root: Path, spec: AssetSpec, *, on_revision=None):
             "--webp",
             "off",
         ]
+        from .resources import resolve
+        from .runtime_execution import legacy_gpu_lock
+
+        effective = resolve(root, "trellis")["effective"]
+        if isinstance(effective["gpu"], list):
+            command.extend(["--gpu", "0"])
+        if "threads" in effective:
+            command.extend(["--threads", str(effective["threads"])])
         write_json(out / "generation.json", {"command": command, "started_at": now()})
         lock_path = root / ".assets" / ".locks" / "trellis.lock"
         lock_path.parent.mkdir(parents=True, exist_ok=True)
-        with FileLock(lock_path, timeout=3600):
-            run_logged(command, out / "trellis.log", timeout=3600, cwd=root)
+        with legacy_gpu_lock(root, "trellis", lock_path):
+            run_logged(command, out / "trellis.log", timeout=3600, cwd=root, runtime="trellis")
         validate_glb(raw)
         request.update(operation="import", source=str(raw))
     blender(root, request, out)

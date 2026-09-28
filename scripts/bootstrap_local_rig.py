@@ -14,6 +14,10 @@ import subprocess
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
+from asset_auto.resources import THREAD_ENV, apply_process_resources, child_env
+from asset_auto.runtime_execution import reject_bridge, resource_guard
+
 SOURCE_REPO = "https://github.com/VAST-AI-Research/SkinTokens.git"
 SOURCE_REV = "273b691d35989d71cd17ff2895fdc735097b92d1"
 MODEL_REPO = "VAST-AI/SkinTokens"
@@ -46,7 +50,7 @@ def digest(path):
         return hashlib.file_digest(stream, "sha256").hexdigest()
 
 
-def patch_source(source):
+def patch_source(source, env=None):
     """Apply only known patches to the pinned source, accepting our prior patch version."""
     replacements = {
         "src/server/bpy_server.py": [("host='0.0.0.0'", "host='127.0.0.1'")],
@@ -59,7 +63,7 @@ def patch_source(source):
     prepared = []
     for relative, pairs in replacements.items():
         path = source / relative
-        original = run(["git", "show", f"{SOURCE_REV}:{relative}"], cwd=source, capture=True)
+        original = run(["git", "show", f"{SOURCE_REV}:{relative}"], cwd=source, capture=True, env=env)
         expected = original
         for before, after in pairs:
             if expected.count(before) != 1:
@@ -101,19 +105,20 @@ def install(root, distro):
     runtime = root / ".runtime" / "local-rig"
     source = runtime / "source"
     runtime.mkdir(parents=True, exist_ok=True)
+    env = child_env(root, "local_rig")
+    env = os.environ.copy() if env is None else env.copy()
     uv = shutil.which("uv") or str(Path.home() / ".local/bin/uv")
     if not Path(uv).is_file():
         raise RuntimeError("Install uv in this Linux user's environment before bootstrap")
-    run(["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"])
+    run(["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader"], env=env)
     if not source.exists():
-        run(["git", "clone", "--no-checkout", SOURCE_REPO, source])
-        run(["git", "checkout", "--detach", SOURCE_REV], cwd=source)
-    actual = run(["git", "rev-parse", "HEAD"], cwd=source, capture=True).strip()
+        run(["git", "clone", "--no-checkout", SOURCE_REPO, source], env=env)
+        run(["git", "checkout", "--detach", SOURCE_REV], cwd=source, env=env)
+    actual = run(["git", "rev-parse", "HEAD"], cwd=source, capture=True, env=env).strip()
     if actual != SOURCE_REV:
         raise RuntimeError("Existing local-rig checkout uses another revision; preserving it")
-    patches = patch_source(source)
+    patches = patch_source(source, env=env)
     python = runtime / ".venv/bin/python"
-    env = os.environ.copy()
     env["UV_CACHE_DIR"] = str(runtime / "cache/uv")
     env["UV_PYTHON_INSTALL_DIR"] = str(runtime / "python")
     env["UV_PYTHON_PREFERENCE"] = "only-managed"
@@ -148,7 +153,7 @@ def install(root, distro):
         "local_dir='models/Qwen3-0.6B', ignore_patterns=['*.bin','*.safetensors'])\n"
     )
     run([python, "-c", download_code], cwd=source, env=env)
-    check = run([python, "-c", (
+    command = [python, "-c", (
         "import json, torch, bpy, flash_attn; "
         "from flash_attn import flash_attn_func; "
         "q=torch.randn(1,32,4,64,device='cuda',dtype=torch.bfloat16); "
@@ -156,8 +161,14 @@ def install(root, distro):
         "print(json.dumps(dict(torch=torch.__version__, blender=bpy.app.version_string, "
         "flash_attn=flash_attn.__version__, gpu=torch.cuda.get_device_name(0), "
         "attention_finite=bool(torch.isfinite(y).all()))))"
-    )], capture=True, env=env)
-    versions = json.loads(check.strip().splitlines()[-1])
+    )]
+    with resource_guard(root, "local_rig", command) as launch:
+        probe_env = env.copy()
+        for key in ("CUDA_DEVICE_ORDER", "CUDA_VISIBLE_DEVICES", *THREAD_ENV):
+            if key in (launch["env"] or {}):
+                probe_env[key] = launch["env"][key]
+        check = run(launch["command"], capture=True, env=probe_env)
+        versions = json.loads(check.strip().splitlines()[-1])
     freeze = run([uv, "pip", "freeze", "--python", python], capture=True, env=env)
     (runtime / "requirements-installed.txt").write_text(freeze, encoding="utf-8")
     manifest = {
@@ -186,12 +197,14 @@ def main():
     args = parser.parse_args()
     root = args.root.resolve()
     if os.name == "nt" and not args.worker:
+        reject_bridge(root, "local_rig")
         prefix = ["wsl", "--distribution", args.wsl_distribution, "--exec"]
         linux_root = run([*prefix, "wslpath", "-a", str(root)], capture=True).strip()
         script = linux_root + "/scripts/bootstrap_local_rig.py"
         run([*prefix, "python3", script, "--root", linux_root, "--worker",
              "--wsl-distribution", args.wsl_distribution])
     else:
+        apply_process_resources(root)
         install(root, args.wsl_distribution if args.worker else None)
 
 

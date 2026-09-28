@@ -1,5 +1,7 @@
 import argparse
 import json
+import os
+import shlex
 import sys
 from pathlib import Path
 
@@ -24,6 +26,12 @@ def main():
     parser.add_argument("--root", type=Path)
     commands = parser.add_subparsers(dest="command", required=True)
     commands.add_parser("doctor")
+    resource_command = commands.add_parser("resources", help="Inspect private host policy or run a guarded command")
+    resource_command.add_argument("--runtime", choices=("trellis", "kimodo", "local_rig", "local_parts", "blender"))
+    resource_mode = resource_command.add_mutually_exclusive_group()
+    resource_mode.add_argument("--shell-prefix", action="store_true")
+    resource_mode.add_argument("--exec", dest="execute", action="store_true")
+    resource_command.add_argument("argv", nargs=argparse.REMAINDER)
     commands.add_parser("list")
     commands.add_parser("tripo-balance")
     command = commands.add_parser("tripo-plan")
@@ -64,7 +72,33 @@ def main():
     args = parser.parse_args()
     root = args.root.resolve() if args.root else root_path()
     try:
-        if args.command == "doctor":
+        from . import resources
+
+        # Jobs apply inside their error-recording scope; read-only resource
+        # inspection reports current process state without changing it.
+        if args.command not in ("_worker", "resources"):
+            resources.apply_process_resources(root)
+        if args.command == "resources":
+            if args.execute or args.shell_prefix:
+                if not args.runtime:
+                    raise ValueError("--runtime is required for guarded execution or a shell prefix")
+                if args.shell_prefix:
+                    prefix = [sys.executable, "-m", "asset_auto.cli", "--root", str(root),
+                              "resources", "--runtime", args.runtime, "--exec", "--"]
+                    print("& " + " ".join("'" + part.replace("'", "''") + "'" for part in prefix)
+                          if os.name == "nt" else shlex.join(prefix))
+                    return 0
+                from .runtime_execution import run
+
+                command = args.argv[1:] if args.argv[:1] == ["--"] else args.argv
+                if not command:
+                    raise ValueError("Provide an executable command after --exec --")
+                run(root, args.runtime, command)
+                return 0
+            if args.argv:
+                raise ValueError("Extra command arguments require --exec")
+            result = resources.runtime_check(root, args.runtime) if args.runtime else resources.describe(root)
+        elif args.command == "doctor":
             result = capabilities(root)
         elif args.command == "list":
             result = Store(root).list()

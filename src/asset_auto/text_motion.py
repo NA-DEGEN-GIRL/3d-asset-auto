@@ -132,8 +132,10 @@ def resume(root, asset_id, revision):
             lock = root / ".assets/.locks/trellis.lock"
             lock.parent.mkdir(parents=True, exist_ok=True)
             command = kimodo_runtime.worker_command(root, out / "infer.py", out / "motion-request.json", installed)
-            with FileLock(lock, timeout=3600):
-                pipeline.run_logged(command, out / "kimodo.log", timeout=3600, cwd=root)
+            from .runtime_execution import legacy_gpu_lock
+
+            with legacy_gpu_lock(root, "kimodo", lock):
+                pipeline.run_logged(command, out / "kimodo.log", timeout=3600, cwd=root, runtime="kimodo")
         inference = inference_record(out, record["binding_sha256"])
         _, parent, _ = pipeline.completed_source(root, asset_id, request.revision)
         spec = AssetSpec.model_validate(parent["spec"])

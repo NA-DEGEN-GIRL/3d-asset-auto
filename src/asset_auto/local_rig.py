@@ -64,6 +64,10 @@ def wsl_path(path, distro):
 
 
 def command(root, out, source_glb, installed, run_id=None):
+    if installed.get("platform") == "wsl":
+        from .runtime_execution import reject_bridge
+
+        reject_bridge(root, "local_rig")
     runtime = root / ".runtime/local-rig"
     script = root / "scripts/local_rig/run.py"
     if installed.get("platform") == "wsl":
@@ -219,14 +223,20 @@ def generate(root, request, out, source_glb):
     write_json(out / "local-rig.json", metadata)
     log = out / "local-rig.log"
     try:
-        with log.open("wb") as stream:
+        from .runtime_execution import resource_guard
+
+        argv = command(root, out, source_glb, installed, metadata["run_id"])
+        with resource_guard(root, "local_rig", argv, log.with_suffix(".resources.json")) as launch, log.open("wb") as stream:
             result = subprocess.run(
-                command(root, out, source_glb, installed, metadata["run_id"]),
+                launch["command"],
                 stdout=stream, stderr=subprocess.STDOUT,
                 timeout=1850, check=False,
                 creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0,
+                **({"env": launch["env"]} if launch["env"] is not None else {}),
             )
-    except (OSError, subprocess.TimeoutExpired):
+            if result.returncode:
+                raise RuntimeError(f"Local rigging failed ({result.returncode}); inspect {log}")
+    except (OSError, ValueError, RuntimeError, subprocess.TimeoutExpired):
         metadata.update(state="failed", completed_at=now())
         write_json(out / "local-rig.json", metadata)
         raise

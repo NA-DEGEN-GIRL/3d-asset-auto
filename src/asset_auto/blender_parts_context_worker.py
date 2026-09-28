@@ -8,6 +8,7 @@ never remeshes, fills cut surfaces, infers names, or modifies the source file.
 import hashlib
 import json
 import math
+import os
 import re
 import sys
 from pathlib import Path
@@ -100,8 +101,12 @@ def configure_render(output, resolution, samples):
     for obj in list(scene.objects):
         if obj.type in {"LIGHT", "CAMERA"}:
             bpy.data.objects.remove(obj, do_unlink=True)
-    scene.render.engine = "BLENDER_EEVEE_NEXT"
-    if hasattr(scene.eevee, "taa_render_samples"):
+    cpu_render = os.environ.get("ASSET_AUTO_BLENDER_CPU") == "1"
+    scene.render.engine = "CYCLES" if cpu_render else "BLENDER_EEVEE_NEXT"
+    if cpu_render:
+        scene.cycles.device = "CPU"
+        scene.cycles.samples = samples
+    elif hasattr(scene.eevee, "taa_render_samples"):
         scene.eevee.taa_render_samples = samples
     scene.render.resolution_x = scene.render.resolution_y = resolution
     scene.render.resolution_percentage = 100

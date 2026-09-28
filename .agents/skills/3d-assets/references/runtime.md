@@ -4,8 +4,11 @@ The wrapper accepts all `assetctl` arguments. In the runtime repository itself, 
 
 The wrapper supports `--execution local|windows|auto`, `runtime-status` and `runtime-configure`. Read [execution-setup.md](execution-setup.md) for OS-specific preparation, registration and stable job routing; read [windows-bridge.md](windows-bridge.md) for cross-host file transfer. Runtime commands below are unchanged.
 
+Read [resource policy](../../../../docs/RESOURCES.en.md) for private host settings, precedence and enforcement limits. `resources --runtime <name>` inspects a plan without model execution; `doctor` includes resource diagnostics. Keep GPU UUIDs and actual budgets out of committed specs. Wait for a busy selected GPU or Blender slot; do not choose another device or loosen policy automatically. A missing GPU or unsupported policy is a blocker, not CPU inference support. For custom commands, `resources --runtime blender --exec -- <blender> ...` applies the guarded launcher; `--shell-prefix` prints that launcher prefix with its resolved root, not merely environment assignments.
+
 ```text
 doctor
+resources --runtime trellis|kimodo|local_rig|local_parts|blender
 generate <spec.json> [--async]
 process-plan <request.json>
 process <request.json> [--async]

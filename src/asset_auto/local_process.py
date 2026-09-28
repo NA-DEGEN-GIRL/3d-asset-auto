@@ -7,8 +7,6 @@ import json
 from contextlib import nullcontext
 from pathlib import Path
 
-from filelock import FileLock
-
 from .store import now, read_json, write_json
 
 BACKENDS = {"rig": "skintokens", "animate": "procedural-biped-ik-v1", "segment": "geosam2"}
@@ -91,7 +89,10 @@ def process(root, request, out, source_glb, source_manifest, *, resume=False):
     write_json(checkpoint, record)
     lock_path = root / ".assets" / ".locks" / "trellis.lock"
     lock_path.parent.mkdir(parents=True, exist_ok=True)
-    lock = FileLock(lock_path, timeout=3600) if request.operation in ("rig", "segment") else nullcontext()
+    from .runtime_execution import legacy_gpu_lock
+
+    runtime = "local_rig" if request.operation == "rig" else "local_parts"
+    lock = legacy_gpu_lock(root, runtime, lock_path) if request.operation in ("rig", "segment") else nullcontext()
     with lock:
         if request.operation == "rig":
             from .local_rig import generate

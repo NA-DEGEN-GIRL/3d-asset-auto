@@ -71,8 +71,14 @@ class FakeSubprocess:
 
 
 @pytest.fixture
-def wrapper():
-    return load_wrapper()
+def wrapper(tmp_path, monkeypatch):
+    module = load_wrapper()
+    home = tmp_path / "unregistered-home"
+    home.mkdir()
+    # Explicit HOME/XDG_CONFIG_HOME fixtures still win; the fallback must never
+    # load a developer's real native-runtime registration on Windows or Linux.
+    monkeypatch.setattr(module.Path, "home", classmethod(lambda cls: home))
+    return module
 
 
 @pytest.fixture
@@ -347,11 +353,15 @@ def test_registration_roundtrip_and_repair(wrapper, tmp_path, fake_subprocess, c
     assert fake_subprocess.calls[0][0][0] == str(python)
 
 
-def test_runtime_status_does_not_run_any_job(wrapper, tmp_path, fake_subprocess, capsys):
+@pytest.mark.parametrize("execution", ["auto", "local", "windows"])
+def test_runtime_status_does_not_run_any_job(wrapper, tmp_path, fake_subprocess, capsys, execution):
     native, _ = runtime_root(tmp_path, "posix")
     environ = register_fixture(wrapper, tmp_path, native)
-    assert wrapper.main(["runtime-status"], os_name="posix", environ=environ) == 0
+    environ["ASSET_AUTO_RESOURCES_FILE"] = str(tmp_path / "must-not-read-private-policy.json")
+    assert wrapper.main(["--execution", execution, "runtime-status"], os_name="posix", environ=environ) == 0
     report = json.loads(capsys.readouterr().out)
     assert report["local_installed"] and report["local_registered"]
     assert report["windows_bridge_enabled"] is False
+    assert report["resource_policy"]["checked"] is False
+    assert report["resource_policy"]["check_argv"][-3:] == ["--execution", execution, "resources"]
     assert fake_subprocess.calls == []

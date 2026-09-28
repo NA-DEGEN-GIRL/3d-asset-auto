@@ -24,7 +24,7 @@ def generate(root, request, out, source_glb):
         executable(root, "blender"), "--background", "--factory-startup", "--disable-autoexec",
         "--python-exit-code", "1", "--python",
         str(Path(__file__).with_name("blender_motion_worker.py")), "--", str(path),
-    ], out / "local-motion.log", cwd=root)
+    ], out / "local-motion.log", cwd=root, runtime="blender")
     validate_glb(out / "generated.glb")
     report = read_json(out / "local-motion.json")
     report["source_sha256"] = hashlib.sha256(source_glb.read_bytes()).hexdigest()

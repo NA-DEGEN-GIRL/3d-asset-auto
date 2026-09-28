@@ -52,7 +52,11 @@ def available(root):
         return {"available": False, "reason": str(error), "backend": "geosam2"}
 
 
-def _run(command, log, cwd, timeout=3600):
+def _run(command, log, cwd, timeout=3600, *, runtime=None):
+    if runtime is not None:
+        from .runtime_execution import run
+
+        return run(Path(cwd), runtime, command, log=log, timeout=timeout)
     flags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
     with Path(log).open("wb") as stream:
         result = subprocess.run(
@@ -70,7 +74,7 @@ def _blender(root, request, out, log_name):
     _run(
         [executable(root, "blender"), "--background", "--factory-startup", "--disable-autoexec",
          "--python-exit-code", "1", "--python", Path(__file__).with_name("blender_parts_context_worker.py"),
-         "--", request_path], Path(out) / f"{log_name}.log", root,
+         "--", request_path], Path(out) / f"{log_name}.log", root, runtime="blender",
     )
 
 
@@ -152,6 +156,10 @@ def segment(root, request, out, source_glb):
     }
     write_json(checkpoint, metadata)
     distro = install.get("wsl_distribution", "Ubuntu-24.04")
+    if os.name == "nt":
+        from .runtime_execution import reject_bridge
+
+        reject_bridge(root, "local_parts")
     runtime = root / ".runtime" / "local-parts"
     if sha256(runtime / MODEL_NAME) != MODEL_SHA256:
         raise ValueError("Local segmentation checkpoint checksum changed; rerun bootstrap_local_parts.py")
@@ -168,7 +176,7 @@ def segment(root, request, out, source_glb):
     command = [python_path, _linux_path(worker, distro), _linux_path(request_path, distro)]
     if os.name == "nt":
         command = ["wsl.exe", "-d", distro, "--exec", *command]
-    _run(command, out / "geosam2.log", root)
+    _run(command, out / "geosam2.log", root, runtime="local_parts")
     report = read_json(out / "inference-report.json")
     if report.get("binding_sha256") != binding_hash:
         raise ValueError("Segmentation inference output has an unexpected request binding")

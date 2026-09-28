@@ -67,7 +67,9 @@ def worker_command(root, script, request, installed):
     runtime = root / ".runtime/kimodo"
     if installed.get("platform") == "wsl":
         from .local_rig import wsl_path
+        from .runtime_execution import reject_bridge
 
+        reject_bridge(root, "kimodo")
         distro = installed["wsl_distribution"]
         folder, program, spec = (wsl_path(path, distro) for path in (runtime, script, request))
         return ["wsl", "--distribution", distro, "--exec", folder + "/.venv/bin/python",

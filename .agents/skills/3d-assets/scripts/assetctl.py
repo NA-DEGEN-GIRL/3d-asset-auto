@@ -166,6 +166,13 @@ def runtime_options(arguments, environ, runtime_root, os_name):
         print(json.dumps({"skill": SKILL_NAME, "execution": execution, "local_root": str(local_root),
                           "local_installed": python.is_file(), "local_registered": registered,
                           "windows_bridge_enabled": bridge_enabled, "bridge_error": bridge_error,
+                          "resource_policy": {
+                              "checked": False,
+                              "check_argv": [sys.executable, str(Path(__file__).resolve()),
+                                             "--execution", execution, "resources"],
+                              "note": "This check uses the selected execution host; status does not "
+                                      "read or enforce its private resource policy.",
+                          },
                           "note": "Installation is not inference proof. Run doctor/plan on the selected host."}))
         return None
     return arguments, local_root, execution, registered

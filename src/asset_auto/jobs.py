@@ -43,6 +43,9 @@ def validate_processing_resume(root, payload, *, tripo_only=False):
 
 
 def submit(root, operation, payload):
+    from .resources import resolve
+
+    resource_policy = resolve(root)
     if operation == "generate":
         payload = AssetSpec.model_validate(payload).model_dump()
     elif operation == "edit":
@@ -83,6 +86,7 @@ def submit(root, operation, payload):
         "payload": payload,
         "state": "queued",
         "created_at": now(),
+        "resource_policy_at_submission": resource_policy,
     }
     write_json(directory / "job.json", record)
     environment = os.environ.copy()
@@ -140,7 +144,18 @@ def run(root: Path, job_id):
         record["recovery"] = recovery
         write_json(directory / "job.json", record)
 
+    from .runtime_execution import progress_observer
+
+    def save_resource_progress(progress):
+        record["resource_progress"] = progress
+        write_json(directory / "job.json", record)
+
+    resource_token = progress_observer.set(save_resource_progress)
     try:
+        from .resources import apply_process_resources
+
+        record["resource_process"] = apply_process_resources(root)
+        write_json(directory / "job.json", record)
         if record["operation"] == "generate":
             result = generate(root, AssetSpec.model_validate(record["payload"]), on_revision=save_recovery)
         elif record["operation"] == "edit":
@@ -190,6 +205,8 @@ def run(root: Path, job_id):
     except Exception as error:  # noqa: BLE001 -- persist worker failures at the process boundary
         record.update(state="failed", error=str(error))
         traceback.print_exc()
+    finally:
+        progress_observer.reset(resource_token)
     record["finished_at"] = now()
     write_json(directory / "job.json", record)
     return record

@@ -21,7 +21,9 @@ The adapter accepts text for inference. Images/video inform the agent's prompts 
 
 ## Install when needed
 
-The setup requires Linux or Windows WSL2, an NVIDIA CUDA GPU and a C++ compiler. The recorded upstream guidance estimates about 17 GB VRAM with the text encoder. This adapter runs both model and encoder on the same GPU without automatic CPU/remote-encoder fallback, in an environment separate from the main `.venv`.
+The setup requires Linux or Windows WSL2, an NVIDIA CUDA GPU and a C++ compiler, in an environment separate from the main `.venv`. The default runs both motion network and text encoder on CUDA. An operator can explicitly set `runtimes.kimodo.text_encoder_device: "cpu"` in the private [resource policy](RESOURCES.en.md) to keep only the motion network on the selected GPU. There is no automatic CPU/remote-encoder fallback, and full CPU Kimodo inference is unsupported.
+
+For planning, allow approximately 17 GiB VRAM with the CUDA encoder or roughly 2 GiB for the motion network with the CPU encoder; these are estimates, not fit guarantees. CPU encoding requires substantial host RAM and increases latency. Inspect `resources --runtime kimodo` on the actual execution host before inference. Windows/WSL routing does not automatically carry or enforce a caller's GPU policy; use the supported worker-host configuration or report the boundary as blocked. A busy selected GPU waits; it does not authorize another device or policy changes.
 
 ```sh
 uv run --no-sync python scripts/bootstrap_kimodo.py

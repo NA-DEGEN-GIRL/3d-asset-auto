@@ -9,6 +9,8 @@ Start from the target project's renderer and requested expression. Reuse its wor
 
 The supplied gallery depends on the shared repository's Blender helper and `examples/game-vfx/` runtime. Resolve this `SKILL.md` through any installation junction/symlink to locate that repository; the active project may be elsewhere. Read [runtime.md](references/runtime.md) before using those examples. A detached copy does not include that runtime; an existing project's own playback need not adopt it.
 
+Respect the execution host's private [resource policy](../../../docs/RESOURCES.en.md) and use its guarded launcher for Blender work. Inspect GPU selection and CPU/thread budgets before baking or rendering; wait for busy selected resources without switching devices. Do not widen limits or enable protected devices without user/operator authorization. Mantaflow simulation is CPU work, while EEVEE/OpenGL rendering can use GPUs independently of CUDA masks. Keep policy and resource provenance local, and report any unsupported enforcement on the actual worker host.
+
 ## Choose and make the effect
 
 - Inspect the project's renderer/backend, release platform, camera, interaction and requested output where available. Set observable technical and expressive acceptance criteria against the adopted references and requested finish; do not lower them to the starting component's quality. If the target is unknown, preserve portable ingredients and intent or honor the requested format; do not choose an engine, build both web and Godot, or open a viewer by default.

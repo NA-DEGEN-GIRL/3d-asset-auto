@@ -25,6 +25,7 @@ For selected humanoid work, first consider [reference review → rig checks → 
 | Author custom motion, edit rigs or combine clips | [Blender editing](docs/BLENDER.en.md) |
 | Diagnose damaged surfaces and reuse a finishing approach | [Finishing](docs/FINISHING.en.md) |
 | Explicitly select local learned human motion | [Kimodo](docs/KIMODO.en.md) |
+| Protect shared GPUs and set CPU budgets | [Resource policy](docs/RESOURCES.en.md) — private operator settings and actual worker enforcement |
 | Define functional criteria and review each motion | [Quality](docs/QUALITY.en.md) |
 | Plan image/video references for difficult or creative motion | [Motion references](docs/MOTION_REFERENCES.en.md): initial design, optional Grok headless, frame review and Blender application |
 | Author and review game effects | [game-vfx skill](.agents/skills/game-vfx/SKILL.md), [design and execution](docs/GAME_VFX_DESIGN.en.md), [VFX authoring and experiments](docs/VFX.en.md): choose authoring and playback for the destination project |

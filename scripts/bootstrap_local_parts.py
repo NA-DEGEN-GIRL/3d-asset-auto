@@ -22,6 +22,8 @@ from asset_auto.local_parts import (
     MODEL_REVISION,
     MODEL_SHA256,
 )
+from asset_auto.resources import apply_process_resources, child_env
+from asset_auto.runtime_execution import reject_bridge, resource_guard
 
 PYTHON_VERSION = "3.11.13"
 REQUIREMENTS = Path(__file__).resolve().parent / "local_parts" / "requirements-linux.lock"
@@ -55,6 +57,11 @@ def main():
     if not REQUIREMENTS.is_file():
         raise FileNotFoundError(f"Missing pinned local segmentation dependency lock: {REQUIREMENTS}")
     root = args.root.resolve()
+    if os.name == "nt":
+        reject_bridge(root, "local_parts")
+    else:
+        apply_process_resources(root)
+    env = child_env(root, "local_parts")
     runtime = root / ".runtime" / "local-parts"
     runtime.mkdir(parents=True, exist_ok=True)
     prefix = ["wsl.exe", "-d", args.wsl_distribution, "--exec"] if os.name == "nt" else []
@@ -66,13 +73,14 @@ def main():
 
     def run(command):
         subprocess.run([*prefix, "env", "PATH=/usr/local/bin:/usr/bin:/bin",
-                        f"UV_PYTHON_INSTALL_DIR={linux_path(runtime / 'python')}", *command], check=True)
+                        f"UV_PYTHON_INSTALL_DIR={linux_path(runtime / 'python')}", *command], check=True,
+                       env=env)
 
     uv = subprocess.check_output([
         *prefix, "python3", "-c",
         ("import os,shutil; p=shutil.which('uv') or os.path.expanduser('~/.local/bin/uv'); "
          "assert os.path.isfile(p), 'Install uv inside Linux/WSL before bootstrap_local_parts.py'; print(p)"),
-    ], text=True).strip()
+    ], text=True, env=env).strip()
     archive = runtime / f"GeoSAM2-{CODE_REVISION}.tar.gz"
     if not archive.is_file():
         download(f"https://codeload.github.com/{CODE_REPO}/tar.gz/{CODE_REVISION}", archive)
@@ -91,20 +99,24 @@ def main():
     uv_prefix = [uv, "--cache-dir", linux_path(Path(args.uv_cache).resolve())] if args.uv_cache else [uv]
     run([*uv_prefix, "pip", "sync", "--python", python, "--require-hashes",
          "--index-url", "https://pypi.org/simple", linux_path(REQUIREMENTS)])
-    probe = subprocess.check_output([
+    command = [
         *prefix, python, "-c", ("import json,torch; "
         "assert torch.cuda.is_available(), 'CUDA unavailable'; "
         "a=torch.ones(2,device='cuda'); assert float((a+a).sum())==4; "
         "print(json.dumps({'torch':torch.__version__,'cuda':torch.version.cuda,"
         "'gpu':torch.cuda.get_device_name(0)}))"),
-    ], text=True).strip()
+    ]
+    with resource_guard(root, "local_parts", command) as launch:
+        probe = subprocess.check_output(launch["command"], text=True,
+                                        env=launch["env"] if launch["env"] is not None else env).strip()
+        device = json.loads(probe)
     record = {
         "backend": "geosam2", "license": "Apache-2.0", "code_revision": CODE_REVISION,
         "model_revision": MODEL_REVISION, "model_sha256": MODEL_SHA256,
         "wsl_distribution": args.wsl_distribution if os.name == "nt" else None,
         "python": PYTHON_VERSION, "requirements_lock": "scripts/local_parts/requirements-linux.lock",
         "requirements_sha256": hashlib.sha256(REQUIREMENTS.read_bytes()).hexdigest(),
-        "device": json.loads(probe),
+        "device": device,
     }
     installed = root / ".runtime" / "installed" / "local-parts.json"
     installed.parent.mkdir(parents=True, exist_ok=True)
