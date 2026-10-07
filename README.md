@@ -147,6 +147,7 @@ VFX 작업에는 별도 `game-vfx` 스킬을 연결하고 [설계·실행 안내
 - [Tripo API](https://developers.tripo3d.ai/en/docs): 명시적으로 선택하는 유료 클라우드 생성.
 - [SkinTokens](https://github.com/VAST-AI-Research/SkinTokens) / [GeoSAM2](https://github.com/VAST-AI-Research/GeoSAM2): 필요할 때 설치하는 로컬 리깅·부품 분리 모델.
 - [Kimodo](https://github.com/nv-tlabs/kimodo): 선택 설치하는 로컬 텍스트→사람 모션 모델과 기존 리그 적용.
+- [Effekseer](docs/EFFEKSEER.md): 선택 설치하는 게임 VFX 저작·재생 도구. CPU 파일 변환, Windows 편집기와 WebGL 미리보기, 외부 메시의 `.efkmodel` 변환을 지원합니다. [네 마법 예제 재현 절차](docs/EFFEKSEER.md#네-가지-마법-예제-재현)는 별도 설치·실행 시 사용합니다.
 - [Godot](https://godotengine.org/) / [Three.js](https://threejs.org/): 엔진·웹 검증.
 
 도구·모델 가중치와 DINOv3/BiRefNet 같은 구성 요소의 라이선스는 각각 확인해야 합니다. 이 저장소는 실행 파일이나 모델 가중치를 재배포하지 않습니다.

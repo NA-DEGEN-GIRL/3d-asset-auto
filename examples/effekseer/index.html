@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="color-scheme" content="dark" />
+  <title>Spell laboratory · Effekseer</title>
+  <link rel="stylesheet" href="./style.css" />
+</head>
+<body>
+  <header class="masthead"><a class="brand" href="./"><span class="brand-mark">✦</span> SPELL LAB<span class="brand-detail">EFFEKSEER / REALTIME 3D</span></a><span id="status" class="status" role="status">런타임 준비 중</span></header>
+  <main>
+    <aside class="catalog">
+      <div class="eyebrow">ELEMENTAL STUDIES</div>
+      <h1>마법의 움직임을<br />공간에서 살펴보세요.</h1>
+      <p class="intro">CC0 샘플을 수정하고 3D 얼음 메시를 더했습니다.<br />회전하고, 멈추고, 같은 순간을 비교하세요.</p>
+      <nav id="effects" aria-label="마법 효과"></nav>
+      <div class="catalog-note"><span>검토용 로컬 갤러리</span><p>실제 입자·리본·메시 런타임 재생.<br />시뮬레이션 충돌이나 엔진별 성능을<br />이 미리보기만으로 보장하지 않습니다.</p></div>
+    </aside>
+    <section class="workspace">
+      <div class="scene-heading"><div><div id="effect-subtitle" class="eyebrow">LOADING</div><h2 id="effect-name">효과 불러오는 중</h2></div><div class="view-options"><label>배경 <select id="background"><option value="dark">어둡게</option><option value="light">밝게</option></select></label><label><input id="occluder" type="checkbox" /> 가림 물체</label><label><input id="multiple" type="checkbox" /> 동시 3개</label></div></div>
+      <div class="stage" id="stage">
+        <canvas id="canvas" aria-label="마법 효과 3D 화면"></canvas>
+        <div id="error" class="error" role="alert" hidden></div>
+        <div class="stage-caption"><span>마우스 드래그 · 시점 회전</span><span>휠 · 확대 / 축소</span></div>
+        <div class="view-buttons" role="group" aria-label="시점 선택"><button data-view="perspective" class="selected">입체</button><button data-view="front">정면</button><button data-view="side">측면</button><button data-view="back">후면</button><button data-view="top">위에서</button></div>
+        <div class="metrics"><span id="instances">인스턴스 —</span><span id="fps">— FPS</span></div>
+      </div>
+      <div class="playback"><div class="transport"><button id="play" class="primary" disabled>일시정지</button><button id="restart" disabled>처음부터</button><label><input id="loop" type="checkbox" checked /> 반복</label><label>속도 <select id="speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option></select></label><label class="seed">Seed <input id="seed" type="number" min="1" max="2147483647" step="1" value="42" /></label><output id="time">0.00 / 0.00 s</output></div><input id="timeline" aria-label="재생 시점" type="range" min="0" max="1" step="0.0166667" value="0" disabled /><div id="events" class="events" aria-label="핵심 순간"></div></div>
+      <div class="effect-note"><p id="description"></p><a id="download" hidden title="효과 파일만 받습니다. 다른 프로젝트에서는 함께 쓰인 텍스처·모델 폴더와 런타임도 필요합니다.">효과 파일 ↓ · 리소스 별도</a></div>
+    </section>
+  </main>
+  <script src="./runtime/effekseer.js"></script>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

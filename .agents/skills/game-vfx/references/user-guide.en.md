@@ -16,6 +16,7 @@ This is not a single dedicated AI VFX model that automatically produces complete
 | --- | --- |
 | Destination shaders, particles and mesh systems | The default playback path. Authoring follows the existing effect system, renderer/version, device, camera and interactions. An unspecified engine is not chosen automatically. |
 | Blender | A preferred local tool for needed curves, meshes, noise ingredients, object animation, rigid-body motion and baking. It is not a mandatory step for every effect. |
+| Effekseer — optional when useful | A dedicated VFX tool that composes sprites, ribbons, rings and model particles through nodes and timing. Use it when selected by the user or suitable for the target integration. Preserve the editable effect and referenced resources, and supply the target runtime; the complete effect is not delivered as GLB. It needs no AI model or CUDA, but its editor and actual playback need graphics rendering resources. |
 | Supplied Blender helper + Three.js examples | The helper creates 3D noise and lightning paths. Fire uses a spatial field shader, ice replays an existing fracture clip, and lightning combines paths with discharge timing. The three complete effects are not stored in one GLB. |
 | Blender Mantaflow — optional when useful | Can provide gas/fire/smoke or liquid simulation ingredients. Conversion to the target playback representation requires work; the supplied helper has no general fluid-cache exporter/player. Not every fireball needs simulation. |
 | ImageGen / authorized Grok video | Supports references for shape, color, material and timing, or reviewed texture ingredients. Images/video do not automatically reconstruct 3D fluids, collisions, trajectories or game effects. Selection depends on available tools and the task's authorization. |
@@ -35,6 +36,7 @@ When known, include **the desired appearance and behavior, destination project, 
 | Specify output format | `$game-vfx deliver a three-second blue fire pillar only as GLB. It will be viewed from several angles.` |
 | Reuse an existing model | `$game-vfx use this meteor GLB for a falling impact effect and integrate it into the current project.` |
 | Select a production method | `$game-vfx bake a smoke explosion with Mantaflow and convert it for playback in this project.` |
+| Select Effekseer | `$game-vfx use Effekseer to make separate fire-burst, ice and lightning spells for web review. Keep editable sources and resources.` |
 | Combine explanation and work | `$game-vfx briefly explain your tool choices, then improve the readability of this project's sword trail.` |
 | Request a web preview | `$game-vfx also open a web preview where I can rotate and play the completed effect.` |
 
@@ -45,4 +47,4 @@ When known, include **the desired appearance and behavior, destination project, 
 - **Installation versus verification:** This guide describes supported paths, not proof that everything is installed on the current machine. An explicit availability request can use read-only `doctor` and relevant resource-plan inspection. Detected files, successful execution, visual quality and destination-game performance are reported separately. Credentials and private device identifiers are not disclosed.
 - **Sources and licensing:** Check the terms for external models, textures, footage, code and service outputs individually and preserve provenance. A free or installed tool does not establish redistribution rights for every output.
 
-Read more: [authoring and review](workflow.md), [supplied example runtime contract](runtime.md), [design and execution](../../../../docs/GAME_VFX_DESIGN.en.md), [VFX authoring and experiments](../../../../docs/VFX.en.md), [separate 3D asset skill](../../3d-assets/SKILL.md).
+Read more: [authoring and review](workflow.md), [Effekseer usage and resources](../../../../docs/EFFEKSEER.en.md), [supplied example runtime contract](runtime.md), [design and execution](../../../../docs/GAME_VFX_DESIGN.en.md), [VFX authoring and experiments](../../../../docs/VFX.en.md), [separate 3D asset skill](../../3d-assets/SKILL.md).
