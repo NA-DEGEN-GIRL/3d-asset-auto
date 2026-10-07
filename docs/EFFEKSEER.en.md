@@ -76,6 +76,8 @@ This is a reproducible authoring/conversion/preview path, not automatic approval
 
 ## Licensing and records
 
+The repository's [Effekseer example source](../examples/effekseer/LICENSE.txt) is MIT; its notice is included in the built site. This does not relicense external effects, textures or models.
+
 The official runtime uses MIT; the official distribution's effect and texture data are identified as CC0. Preserve distribution/dependency notices and the provenance of each reused resource. Do not extend those terms to community effects, separate textures, 3D models or provider outputs. [Official licensing guidance](https://effekseer.github.io/Help_Tool/en/overview.html#license)
 
 Keep downloaded tools, models, generated effects and render/device records in local work directories rather than automatically adding them to Git. Report actual installation/conversion/render success, visual finish and other-engine compatibility separately.

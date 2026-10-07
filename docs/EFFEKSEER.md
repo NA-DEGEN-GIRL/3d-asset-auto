@@ -76,6 +76,8 @@ python -m http.server 8784 --bind 127.0.0.1 --directory .work/effekseer-demo/rev
 
 ## 라이선스와 기록
 
+이 저장소의 [Effekseer 예제 소스](../examples/effekseer/LICENSE.txt)는 MIT이며, 빌드한 사이트에도 해당 고지를 포함합니다. 이 고지는 외부 효과·텍스처·모델의 라이선스를 바꾸지 않습니다.
+
 공식 런타임은 MIT이고 공식 배포의 효과·텍스처 데이터는 CC0로 안내됩니다. 배포물의 라이선스·의존성 고지와 실제 사용한 자료의 출처를 보존합니다. 커뮤니티 효과, 별도 텍스처, 3D 모델이나 생성 서비스 출력까지 같은 조건이라고 일반화하지 않습니다. [공식 라이선스 안내](https://effekseer.github.io/Help_Tool/en/overview.html#license)
 
 다운로드한 도구, 모델, 생성 효과와 렌더·장치 기록은 로컬 작업 폴더에 두고 자동으로 Git에 추가하지 않습니다. 실제 설치/변환/렌더 성공, 시각적 완성도, 다른 엔진의 호환성을 구분해서 보고합니다.

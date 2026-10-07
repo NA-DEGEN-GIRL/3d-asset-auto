@@ -20,8 +20,8 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-Scope: authored source files in examples/game-vfx only. Generated media,
+Scope: authored source files in examples/effekseer only. Generated media,
 caller-supplied models, third-party packages and other repository files are
 not relicensed by this notice. Preserve Three.js and other dependency notices
-when distributing a bundled application. The separate Blender bpy helper is
-GPL-3.0-or-later, as stated alongside that helper.
+when distributing a bundled application. The external Effekseer runtime and
+sample resources retain their own licenses.

@@ -63,6 +63,7 @@ for (const name of ['effekseer.js', 'effekseer.wasm', 'LICENSE']) {
   await cp(path.join(options.runtime, name), path.join(options.out, 'runtime', name));
 }
 await cp(threeLicense, path.join(options.out, 'runtime/THREE-LICENSE.txt'));
+await cp(path.join(here, 'LICENSE.txt'), path.join(options.out, 'LICENSE.txt'));
 // Only exported playback ingredients are served, never the runtime root or editor source.
 const permitted = new Set(['.efkefc', '.efk', '.efkmodel', '.efkmat', '.png', '.jpg', '.jpeg', '.dds', '.wav', '.ogg']);
 const isNotice = name => /^(ATTRIBUTION\.txt|LICENSE(?:\.txt)?|COPYING(?:\.txt)?)$/i.test(name);
