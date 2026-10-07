@@ -159,7 +159,7 @@ def author(samples: Path, output: Path) -> None:
                     put(node, f"RendererCommonValues/Fade{phase}Type", 1)
                     put(node, f"RendererCommonValues/Fade{phase}/Frame", frames)
                 if node.findtext("DrawingValues/Type") == "4":
-                    put(node, "DrawingValues/Ring/Billboard", 3)
+                    put(node, "DrawingValues/Ring/Billboard", 2)  # Fixed; 3 is RotatedBillboard.
         # Depth testing enables world geometry to occlude transparent particles.
         for node in project.findall(".//Node"):
             common = node.find("RendererCommonValues")

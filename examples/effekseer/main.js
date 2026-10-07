@@ -103,7 +103,10 @@ function seek(seconds) {
   running = false;
   makeHandles();
   elapsed = Math.min(active.duration, Math.max(0, seconds));
-  for (const handle of handles) handle.setFrame(elapsed * 60);
+  // Use the playback clock for seeking too: per-handle setFrame can differ
+  // for short-lived model nodes and multiple instances in the pinned runtime.
+  context.update(0);
+  for (let step = 0; step < Math.round(elapsed * 60); step++) context.update(1);
   accumulator = 0;
   updateTimeline();
 }

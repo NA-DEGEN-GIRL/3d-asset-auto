@@ -12,6 +12,10 @@ Effekseer provides VFX authoring and playback for timed particles, ribbons, ring
 
 Consult the official [tool reference](https://effekseer.github.io/Help_Tool/en/ToolReference/index.html) for file and command-line contracts. When adapting bundled examples or existing projects, first define the intended layers and events; a palette change alone does not establish completion of newly requested behavior.
 
+Keep an XML input's schema and version metadata consistent. Changing a legacy project's `ToolVersion` to the installed editor version without migrating its structure can produce a successful conversion with invisible nodes. Preserve compatible source metadata and let the official tool convert it; inspect actual playback rather than treating an output file as evidence that the nodes survived.
+
+Check renderer enum values against the pinned format before authoring them numerically. In 1.80.7, billboard `2` is `Fixed` and `3` is `RotatedBillboard`; using the latter for a ground-contact plane can keep it facing the camera despite rotation settings. Confirm alignment from another camera angle.
+
 ## Installation and conversion
 
 [`scripts/effekseer.py`](../scripts/effekseer.py) owns the **1.80.7** pins and download verification for native Windows/Linux x86_64 editors and the WebGL distribution. It installs under `.runtime/effekseer/1.80.7/` and does not automatically install a Godot plugin. Windows uses `editor/` and `editor.install.json`; Linux uses `editor-linux/` and `editor-linux.install.json`, preserving existing Windows installation records. Run these commands from the repository root.
@@ -92,6 +96,8 @@ done
 Continue only after each stage succeeds. Run the `node` build and HTTP server commands at the end of the PowerShell example only for a requested web preview. On Linux, use the same build command and start the server with `.venv/bin/python -m http.server …`. Choose a free port if needed and serve only the built site. [`build.mjs`](../examples/effekseer/build.mjs) copies playback effects/resources, runtime and license notices while excluding source XML/OBJ and private provenance JSON. Use a hidden window and readiness check when starting a background server on Windows.
 
 This is a reproducible authoring/conversion/preview path, not automatic approval of example visual finish or real-game performance. Record actual per-effect playback and multi-angle review in the task's work records.
+
+The example viewer seeks by rebuilding instances and advancing the whole context on the same 60 Hz simulation clock used for playback. This avoids a discrepancy observed with per-handle frame setting for short-lived models and multiple instances. Paused-event captures and normal playback still need separate inspection; a native render also does not establish the WebGL material appearance.
 
 ## Licensing and records
 
