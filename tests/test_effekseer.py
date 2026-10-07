@@ -44,6 +44,149 @@ def test_archive_rejects_symlink_and_case_alias(tmp_path):
             list(helper.safe_members(archive, tmp_path))
 
 
+@pytest.mark.parametrize("kind", [stat.S_IFIFO, stat.S_IFCHR, stat.S_IFBLK, stat.S_IFSOCK])
+def test_archive_rejects_special_unix_files(tmp_path, kind):
+    special = zipfile.ZipInfo("special")
+    special.create_system = 3
+    special.external_attr = (kind | 0o777) << 16
+    with zipfile.ZipFile(archive_bytes([(special, b"fixture")])) as archive, pytest.raises(ValueError):
+        list(helper.safe_members(archive, tmp_path))
+
+
+def test_extract_preserves_executable_bits_without_privileged_permissions(tmp_path, monkeypatch):
+    executable = zipfile.ZipInfo("tool")
+    executable.create_system = 3
+    executable.external_attr = (stat.S_IFREG | 0o6755) << 16
+    archive = tmp_path / "input.zip"
+    archive.write_bytes(archive_bytes([(executable, b"pinned")]).read())
+    output = tmp_path / "out"
+    modes = []
+    monkeypatch.setattr(helper, "os", SimpleNamespace(name="posix"))
+    monkeypatch.setattr(Path, "chmod", lambda path, mode: modes.append(mode))
+    helper.extract_verified(archive, output)
+    helper.extract_verified(archive, output)
+    assert len(modes) == 2  # Repair a matching installation extracted without exec bits too.
+    assert all(mode & 0o111 == 0o111 and not mode & 0o7000 for mode in modes)
+    assert (output / "tool").read_bytes() == b"pinned"
+
+
+def installed_editor(root, *, legacy=False):
+    layout = helper.editor_layout()
+    base = helper.runtime_dir(root)
+    for relative in layout["required"]:
+        path = base / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"pinned " + relative.encode())
+    receipt = {"version": helper.VERSION, "source_commit": helper.COMMIT,
+               "files": {relative: helper.sha256(base / relative) for relative in layout["required"]}}
+    if not legacy:
+        receipt["platform"] = layout["platform"]
+    (base / layout["receipt"]).write_text(json.dumps(receipt), encoding="utf-8")
+    return layout, base
+
+
+def test_doctor_accepts_legacy_windows_receipt(tmp_path, monkeypatch):
+    monkeypatch.setattr(helper.sys, "platform", "win32")
+    layout, base = installed_editor(tmp_path, legacy=True)
+    monkeypatch.setattr(helper.subprocess, "run", lambda *a, **k: pytest.fail("native probe on Windows"))
+    status = helper.doctor(tmp_path)
+    assert status["components"]["editor"]["ready"]
+    assert Path(status["editor_cli"]) == base / helper.EDITOR_DIR / "Tool/bin/Effekseer.exe"
+    assert layout["receipt"] == "editor.install.json"
+
+
+def test_linux_doctor_requires_own_receipt_and_native_viewer_dependencies(tmp_path, monkeypatch):
+    monkeypatch.setattr(helper.sys, "platform", "win32")
+    _, base = installed_editor(tmp_path, legacy=True)
+    windows_receipt = (base / "editor.install.json").read_bytes()
+    monkeypatch.setattr(helper.sys, "platform", "linux")
+    monkeypatch.setattr(helper.platform, "machine", lambda: "x86_64")
+    assert not helper.doctor(tmp_path)["components"]["editor"]["ready"]
+    layout, _ = installed_editor(tmp_path)
+    monkeypatch.setattr(helper.os, "access", lambda *a: True)
+    calls = []
+
+    def run(command, **kwargs):
+        calls.append(command)
+        missing = command[-1].endswith("libViewer.so")
+        return SimpleNamespace(returncode=0, stdout=b"libGLU.so.1 => not found\n" if missing else b"",
+                               stderr=b"")
+
+    monkeypatch.setattr(helper.subprocess, "run", run)
+    status = helper.doctor(tmp_path)
+    component = status["components"]["editor"]
+    assert not component["ready"]
+    assert component["receipt_hashes_match"]
+    assert component["native_dependencies"][-1]["missing"] == ["libGLU.so.1"]
+    assert all(command[0] == "ldd" for command in calls)
+    assert len(calls) == 3
+    assert Path(status["editor_cli"]) == base / layout["editor"]
+    assert (base / "editor.install.json").read_bytes() == windows_receipt
+
+
+def test_linux_doctor_does_not_probe_modified_binaries(tmp_path, monkeypatch):
+    monkeypatch.setattr(helper.sys, "platform", "linux")
+    monkeypatch.setattr(helper.platform, "machine", lambda: "x86_64")
+    layout, base = installed_editor(tmp_path)
+    (base / layout["editor"]).write_bytes(b"modified")
+    monkeypatch.setattr(helper.subprocess, "run", lambda *a, **k: pytest.fail("probe of unverified binary"))
+    status = helper.doctor(tmp_path)["components"]["editor"]
+    assert not status["ready"] and not status["receipt_hashes_match"]
+    assert not status["native_dependencies_checked"]
+
+
+def test_linux_doctor_requires_executable_permissions(tmp_path, monkeypatch):
+    monkeypatch.setattr(helper.sys, "platform", "linux")
+    monkeypatch.setattr(helper.platform, "machine", lambda: "x86_64")
+    layout, _ = installed_editor(tmp_path)
+    monkeypatch.setattr(helper.os, "access", lambda *a: False)
+    monkeypatch.setattr(helper.subprocess, "run", lambda *a, **k: SimpleNamespace(
+        returncode=0, stdout=b"", stderr=b""))
+    status = helper.doctor(tmp_path)["components"]["editor"]
+    assert not status["ready"]
+    assert status["not_executable"] == [layout["editor"], layout["converter"]]
+
+
+def test_linux_install_selects_pinned_release_and_preserves_windows(tmp_path, monkeypatch):
+    monkeypatch.setattr(helper.sys, "platform", "win32")
+    _, base = installed_editor(tmp_path, legacy=True)
+    windows_receipt = (base / "editor.install.json").read_bytes()
+    monkeypatch.setattr(helper.sys, "platform", "linux")
+    monkeypatch.setattr(helper.platform, "machine", lambda: "x86_64")
+    layout = helper.editor_layout()
+    downloaded = []
+
+    def download(url, destination, digest):
+        downloaded.append((url, digest))
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        entries = [(path.removeprefix("editor-linux/"), b"pinned") for path in layout["required"]]
+        destination.write_bytes(archive_bytes(entries).read())
+
+    monkeypatch.setattr(helper, "download", download)
+    monkeypatch.setattr(helper.os, "access", lambda *a: True)
+    monkeypatch.setattr(helper.subprocess, "run", lambda *a, **k: SimpleNamespace(
+        returncode=0, stdout=b"", stderr=b""))
+    assert helper.install(tmp_path, "editor")["components"]["editor"]["ready"]
+    assert downloaded == [(helper.RELEASE + helper.LINUX_EDITOR[0], helper.LINUX_EDITOR[1])]
+    receipt = json.loads((base / "editor-linux.install.json").read_text())
+    assert receipt["platform"] == "linux-x86_64"
+    assert set(receipt["files"]) == set(layout["required"])
+    assert (base / "editor.install.json").read_bytes() == windows_receipt
+
+
+@pytest.mark.parametrize("host,architecture", [("linux", "aarch64"), ("darwin", "x86_64")])
+def test_unsupported_editor_host_keeps_webgl_available(tmp_path, monkeypatch, host, architecture):
+    monkeypatch.setattr(helper.sys, "platform", host)
+    monkeypatch.setattr(helper.platform, "machine", lambda: architecture)
+    monkeypatch.setattr(helper, "download", lambda *a: pytest.fail("unsupported editor download"))
+    with pytest.raises(ValueError, match="Linux x86_64"):
+        helper.install(tmp_path, "editor")
+    status = helper.doctor(tmp_path)
+    assert not status["components"]["editor"]["supported"]
+    assert "webgl" in status["components"]
+    assert status["editor_cli"] is None
+
+
 def test_extract_reuses_identical_and_preserves_modified_files(tmp_path):
     archive = tmp_path / "input.zip"
     archive.write_bytes(archive_bytes([("dir/asset", b"pinned")]).read())
@@ -128,6 +271,38 @@ def test_export_applies_threads_and_never_gui_or_material_cache(mock_export, mon
     assert not result["rendered"]
     with pytest.raises(ValueError, match="already exists"):
         helper.export(source.parent, source, output)
+
+
+@pytest.mark.parametrize("model", [False, True])
+def test_linux_conversions_use_native_paths_and_cpu_policy(mock_export, monkeypatch, model):
+    source, output = mock_export
+    monkeypatch.setattr(helper.sys, "platform", "linux")
+    monkeypatch.setattr(helper.platform, "machine", lambda: "x86_64")
+    layout = helper.editor_layout()
+    base = helper.runtime_dir(source.parent)
+    monkeypatch.setattr(helper, "doctor", lambda root: {
+        "components": {"editor": {"ready": True}}, "editor_cli": str(base / layout["editor"]),
+        "model_converter": str(base / layout["converter"])})
+    if model:
+        source = source.with_suffix(".obj")
+        source.write_text("v 0 0 0\nv 1 0 0\nv 0 1 0\nf 1 2 3\n")
+        output = output.with_suffix(".efkmodel")
+
+    def run(command, **kwargs):
+        expected = "converter" if model else "editor"
+        assert command[0] == str(base / layout[expected])
+        assert ("-cui" in command) is not model
+        assert kwargs["cwd"] == base / layout["directory"] / "Tool"
+        assert kwargs["env"]["OMP_NUM_THREADS"] == "3"
+        assert kwargs["creationflags"] == 0
+        output.write_bytes(struct.pack("<ifiiii", 6, 1.0, 1, 1, 3, 0) if model else effect_container())
+        return SimpleNamespace(returncode=0, stdout=b"", stderr=b"")
+
+    monkeypatch.setattr(helper.subprocess, "run", run)
+    assert helper.export(source.parent, source, output, model_scale=1.0 if model else None)["state"] == "completed"
+    receipt = json.loads(output.with_suffix(output.suffix + ".provenance.json").read_text())
+    assert receipt["platform"] == "linux-x86_64"
+    assert not receipt["rendered"]
 
 
 def test_model_conversion_checks_header_and_preserves_cpu_contract(mock_export, monkeypatch):

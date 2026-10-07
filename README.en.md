@@ -136,7 +136,7 @@ Core pins are in [bootstrap.py](scripts/bootstrap.py). Optional rigging, segment
 - [Tripo](https://developers.tripo3d.ai/en/docs): explicitly selected paid cloud generation.
 - [SkinTokens](https://github.com/VAST-AI-Research/SkinTokens), [GeoSAM2](https://github.com/VAST-AI-Research/GeoSAM2): optional local rigging and segmentation.
 - [Kimodo](https://github.com/nv-tlabs/kimodo): optional local text-to-human-motion and mapped application.
-- [Effekseer](docs/EFFEKSEER.en.md): optional game VFX authoring/playback, CPU file conversion, Windows editor, WebGL preview and external mesh conversion to `.efkmodel`. See its guide for the separately installed four-magic example recipe.
+- [Effekseer](docs/EFFEKSEER.en.md): optional game VFX authoring/playback with native Windows/Linux x86_64 editors, CPU file and external mesh conversion to `.efkmodel`, and WebGL preview. See its guide for the separately installed four-magic example recipe.
 - [Godot](https://godotengine.org/), [Three.js](https://threejs.org/): optional integration checks.
 
 Tools, model weights and components such as DINOv3/BiRefNet have their own terms. This repository does not redistribute binaries or model weights.

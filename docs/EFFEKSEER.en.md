@@ -14,7 +14,7 @@ Consult the official [tool reference](https://effekseer.github.io/Help_Tool/en/T
 
 ## Installation and conversion
 
-[`scripts/effekseer.py`](../scripts/effekseer.py) owns the **1.80.7** pins and download verification for the Windows editor and WebGL distribution. It installs under `.runtime/effekseer/1.80.7/` and does not automatically install a Godot plugin. Run these commands from the repository root.
+[`scripts/effekseer.py`](../scripts/effekseer.py) owns the **1.80.7** pins and download verification for native Windows/Linux x86_64 editors and the WebGL distribution. It installs under `.runtime/effekseer/1.80.7/` and does not automatically install a Godot plugin. Windows uses `editor/` and `editor.install.json`; Linux uses `editor-linux/` and `editor-linux.install.json`, preserving existing Windows installation records. Run these commands from the repository root.
 
 ```text
 uv run --no-sync python scripts/effekseer.py --root <absolute-runtime-root> doctor
@@ -23,9 +23,16 @@ uv run --no-sync python scripts/effekseer.py --root <absolute-runtime-root> expo
 uv run --no-sync python scripts/effekseer.py --root <absolute-runtime-root> model --input <absolute-existing-mesh.obj> --output <absolute-new-model.efkmodel> --scale 1
 ```
 
-Select only `install --component editor` or `webgl` when appropriate. `doctor` checks installation state; it does not replace visual review. An `.efkefc` `export` uses the official tool's `-cui -in … -o …` path. This plain conversion avoids GUI/graphics-device initialization and material-cache generation, and applies the global CPU policy. Thread environment variables do not enforce a hard cap on every native thread; do not report unsupported Windows CPU affinity as applied. Rendering requires the separate resource checks below.
+On Linux, these direct commands also work after setting up the project's virtual environment. The official Linux distribution bundles a self-contained .NET runtime; no separate .NET SDK, Mono or Wine is needed. Native shared libraries such as `libGLU.so.1` are still required; on Ubuntu, install a missing `libGLU.so.1` with `sudo apt-get install libglu1-mesa`. `doctor` checks executable permissions, hashes and native dependencies of the binaries and `libViewer.so`, which CUI also loads.
 
-`model` is a Windows CPU path through the official resource converter for an existing `.obj` or `.glb`. `--scale` must be positive; existing outputs and provenance files are not overwritten. Actual minimal-OBJ conversion and output-header checks were verified, but they do not establish arbitrary-model appearance, material or rig preservation. Author the model's materials, textures and renderer settings separately.
+```bash
+.venv/bin/python scripts/effekseer.py install --component all
+.venv/bin/python scripts/effekseer.py doctor
+```
+
+Select only `install --component editor` or `webgl` when appropriate. `doctor` checks installation state; it does not replace visual review. An `.efkefc` `export` uses the official tool's `-cui -in … -o …` path. This plain conversion avoids GUI/graphics-device initialization and material-cache generation, and applies the global CPU policy. Actual Linux conversion was verified without `DISPLAY`. Thread environment variables do not enforce a hard cap on every native thread; do not report unsupported Windows CPU affinity as applied. Rendering requires the separate resource checks below.
+
+`model` is a native Windows/Linux x86_64 CPU path through the official resource converter for an existing `.obj` or `.glb`. `--scale` must be positive; existing outputs and provenance files are not overwritten. Actual minimal-OBJ conversion and output-header checks were verified, but they do not establish arbitrary-model appearance, material or rig preservation. Author the model's materials, textures and renderer settings separately.
 
 ## GPU and private resource settings
 
@@ -34,12 +41,13 @@ Select only `install --component editor` or `webgl` when appropriate. `doctor` c
 | Writing XML/resources and inspecting files | CPU and file operations; no CUDA model or GPU inference memory is needed. |
 | Command-line conversion | The helper's plain conversion uses the CPU path. Do not generalize that to every `-cui` invocation or another tool's material-cache/recording operations. |
 | Windows editor/preview | Official requirements include DirectX 11. Even ordinary particles consume graphics resources when drawn. |
+| Linux editor/preview | Requires OpenGL and a display/graphics backend. Successful headless file conversion does not establish GUI launch or render verification. |
 | WebGL playback | Uses the browser graphics context. CPU particle simulation is distinct from rendering without a GPU. |
 | Effekseer's `GPU Particles` feature | A separate GPU simulation feature. The current official table marks WebGL and Godot integration unsupported, so use regular particles there and recheck the installed version's table. This is not a limitation on Godot's own GPU particle feature. |
 
 Select against the official [environment requirements](https://effekseer.github.io/Help_Tool/en/overview.html) and [GPU particle support table](https://effekseer.github.io/Help_Tool/en/ToolReference/gpuParticles.html). Do not mix this repository's pinned version with an unrelated newer runtime.
 
-The operator's [private resource policy](RESOURCES.en.md) still applies. Use the existing guarded Blender launcher; inspect DirectX/WebGL device selection for the Effekseer editor and browser separately. `CUDA_VISIBLE_DEVICES` and Blender CPU limits do not establish those renderers' GPU selection or concurrency enforcement. If the host cannot enforce a restriction, do not assume protected GPUs are excluded or relax the policy; distinguish verified CPU file work from the render verification status. Do not switch to another device when a selected device is busy.
+The operator's [private resource policy](RESOURCES.en.md) still applies. Use the existing guarded Blender launcher; inspect DirectX/OpenGL/WebGL device selection for the Effekseer editor and browser separately. `CUDA_VISIBLE_DEVICES` and Blender CPU limits do not establish those renderers' GPU selection or concurrency enforcement. If the host cannot enforce a restriction, do not assume protected GPUs are excluded or relax the policy; distinguish verified CPU file work from the render verification status. Do not switch to another device when a selected device is busy.
 
 ## When a separate model is useful
 
@@ -70,7 +78,18 @@ node examples/effekseer/build.mjs --runtime .runtime/effekseer/1.80.7/webgl --ef
 python -m http.server 8784 --bind 127.0.0.1 --directory .work/effekseer-demo/revision-name-site
 ```
 
-Continue only after each stage succeeds. Run the final two stages only for a requested example web preview, choosing a free port if needed. Serve only the built site. [`build.mjs`](../examples/effekseer/build.mjs) copies playback effects/resources, runtime and license notices while excluding source XML/OBJ and private provenance JSON. Use a hidden window and readiness check when starting a background server on Windows.
+In Linux Bash, use the native distribution's `Sample` path. These authoring/conversion commands need no display and stop on a failed command.
+
+```bash
+set -e
+.venv/bin/python examples/effekseer/author_demo.py --samples .runtime/effekseer/1.80.7/editor-linux/Effekseer1.80.7Linux/Sample --out .work/effekseer-demo/revision-name
+.venv/bin/python scripts/effekseer.py model --input .work/effekseer-demo/revision-name/effects/ice/Model/crystal.obj --output .work/effekseer-demo/revision-name/effects/ice/Model/crystal.efkmodel --scale 1
+for effect in fire ice lightning arcane; do
+    .venv/bin/python scripts/effekseer.py export --input ".work/effekseer-demo/revision-name/effects/$effect/source.efkproj" --output ".work/effekseer-demo/revision-name/effects/$effect/effect.efkefc"
+done
+```
+
+Continue only after each stage succeeds. Run the `node` build and HTTP server commands at the end of the PowerShell example only for a requested web preview. On Linux, use the same build command and start the server with `.venv/bin/python -m http.server …`. Choose a free port if needed and serve only the built site. [`build.mjs`](../examples/effekseer/build.mjs) copies playback effects/resources, runtime and license notices while excluding source XML/OBJ and private provenance JSON. Use a hidden window and readiness check when starting a background server on Windows.
 
 This is a reproducible authoring/conversion/preview path, not automatic approval of example visual finish or real-game performance. Record actual per-effect playback and multi-angle review in the task's work records.
 

@@ -1,4 +1,4 @@
-"""Pinned portable Effekseer setup and CPU-only project conversion on Windows.
+"""Pinned portable Effekseer setup and CPU-only conversion on Windows/Linux x64.
 
 This does not launch the editor, render frames, author effects or bundle their
 external resources. D3D/WebGL device selection is outside CUDA resource policy.
@@ -11,6 +11,7 @@ import hashlib
 import json
 import math
 import os
+import platform
 import shutil
 import stat
 import struct
@@ -28,6 +29,8 @@ ARTIFACTS = {
     "editor": ("Effekseer1.80.7Win.zip", "6f059b9cce3a79c5bfe3df9c970cfe62fd72acf130083c7b81832d90f8d1335f"),
     "webgl": ("EffekseerForWebGL1.80.7.zip", "4d6f1d399b661e509231d1fcb375377e79bb02561022f892a8acb2f5eee93a8b"),
 }
+LINUX_EDITOR = ("Effekseer1.80.7Linux.zip",
+                "462a18b289ebee09a792d38f7d5824c5333c0559aff29cb76ddfcf401c9a0505")
 LICENSE_URL = f"https://raw.githubusercontent.com/effekseer/Effekseer/{COMMIT}/LICENSE"
 LICENSE_SHA256 = "9686573243a6e4732edef9e39ac1356371dc7f4a17d995bea32777e36463cb29"
 EDITOR_DIR = "editor/Effekseer1.80.7Win"
@@ -36,6 +39,25 @@ REQUIRED = {
                f"{EDITOR_DIR}/Tool/bin/tools/EffekseerResourceConverter.exe"],
     "webgl": ["webgl/effekseer.js", "webgl/effekseer.wasm", "webgl/LICENSE"],
 }
+
+
+def editor_layout():
+    """Select a native release without sharing mutable Windows/Linux receipts."""
+    if sys.platform == "win32":
+        return {"platform": "windows", "artifact": ARTIFACTS["editor"], "extract_dir": "editor",
+                "directory": EDITOR_DIR, "receipt": "editor.install.json",
+                "editor": REQUIRED["editor"][0], "converter": REQUIRED["editor"][2],
+                "required": REQUIRED["editor"]}
+    if sys.platform == "linux" and platform.machine().lower() in ("x86_64", "amd64"):
+        directory = f"editor-linux/Effekseer{VERSION}Linux"
+        editor = f"{directory}/Tool/bin/Effekseer"
+        converter = f"{directory}/Tool/bin/tools/EffekseerResourceConverter"
+        return {"platform": "linux-x86_64", "artifact": LINUX_EDITOR, "extract_dir": "editor-linux",
+                "directory": directory, "receipt": "editor-linux.install.json",
+                "editor": editor, "converter": converter,
+                "required": [editor, f"{directory}/LICENSE_TOOL", converter,
+                             f"{directory}/Tool/bin/libViewer.so"]}
+    raise ValueError("The portable editor supports Windows or Linux x86_64; WebGL is portable")
 
 
 def sha256(path):
@@ -78,9 +100,11 @@ def safe_members(archive, destination):
     for item in archive.infolist():
         name = item.filename.replace("\\", "/")
         path = PurePosixPath(name)
+        file_type = stat.S_IFMT(item.external_attr >> 16) if item.create_system == 3 else 0
         if (path.is_absolute() or not path.parts or ":" in name
                 or any(p in ("..", ".") or p.endswith((" ", ".")) for p in path.parts)
-                or stat.S_ISLNK(item.external_attr >> 16)):
+                or stat.S_ISLNK(item.external_attr >> 16)
+                or file_type not in (0, stat.S_IFREG, stat.S_IFDIR)):
             raise ValueError(f"Unsafe archive member: {item.filename}")
         key = name.rstrip("/").casefold()
         if key in seen:
@@ -114,47 +138,105 @@ def extract_verified(archive_path, destination):
                 target.parent.mkdir(parents=True, exist_ok=True)
                 with archive.open(item) as source, target.open("xb") as output:
                     shutil.copyfileobj(source, output)
+            if not item.is_dir() and os.name == "posix" and item.create_system == 3:
+                # Only import executable bits; never restore setuid/setgid or
+                # grant write permissions from an archive's Unix metadata.
+                executable = (item.external_attr >> 16) & 0o111
+                if executable:
+                    target.chmod((stat.S_IMODE(target.stat().st_mode) & 0o666) | executable)
 
 
 def install(root, component="all"):
+    if component not in ("all", *ARTIFACTS):
+        raise ValueError(f"Unknown component: {component}")
     chosen = tuple(ARTIFACTS) if component == "all" else (component,)
-    if "editor" in chosen and sys.platform != "win32":
-        raise ValueError("This portable editor installer currently supports Windows only; WebGL is portable")
+    layout = editor_layout() if "editor" in chosen else None
     base = runtime_dir(root)
     for name in chosen:
-        filename, digest = ARTIFACTS[name]
+        filename, digest = layout["artifact"] if name == "editor" else ARTIFACTS[name]
         archive = base / "downloads" / filename
         download(RELEASE + filename, archive, digest)
-        extract_verified(archive, base / name)
+        extract_verified(archive, base / (layout["extract_dir"] if name == "editor" else name))
+        if name == "editor" and layout["platform"] == "linux-x86_64":
+            for executable in (layout["editor"], layout["converter"]):
+                path = base / executable
+                path.chmod((stat.S_IMODE(path.stat().st_mode) & 0o666) | 0o111)
         if name == "webgl":
             download(LICENSE_URL, base / "webgl/LICENSE", LICENSE_SHA256)
+        paths = layout["required"] if name == "editor" else REQUIRED[name]
         receipt = {
             "version": VERSION, "source_commit": COMMIT,
             "url": RELEASE + filename, "archive_sha256": digest,
-            "files": {p: sha256(base / p) for p in REQUIRED[name]},
+            "platform": layout["platform"] if name == "editor" else "portable",
+            "files": {p: sha256(base / p) for p in paths},
         }
-        (base / f"{name}.install.json").write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
+        receipt_path = base / (layout["receipt"] if name == "editor" else f"{name}.install.json")
+        receipt_path.write_text(json.dumps(receipt, indent=2) + "\n", encoding="utf-8")
     return doctor(root)
+
+
+def native_dependencies(base, layout):
+    """Inspect ELF dependencies, including the viewer library loaded by CUI."""
+    checks = []
+    targets = [layout["editor"], layout["converter"], f"{layout['directory']}/Tool/bin/libViewer.so"]
+    for relative in targets:
+        path = base / relative
+        check = {"path": relative, "ready": False, "missing": []}
+        try:
+            result = subprocess.run(["ldd", str(path)], capture_output=True, timeout=10, check=False)
+            output = (result.stdout + result.stderr).decode("utf-8", errors="replace")
+            check.update(returncode=result.returncode,
+                         missing=[line.strip().split()[0] for line in output.splitlines()
+                                  if "=> not found" in line])
+            check["ready"] = result.returncode == 0 and not check["missing"]
+            if not check["ready"]:
+                check["diagnostic"] = output.strip()
+        except (OSError, subprocess.SubprocessError) as error:
+            check["error"] = str(error)
+        checks.append(check)
+    return checks
 
 
 def doctor(root):
     base = runtime_dir(root)
     components = {}
-    for name, paths in REQUIRED.items():
-        receipt_path = base / f"{name}.install.json"
+    try:
+        layout = editor_layout()
+    except ValueError as error:
+        layout = None
+        components["editor"] = {"ready": False, "supported": False, "error": str(error),
+                                "missing": [], "receipt_hashes_match": False}
+    required = {"editor": layout["required"], "webgl": REQUIRED["webgl"]} if layout else {
+        "webgl": REQUIRED["webgl"]}
+    for name, paths in required.items():
+        receipt_path = base / (layout["receipt"] if name == "editor" else f"{name}.install.json")
         receipt = json.loads(receipt_path.read_text(encoding="utf-8")) if receipt_path.exists() else {}
         missing = [p for p in paths if not (base / p).is_file()]
         hashes_match = bool(receipt) and all(
             (base / p).is_file() and sha256(base / p) == receipt.get("files", {}).get(p) for p in paths)
         components[name] = {"ready": not missing and hashes_match, "missing": missing,
                             "receipt_hashes_match": hashes_match}
+        if name == "editor":
+            components[name].update(supported=True, platform=layout["platform"], receipt=str(receipt_path))
+            if layout["platform"] == "linux-x86_64":
+                not_executable = [p for p in (layout["editor"], layout["converter"])
+                                  if (base / p).is_file() and not os.access(base / p, os.X_OK)]
+                components[name]["not_executable"] = not_executable
+                components[name]["ready"] = components[name]["ready"] and not not_executable
+                # ldd operates only on verified release binaries; it creates no
+                # graphics context and does not launch the editor or converter.
+                native = native_dependencies(base, layout) if not missing and hashes_match else []
+                components[name]["native_dependencies"] = native
+                components[name]["native_dependencies_checked"] = bool(native)
+                components[name]["ready"] = components[name]["ready"] and all(c["ready"] for c in native)
     return {
         "version": VERSION, "source_commit": COMMIT, "runtime": str(base), "components": components,
-        "editor_cli": str(base / EDITOR_DIR / "Tool/bin/Effekseer.exe"),
-        "model_converter": str(base / EDITOR_DIR / "Tool/bin/tools/EffekseerResourceConverter.exe"),
+        "editor_cli": str(base / layout["editor"]) if layout else None,
+        "model_converter": str(base / layout["converter"]) if layout else None,
+        "editor_working_directory": str(base / layout["directory"] / "Tool") if layout else None,
         "webgl_runtime": str(base / "webgl"),
         "capabilities": {"cui_conversion": "CPU; no GUI/material-cache rendering",
-                         "editor_preview": "Direct3D on Windows; GPU adapter not controlled by CUDA masks",
+                         "editor_preview": "Direct3D on Windows/OpenGL on Linux; adapter not controlled by CUDA masks",
                          "webgl_preview": "Browser-selected graphics adapter; verify renderer separately"},
     }
 
@@ -229,8 +311,7 @@ def dependencies(path):
 
 def export(root, source, output, timeout=120, *, model_scale=None):
     """Headless save/export; exit zero alone is insufficient in upstream's CLI."""
-    if sys.platform != "win32":
-        raise ValueError("The configured editor converter supports Windows only")
+    layout = editor_layout()
     root, source, output = Path(root).resolve(), Path(source).resolve(), Path(output).resolve()
     is_model = model_scale is not None
     input_types = (".obj", ".glb") if is_model else (".efkproj", ".efkefc")
@@ -266,14 +347,16 @@ def export(root, source, output, timeout=120, *, model_scale=None):
     report = {"version": VERSION, "source_commit": COMMIT, "input": str(source),
               "input_sha256": sha256(source), "output": str(output), "command": command,
               "resources": applied, "state": "running", "rendered": False,
+              "platform": layout["platform"],
               "operation": "model_conversion" if is_model else "effect_conversion",
               "resource_notes": ["CPU-only conversion; no inference/GPU render was requested",
                                  "Thread environment settings are advisory; no native CUI thread flag",
                                  "GUI/WebGL adapter selection is not enforced by this converter"]}
     try:
-        result = subprocess.run(command, cwd=runtime_dir(root) / EDITOR_DIR / "Tool",
+        result = subprocess.run(command, cwd=runtime_dir(root) / layout["directory"] / "Tool",
                                 env=env, capture_output=True, timeout=timeout, check=False,
-                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+                                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0)
+                                if sys.platform == "win32" else 0)
         report.update(returncode=result.returncode, stdout=result.stdout.decode("utf-8", errors="replace"),
                       stderr=result.stderr.decode("utf-8", errors="replace"))
         if result.returncode != 0:

@@ -20,18 +20,16 @@ Output: [formats and location; requested integration/preview, if any]
 Budget: [authorized time, local compute/storage, paid calls and spending limit]
 
 Read the project and linked skill, then make the effect for these conditions.
-For multiple effects, author, review playback and repair each one.
-Preserve editable sources and the requested outputs; inspect the actual result.
-Finish with a brief report of artifact locations, versions and checks,
-review evidence, unresolved defects and conditions not verified.
 Do not edit the skill/shared documentation or publish outputs during this test.
 ```
+
+Do not repeat review, repair or preservation procedures in this request or remind the tester separately during production: the test checks whether those behaviors come from the skill itself. Environment assistance such as installation paths and connection methods is allowed. If quality instructions have to be supplemented, record that intervention and distinguish the result before it. The evidence list below belongs to the authoring session's evaluation; do not inject it as an additional production prompt.
 
 Let the session choose methods from explicit requirements and observed conditions. An unknown engine does not override the requested output format. Budget entries record both prior authorization and permissions the user gives for this test; paid calls and uploads must stay within that scope. Preserve outputs, caches, references and captures in a unique local folder separate from skill source, without overwriting earlier results.
 
 ## Evidence to return to the authoring session
 
-Keep a brief record for each effect. Distinguish created files and passed checks from meeting the requested quality.
+The authoring session checks per-effect evidence in the production record and artifacts. Distinguish created files and passed checks from meeting the requested quality, and leave missing evidence unverified.
 
 - Original request, skill version/checkout, actual tool/renderer versions and chosen authoring/playback path.
 - Editable sources, delivery files, reproduction entrypoint/commands, checks performed and log locations.
