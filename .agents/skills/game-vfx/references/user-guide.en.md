@@ -20,9 +20,11 @@ This is not a single dedicated AI VFX model that automatically produces complete
 | Supplied Blender helper + Three.js examples | The helper creates 3D noise and lightning paths. Fire uses a spatial field shader, ice replays an existing fracture clip, and lightning combines paths with discharge timing. The three complete effects are not stored in one GLB. |
 | Blender Mantaflow — optional when useful | Can provide gas/fire/smoke or liquid simulation ingredients. Conversion to the target playback representation requires work; the supplied helper has no general fluid-cache exporter/player. Not every fireball needs simulation. |
 | ImageGen / authorized Grok video | Supports references for shape, color, material and timing, or reviewed texture ingredients. Images/video do not automatically reconstruct 3D fluids, collisions, trajectories or game effects. Selection depends on available tools and the task's authorization. |
-| Separate `3d-assets` skill | Used when a standalone model such as an ice chunk or meteor is needed. Existing meshes can be reused; new models default to reference image → **TRELLIS.2**. **Tripo is a paid option requiring explicit user selection**. Effects without model requirements need no such inference. |
+| `3d-assets` skill + Blender | Used when a physical ingredient such as the main ice chunk or meteor needs a model or better form. Reuse/edit existing meshes, or generate a new model through reference image → **TRELLIS.2** and refine it in Blender. **Tripo is a paid option requiring explicit user selection**. Effects without model requirements need no such inference. |
 
 Procedural fields, ribbons, particles and lightning branches are normal VFX authoring techniques, distinct from `3d-assets` policy for generating standalone models. Kimodo for human motion is not a default VFX tool and requires explicit selection. Houdini, EmberGen and similar tools are not default dependencies or supplied automated adapters.
+
+Effekseer can work alongside other tools. Use a refined mesh as an Effekseer model particle, or render the main object in the game engine when its materials/physics matter and play surrounding effects through Effekseer. Repair the deficient geometry, material or motion and review timing, depth and overlap in the combined result. See [model handoff choices](../../../../docs/EFFEKSEER.en.md#when-a-separate-model-is-useful).
 
 ## How should I request work?
 
@@ -37,6 +39,7 @@ When known, include **the desired appearance and behavior, destination project, 
 | Reuse an existing model | `$game-vfx use this meteor GLB for a falling impact effect and integrate it into the current project.` |
 | Select a production method | `$game-vfx bake a smoke explosion with Mantaflow and convert it for playback in this project.` |
 | Select Effekseer | `$game-vfx use Effekseer to make separate fire-burst, ice and lightning spells for web review. Keep editable sources and resources.` |
+| Improve model and effect together | `$game-vfx improve this ice spell's shape and material. If needed, generate its main ice model with 3d-assets, refine it in Blender and combine it with the existing Effekseer effect.` |
 | Combine explanation and work | `$game-vfx briefly explain your tool choices, then improve the readability of this project's sword trail.` |
 | Request a web preview | `$game-vfx also open a web preview where I can rotate and play the completed effect.` |
 

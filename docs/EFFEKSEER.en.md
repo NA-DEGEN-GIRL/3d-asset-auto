@@ -55,9 +55,18 @@ The operator's [private resource policy](RESOURCES.en.md) still applies. Use the
 
 ## When a separate model is useful
 
-Reuse an existing mesh for a meteor, distinctive ice chunk, summon or other standalone physical object. Request [`3d-assets`](../.agents/skills/3d-assets/SKILL.md) only when a new model is needed. Reference images and TRELLIS.2 are the default; Tripo requires explicit selection. Effekseer ribbons, rings, sprites and simple procedural VFX geometry do not require inference.
+Reuse or refine an existing mesh for a meteor, distinctive ice chunk, summon or other physical object. Invoke [`3d-assets`](../.agents/skills/3d-assets/SKILL.md) when a new model is needed, even if it is just one ingredient of the effect rather than a separate deliverable. Reference images and TRELLIS.2 are the default; Tripo requires explicit selection. Effekseer ribbons, rings, sprites and simple procedural VFX geometry do not require inference. First distinguish geometry, material and motion shortcomings through [model and effect composition](../.agents/skills/game-vfx/references/workflow.md#combine-model-authoring-and-effect-playback).
 
-Refine needed meshes in Blender and inspect coordinates, units, origin, normals and UVs before converting to Effekseer model inputs. The official [model renderer](https://effekseer.github.io/Help_Tool/en/ToolReference/rendererModel.html) describes conversion from GLB, glTF, FBX, OBJ and other formats into `.efkmodel`. Preserve source and conversion outputs; verify scale, orientation, appearance and resource paths with the actual installed version. Do not assume complete GLB PBR materials, rigs and named animations play unchanged. Keeping a character in its engine and attaching effects to its sockets may be the suitable integration.
+Use Blender for needed shape, surface, UV, fragment or motion work in a new revision, and inspect coordinates, units, origin and normals. Model generation alone does not finish ice transparency/refraction or a shatter sequence. Choose playback for the required material and interaction:
+
+| Composition | When to use it and what to author |
+| --- | --- |
+| Effekseer model particles | Use when the destination Effekseer runtime can express the chosen material and motion. Convert the mesh to `.efkmodel` and configure textures, materials and node motion. The official [model renderer](https://effekseer.github.io/Help_Tool/en/ToolReference/rendererModel.html) describes GLB, glTF, FBX, OBJ and other conversions; the repository helper accepts OBJ/GLB. |
+| Engine mesh + Effekseer | When the main object needs engine materials, lighting, animation or physics, play its GLB or other model as a normal object in the target engine/renderer (such as Three.js or Godot) and use Effekseer for surrounding trails, mist, flashes or small fragments. Write the project's integration code; the supplied example does not assemble this automatically. |
+
+Selecting Effekseer does not require moving every layer into it. Do not assume complete GLB PBR materials, rigs and named animations play unchanged in `.efkmodel`. For example, a generated/refined main ice form can coexist with simpler procedural fragments and mist. If the failure is material-related, repair the chosen renderer's material instead of regenerating geometry.
+
+Preserve sources, converted files and dependencies, and compare appearance in the actual installed version. A mixed composition must share coordinates, units, contact positions and event times; check that meshes and effects stay together through playback, seeking, stopping, restarting and disposal. In particular, inspect depth, overlap and blending between transparent objects and particles against the final backgrounds and complementary views. Individual tool success does not establish the quality of the composition.
 
 ## Authoring, review and integration
 

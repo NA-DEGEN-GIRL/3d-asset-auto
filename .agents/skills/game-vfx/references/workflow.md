@@ -41,6 +41,14 @@ Use the simplest representation that meets the intended camera, interaction and 
 
 Adapt fitting components and connect dependent visual layers to the same authored event positions and times. For multiple contacts, releases or moving sources, verify that each response follows its own cause; a shared decorative burst can conceal missing behavior. Decompose combined spells into named layers/events for inspection. If adjustments cannot recover the intended expression, change the relevant structure, representation or source rather than repeating small parameter edits.
 
+## Combine model authoring and effect playback
+
+When a solid ingredient fails the intended look, isolate it from glow, mist and other secondary layers where useful. Determine whether the missing quality comes from silhouette/surface geometry, material/lighting, motion/contact or their composition. More particles do not repair a poor main form, and a new generated mesh does not by itself supply convincing transparency, refraction or timing. Change the responsible ingredient; suitable procedural geometry remains a valid choice.
+
+Reuse or refine an adequate mesh. If a distinctive new object is needed, invoke [`3d-assets`](../../3d-assets/SKILL.md) within the requested production scope, even when the object is only one layer of the effect. Its reference-image/TRELLIS default and explicit Tripo selection still apply. Use Blender for needed shape, surface, UV, fragment or animation work in a new revision; preserve source and do not treat model generation as finished VFX. Review the ingredient at its intended screen size before composing it, then review the complete effect through the existing per-effect loop.
+
+Choose the mesh's playback representation for its actual material and interaction needs. The [Effekseer model handoff](../../../../docs/EFFEKSEER.en.md#when-a-separate-model-is-useful) distinguishes a converted model particle from an engine-rendered main object with Effekseer accents. For example, an ice spell may combine a generated/refined main chunk, simpler reusable fragments and procedural mist; it need not generate every shard or force all layers into one renderer. This is a composition workflow, not a supplied automatic mesh-to-spell adapter.
+
 ## Simulation ingredients
 
 First prove a bounded authoring → bake → conversion → target-playback path for the relevant behavior. Preserve the editable scene, source cache, settings, frame times, units/bounds and conversion provenance. Match original and converted samples at the same source time before judging the final composition. Inspect domain clipping, quantization/filtering and source-to-playback time mapping when shape or rhythm changes. Neither a completed bake nor a cache file proves that the expected field or mesh was rendered.
