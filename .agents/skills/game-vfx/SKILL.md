@@ -1,6 +1,6 @@
 ---
 name: game-vfx
-description: Create and refine game spell and impact effects for the target project's renderer, using suitable shaders, particles, meshes and optional Blender baking. Use for fire, ice, lightning, trails and related VFX, or explain this skill's tools and usage; request 3d-assets when a separate physical model is needed.
+description: Create and refine game spell and impact effects for the target project's renderer, using suitable shaders, particles, meshes and optional Blender baking. Use for fire, ice, lightning, trails and related VFX, or explain this skill's tools and usage; request 3d-assets when a physical model ingredient is needed.
 ---
 
 # Game VFX
@@ -19,7 +19,7 @@ Respect the execution host's private [resource policy](../../../docs/RESOURCES.e
 
 ## Choose and make the effect
 
-- Inspect the project's renderer/backend, release platform, camera, interaction and requested output where available. Set observable technical and expressive acceptance criteria against the adopted references and requested finish; do not lower them to the starting component's quality. If the target is unknown, preserve portable ingredients and intent or honor the requested format; do not choose an engine, build both web and Godot, or open a viewer by default.
+- Inspect the project's renderer/backend, release platform, camera, interaction and requested output where available. Set observable technical and expressive acceptance criteria using [expression before implementation](references/workflow.md#expression-before-implementation); do not lower them to the starting component's quality. If the target is unknown, preserve portable ingredients and intent or honor the requested format; do not choose an engine, build both web and Godot, or open a viewer by default.
 - For unfamiliar, complex or creative effects, inspect image and temporal references during design. Available ImageGen and authorized Grok video can help establish form and movement; reuse sufficient existing material. Read [workflow.md](references/workflow.md) for reference selection, construction and per-effect review. References guide implementation; they do not automatically supply geometry, physics or temporal consistency.
 - Adapt a suitable component's shape, timing, motion and material, or change the production path if it cannot meet the target. Read [production choices](references/workflow.md#choose-the-production-path), including optional simulation. The supplied fire, ice and lightning examples are starting components, not the quality ceiling or a general fluid-cache exporter. New libraries, models or MCPs need a demonstrated benefit in the task; tool availability is not quality evidence.
 - Consider [Effekseer](../../../docs/EFFEKSEER.en.md) when requested or when its node-based authoring and compatible target integration fit the task. Preserve editable effects and their referenced resources; Effekseer playback is a separate runtime, not GLB export. Verify the chosen backend's features and graphics-device policy before rendering: ordinary particles still need rendering resources, and CUDA masks do not select a DirectX/WebGL adapter.

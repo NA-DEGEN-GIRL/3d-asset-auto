@@ -8,7 +8,9 @@ Keep two concerns distinct: producing ingredients (meshes, textures, fields, bak
 
 ## Expression before implementation
 
-For each effect, identify the characteristics that make the adopted reference recognizable in motion, including its large-scale shape and event rhythm where relevant. Preserve those characteristics before adding fine noise, particles or glow. A plausible effect of the same element may still miss the requested expression. Infer useful defaults from the request and project, and record the intended differences when adapting a reference.
+For a new effect or substantial redesign, briefly define what the player should perceive, the main moving form that conveys it, and the behavior over time that makes it recognizable. Use supplied references or infer a suitable direction from the request and project. Describe observable form and action, not only adjectives such as "powerful." For related variants, identify their deliberately shared identity and intended perceptual differences.
+
+Play the defining form and motion in the target camera as soon as they can be meaningfully judged, before investing heavily in secondary detail. Include the layers needed for that expression; the main form need not be a solid mesh. A narrow edit retains the existing direction and needs only the relevant check.
 
 Useful example criteria:
 
@@ -18,7 +20,7 @@ Useful example criteria:
 | Ice | Readable mass and descent, coherent contact, a decisive breakup and debris settling | A flat splash replacing the chunk, hovering fragments, premature shattering or loss of scale |
 | Lightning | Directed strike, hierarchical branches, brief varied pulses and a clear endpoint | A smooth tube, evenly spaced decorative twigs, disconnected flash or branches visible only from one view |
 
-These are diagnostic examples, not requirements for every style. A quiet magical flame or sustained electrical beam needs different timing. Choose criteria and effort for the intended result.
+These are diagnostic examples, not requirements for every style. For forceful effects, check whether the defining beat has enough change in motion or intensity to read at normal game speed; equally strong activity throughout may feel flat. Adjust relationships between phases where appropriate without changing authoritative timing. For quiet or sustained effects, judge the intended continuity, cadence and state readability instead. Color may carry identity, and related tiers need not always become brighter or larger.
 
 ## Image and temporal references
 
@@ -39,7 +41,7 @@ Use the simplest representation that meets the intended camera, interaction and 
 - **Effekseer:** a useful optional authoring/runtime path for layered sprites, rings, ribbons, tracks and model particles when the destination can play its effects. Prefer an existing integration or the user's selected workflow; a working engine particle system need not be replaced. Read the [Effekseer guide](../../../../docs/EFFEKSEER.en.md) for the pinned tool, dependencies, resource limits and model handoff. Keep the editable effect and resources together and review the actual target backend; browser playback does not establish Godot compatibility.
 - **Offline simulation:** use Blender/Mantaflow when fluid evolution contributes to the target shape or motion. Gas/fire/smoke and liquid paths produce different ingredients and require suitable conversion. Ice solids or lightning do not become fluid tasks simply because this tool is installed. Use the [bake workflow](#simulation-ingredients) when chosen; the supplied gallery is not a general volume-cache exporter/player.
 
-Adapt fitting components and connect dependent visual layers to the same authored event positions and times. For multiple contacts, releases or moving sources, verify that each response follows its own cause; a shared decorative burst can conceal missing behavior. Decompose combined spells into named layers/events for inspection. If adjustments cannot recover the intended expression, change the relevant structure, representation or source rather than repeating small parameter edits.
+Adapt fitting components and connect dependent visual layers to the relevant [gameplay or authored events](#from-authoring-to-game-playback). For multiple contacts, releases or moving sources, verify that each response follows its own cause; a shared decorative burst can conceal missing behavior. Decompose combined spells into named layers/events for inspection. If adjustments cannot recover the intended expression, change the relevant structure, representation or source rather than repeating small parameter edits.
 
 ## Combine model authoring and effect playback
 
@@ -61,9 +63,13 @@ Simulation is a source for artistic shaping. Inspect the primary layer without g
 
 Keep the `.blend` or other editable source alongside the exported geometry, textures, parameters and target code. Record seed, input hashes, coordinate conversion, size, duration, event times and resource ownership. Blender uses Z-up; glTF and these web examples use Y-up. Avoid converting an imported GLB twice.
 
-Plan how the effect starts, seeks, stops, restarts and finishes. A seeded absolute-time update is useful for reproducible review, but target gameplay may also need live endpoints, attachment transforms or collision callbacks. Keep visual contact events distinct from damage logic. State when scene lighting, post-processing or a particular shader is required for the shown result.
+Plan how the effect starts, stops, restarts and finishes, and seeks when supported. A seeded absolute-time update is useful for reproducible review, but target gameplay may also need live endpoints, attachment transforms or collision callbacks. Keep visual responses distinct from damage logic. State when scene lighting, post-processing or a particular shader is required for the shown result.
+
+When the project supplies authoritative events, identify their source, time units and coordinate frame, with positions/targets where supplied, and bind contact responses to those anchors. The authority may be a collision callback, animation marker, server event or authored timeline. Decorative propagation must not silently postpone an accepted contact or change its target. Missing trajectory data remains unknown; identify inferred paths as cosmetic. Standalone art can use its own declared event timeline.
 
 Bind causally related layers to the same event positions and playback clock. Distinguish an object's center from its visible contact surface, and source-frame time from game time. A moving local volume can drag its old wake with it; use appropriate world/local placement for trails and lingering material. Verify the visible contact and transition, not only matching origin coordinates. Record artistic scaling, retiming, clipping and fades separately from source physics.
+
+If sound is requested, pass the visible material, motion, intended rhythm and event anchors to the available `game-audio` skill or the project's audio workflow. Distinguish cue scheduling from onset delay inside the recording. Review combined playback when available, keeping actual listening separate from cue or waveform checks. Anticipation, tails and staggered accents may support one event without aligning every visual and sonic maximum.
 
 For a requested web preview, use the example build/runtime contract in [runtime.md](runtime.md). For an existing game project, implement or adapt only its renderer path. A web viewer's material override or particle layer is not embedded in the GLB. Engine-agnostic delivery can preserve ingredients and intent, but should not claim untested portability.
 
@@ -77,10 +83,14 @@ Keep editable working sources locally, but honor the requested delivered files. 
 
 ## Per-effect quality loop
 
+Reuse the project's playback/capture path, verifying that it reaches the intended effect and state. Add only capabilities needed for review. Where seeking is unavailable, retain available replay inputs or seed and state repeatability limits.
+
+Keep needed cases in the existing review record with applicable context: effect/variant/tier, source/input revision, event or time, camera/resolution and scene/screen settings, capture path and actual rendered state, inspection status and observation. Link corresponding before/after cases for repairs and reuse unchanged context for narrow edits. Confirm the requested state has rendered; selected controls or file counts do not establish coverage. Distinguish captured from inspected; an adapter cannot assign artistic approval.
+
 1. Inspect the final rendered effect at normal game distance and any revealing close-up. Compare reference and result at the adopted events: buildup, peak, contact/release and decay where relevant. Match camera and framing enough for a useful comparison.
 2. Hold the same important instant and inspect complementary angles. Replay transitions and pulses at the intended speed. Static meshes visible from several angles do not establish that the moving effect retains depth or timing.
-3. Test relevant scene conditions: bright/dark backgrounds, foreground occluders, nearby geometry, ground contact, simultaneous instances and supported scale changes. Check empty/prestart time, cancellation, restart and post-lifetime behavior when part of the contract. Choose coverage from the effect's risks, not a universal number of images.
-4. Record the defect, moment, view, failed criterion and likely source. Correct authoring, bake/export or runtime as appropriate. Re-export/rebuild and compare the same conditions, including plausible regressions in expression and untouched effects.
+3. Test relevant scene conditions: bright/dark backgrounds, foreground occluders, nearby geometry, ground contact, simultaneous instances and supported scale changes. When optional screen treatments contribute, compare the spatial effect with them disabled and in the final composition; required materials or post-processing remain part of its representation. Check empty/prestart time, cancellation, restart and post-lifetime behavior when part of the contract. Choose coverage from the effect's risks, not a universal number of images.
+4. Record the defect, moment, view, failed criterion and likely source. For a meaningful visual repair, identify the improvement sought and any visible strength at risk. Correct the responsible authoring, bake/export or runtime component, then compare under the same relevant conditions, including plausible regressions in untouched effects. Record the observed tradeoff: a repair is incomplete if the defect remains or a defining feature no longer reads as intended. Keep or restore a useful prior version and change the responsible layer or approach when needed.
 5. Separate structural correctness, visual expression and target integration. Compare the complete result with the adopted quality target at normal playback and viewing distance, beyond isolated details or defect-free frames. A working component study remains incomplete when its defining shape, timing or material character is missing. Record the remaining visible difference and repair its cause, or report the concrete limit preventing completion.
 
 Treat excessive brightness, geometry and particles as costs, not substitutes for expression. A user-rejected or visibly inadequate example is not an acceptance baseline just because its runtime works. Completion requires both the adopted expression and the applicable technical criteria; bounded test artifacts may remain explicitly incomplete.
